@@ -4,7 +4,7 @@
 @(require racket/list)
 @(require 2htdp/image)
 @(require "shared.rkt")
-@(require (prefix-in s: "../Graphics/shapes.rkt"))
+@(require (prefix-in s: "../Common/tiles.rkt"))
 
 @(define qwirkle-rules "https://en.m.wikipedia.org/wiki/Qwirkle")
 @(define-runtime-path qwirkle.png "qwirkle.png")
