@@ -5,6 +5,9 @@
 (provide
  #; {type Tile}
  tile?
+ tile-shape
+ tile-color
+ tile/m
 
  (contract-out 
   [tile (-> (or/c 'star '8star 'square 'circle 'clover 'diamond)
@@ -32,11 +35,19 @@
  ;; the very first string is "" to make the table square 
  render-all-shapes)
 
+(module+ examples
+  (provide starter-tile))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require 2htdp/image)
 
 ;; ---------------------------------------------------------------------------------------------------
 (struct tile [shape color] #:prefab)
+
+(define-match-expander (tile/m s c) (λ (stx) #'(tile s c)))
+
+(module+ examples
+  (define starter-tile (tile 'star 'red)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the shapes and colors

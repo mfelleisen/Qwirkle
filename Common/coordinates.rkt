@@ -44,7 +44,7 @@
 #; {Coordinate -> Coordinate}
 (define (below-of co)
   (match-define [coordinate r c] co)
-  (coordinate (- r 1) c))
+  (coordinate (+ r 1) c))
 
 #; {Coordinate Coordinate -> Boolean}
 (define (top-down-left-to-right-order< c d)

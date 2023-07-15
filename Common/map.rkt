@@ -13,8 +13,15 @@
   [render-map (-> map? 2:image?)]))
 
 (module+ examples
+  (provide starter-free
+           start+1-map
+           start+1-free
+           start+1-can))
+
+(module+ examples
   (provide
    starter-map
+   starter-can
    lshaped-map))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -22,15 +29,18 @@
 (require Qwirkle/Common/tiles)
 (require (prefix-in 2: 2htdp/image))
 
+(module+ examples
+  (require (submod Qwirkle/Common/tiles examples)))
+
 (module+ test
   (require (submod ".." examples))
+  (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
 
 #; {type map = [Hashof Coordinate Tile]}
 #; {type Candidate  = [candidate Coordinate Option<Tile> Option<Tile> Option<Tile> Option<Tile>]}
-#; {type Coordinate = [coordinate Integer Integer]}
 
 (define map? hash?)
 
@@ -41,6 +51,7 @@
 ;; add a tile that shares a side with an existing one on the map 
 
 #; {Map Coordinate Tile -> Map}
+;; pre: c must be adjacent to some other tile meaning the two share a tile 
 (define (add-tile b c t)
   (hash-set b c t))
 
@@ -51,6 +62,72 @@
       (occupied b (right-of c))
       (occupied b (below-of c))))
 
+;; ---------------------------------------------------------------------------------------------------
+;; candidates : Map Tile -> [Listof Candidate]
+;; at which coordinates can the given tile be placed to satisfy the "continues line" predicate
+;; and what are its neighbors
+
+(struct candidate [place left top right below] #:prefab)
+
+#; {Map Tile -> [Setof Candidate]}
+(module+ test
+  (check-equal? (select starter-map starter-tile) starter-can)
+  (check-equal? (select start+1-map starter-tile) start+1-can))
+(define (select map t)
+  (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits? map co t))] #:when can)
+    can))
+
+#; {Map Coordinate Tile -> (U Candidate False)}
+(define (fits? map co tile)
+  (define left  (neighbor-tile map co left-of))
+  (define top   (neighbor-tile map co top-of))
+  (define right (neighbor-tile map co right-of))
+  (define below (neighbor-tile map co below-of))
+  (and (fit-line left tile right)
+       (fit-line top tile below)
+       (candidate co left top right below)))
+
+#; {Map Coordinate [Coordinate -> Coordinate] -> (U Tile False)}
+(define (neighbor-tile map co selector)
+  (hash-ref map (selector co) #false))
+
+#; {(U Tile False) Tile (U Tile False) -> Boolean}
+(define (fit-line left tile right)
+  (define color (tile-color tile))
+  (define shape (tile-shape tile))
+  ;; tile/m
+  (cond
+    [(and (not left) (not right)) #true]
+    [(not left) (or (equal? (tile-shape right) shape) (equal? (tile-color right) color))]
+    ((not right) (or (equal? (tile-shape left) shape) (equal? (tile-color left) color)))
+    [else (or
+           (and (equal? (tile-shape left) shape) (equal? (tile-shape right) shape))
+           (and (equal? (tile-color left) color) (equal? (tile-color right) color)))]))
+
+#; {Map -> [Setof Coordinate]}
+(module+ test
+  (check-equal? (all-free-neighbors starter-map) (apply set starter-free))
+  (check-equal? (all-free-neighbors start+1-map) start+1-free))
+(define (all-free-neighbors map)
+  (define as-list (hash-map map list))
+  (for/fold ([r (set)]) ([cell (in-list as-list)])
+    (foldr (λ (n s) (set-add s n)) r (free-neighbors map (first cell)))))
+
+#; {Map Coordinate -> [Listof Coordinate]}
+(module+ test
+  (check-equal? (free-neighbors starter-map origin) starter-free))
+(define (free-neighbors map co)
+  (append (1-neighbor map co left-of)
+          (1-neighbor map co top-of)
+          (1-neighbor map co right-of)
+          (1-neighbor map co below-of)))
+
+#; {Map Coordinate [Coordinate -> Coordinate] -> [Listof Coordinate]}
+;; is `(next-neighbor co)` unoccupied? if so, it's returned in a list; otherwise '[]
+(define (1-neighbor map co next-coordinate)
+  (if (occupied map (next-coordinate co)) '[] (list (next-coordinate co))))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {Map Coordinate -> (U Tile False)}
 (define (occupied b co)
   (hash-ref b co #false))
@@ -73,13 +150,19 @@
   (define tile-1 (first row0))
   (define-values (image1 row1)
     (if (= (coordinate-column (first tile-1)) left-most)
-        (values (render-tile (second tile-1)) (rest row0))
+        (values (render-tile+ tile-1) (rest row0))
         (values blank row0)))
   (for/fold ([last (+ left-most 1)] [r image1] #:result r) ([cell row1])
     (match-define [list c tile] cell)
     (define column (coordinate-column c))
-    (values (+ column 1) (2:beside r (blank-spaces (abs (- column last))) (render-tile tile)))))
+    (values (+ column 1) (2:beside r (blank-spaces (abs (- column last))) (render-tile+ cell)))))
 
+#; {[List Coordinate Tile] -> Image}
+(define (render-tile+ co+tile)
+  (match-define [list co tile] co+tile)
+  (define co-as-text (~a "(" (coordinate-row co) ","  (coordinate-column co) ")"))
+  (2:overlay (2:text co-as-text 11 'black) (render-tile tile)))
+  
 #; {N -> Image}
 (define (blank-spaces n)
   (cond
@@ -108,7 +191,22 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (define starter-map (start-map (tile 'star 'red)))
+  (define starter-map (start-map starter-tile))
+  (define starter-free [list [coordinate 0 -1] [coordinate -1 0] [coordinate 0 +1] [coordinate +1 0]])
+  (define starter-can
+    [set (candidate [coordinate  0 -1] #f #f starter-tile #f)
+         (candidate [coordinate -1  0] #f #f #f starter-tile)
+         (candidate [coordinate  0 +1] starter-tile #f #f #f)
+         (candidate [coordinate +1  0] #f starter-tile #f #f)])
+  
+  (define start+1-map (add-tile starter-map (coordinate 0 -1) (tile '8star 'green)))
+  (define start+1-free
+    (let* ([s (rest starter-free)]
+           [t (list (coordinate 0 -2) (coordinate -1 -1) (coordinate +1 -1))]
+           [s (append s t)])
+      (apply set s)))
+  (define start+1-can (set-remove starter-can (candidate [coordinate  0 -1] #f #f starter-tile #f)))
+  
   (define lshaped-map
     (let* ([s starter-map]
            [s (add-tile s (coordinate -1  0) (tile '8star 'green))]
@@ -121,4 +219,7 @@
 
 (module+ test
   (render-map starter-map)
+  '---
+  (render-map start+1-map)
+  '---
   (render-map lshaped-map))
