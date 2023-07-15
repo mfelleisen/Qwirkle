@@ -1,18 +1,32 @@
 #lang racket
 
+;; data representation of tiles, shapes, and colors
+
 (provide
- ;; type Shape < Symbol 
- ;; type Color < Symbol 
+ #; {type Tile}
+ tile?
 
- #; {Any -> Boolean : Shape}
- shape?
-
- #; {Any -> Boolean : Color}
- color?
-
- #; {Shape Color -> Image}
+ (contract-out 
+  [tile (-> (or/c 'star '8star 'square 'circle 'clover 'diamond)
+            (or/c 'red 'green 'blue 'yellow 'orange 'purple)
+            tile?)])
+ 
+ #; {Tile -> Image}
  render-tile
 
+ #; Image
+ blank
+
+ #; {type Shape = (U 'star '8star 'square 'circle 'clover 'diamond)}
+ #; {type Color = (U 'red 'green 'blue 'yellow 'orange 'purple)}
+ 
+ #; {Any -> Boolean : ShapeSymbol}
+ shape?
+
+ #; {Any -> Boolean : ColorSymbol}
+ color?)
+
+(provide ;; for documentation 
  #; {-> [Pair [Listof name-of-color:String]
               [Listof [Pair name-of-shape:String [Listof Image]]]]}
  ;; the very first string is "" to make the table square 
@@ -20,6 +34,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (require 2htdp/image)
+
+;; ---------------------------------------------------------------------------------------------------
+(struct tile [shape color] #:prefab)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the shapes and colors
@@ -57,10 +74,6 @@
 (define (color? x) (cons? (member x ALL-COLORS)))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define (render-tile s c)
-  [(second [assq s ALL-SHAPES]) (first (member c ALL-COLORS))])
-
-;; ---------------------------------------------------------------------------------------------------
 (define (render-all-shapes [t values])
   (define all-shapes
     (for/list ([s ALL-SHAPES])
@@ -77,3 +90,15 @@
   (define h (image-height i))
   (overlay i (rectangle (+ white w) (+ white h) 'solid 'white)))
 
+;; ---------------------------------------------------------------------------------------------------
+(define (render-tile 1tile)
+  (match-define [tile s c] 1tile)
+  (define t [(second [assq s ALL-SHAPES]) (first (member c ALL-COLORS))])
+  (overlay t (rectangle (+ (image-width t) 6) (+ (image-height t) 6) 'outline 'black)))
+
+(define blank
+  (let* ([s (render-tile (tile 'star 'green))]
+         [w (image-width s)]
+         [h (image-height s)]
+         [s (rectangle w h 'solid 'white)])
+    s))
