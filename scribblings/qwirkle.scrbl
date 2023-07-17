@@ -12,7 +12,7 @@
 @; -----------------------------------------------------------------------------
 @author{Matthias Felleisen}
 
-@top[#:tag "qwirkle"]{@red{The Game: Q}}
+@top[#:tag "Q"]{@red{The Game: Q}}
 
 @margin-note*{@(scale .5 [bitmap/file qwirkle.png])}
 
