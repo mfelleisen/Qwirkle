@@ -22,6 +22,9 @@
  top-of
  below-of)
 
+(module+ examples
+  (provide lshaped-coordinates))
+
 ;; -----------------------------------------------------------------------------
 (struct coordinate [row column] #:prefab)
 (define origin [coordinate 0 0])
@@ -54,3 +57,12 @@
     [(< rc rd) #true]
     [(> rc rd) #false]
     [(= rc rd) (< cc cd)]))
+
+(module+ examples
+  (define lshaped-coordinates
+    [list (coordinate -1  0)
+          (coordinate +1  0)
+          (coordinate +1 +1)
+          (coordinate +1 +2)
+          (coordinate +1 +3)
+          (coordinate  0 +3)]))

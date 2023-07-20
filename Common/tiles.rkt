@@ -36,7 +36,10 @@
  render-all-shapes)
 
 (module+ examples
-  (provide starter-tile))
+  (provide
+   starter-tile
+   starter-tile*
+   qwirkle-tile*))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require 2htdp/image)
@@ -47,8 +50,18 @@
 (define-match-expander (tile/m s c) (λ (stx) #'(tile s c)))
 
 (module+ examples
-  (define starter-tile (tile 'star 'red)))
+  (define starter-tile (tile 'star 'red))
 
+  (define 8-green (tile '8star 'green))
+  (define sq-blue (tile 'square 'blue))
+  (define ci-llow (tile 'circle 'yellow))
+  (define cr-prpl (tile 'clover 'purple))
+  (define di-llow (tile 'diamond 'yellow))
+  (define ci-ange (tile 'circle 'orange))
+
+  (define starter-tile* [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
+  (define qwirkle-tile* [build-list 6 (λ _ 8-green)]))
+  
 ;; ---------------------------------------------------------------------------------------------------
 ;; the shapes and colors
 

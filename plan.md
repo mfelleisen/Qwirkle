@@ -1,19 +1,46 @@
-## Legality Checking and Scoring
+## Interactive Player
+
+Allow human player to make decision 
+
+## Games: Player and Referee
 
 ```
-type Placements = [Listof [placement Coordinate Tile]]
+referee              player
+  | --- takeTurn ----> |
 
-legal? : Board Coordinate Placements -> Option<Board>
-score  : Board Coordinate Placements -> Natural
+(scenario 1)
+  | <== Placements === | 
+  | 	 	       |
+
+(scenario 2)
+  | <== [setof Tile] = | 
+  | -- [setof Tile] -> |
+  | <== Void ========= | 
+```
+
+## Strategies
+
+greedy per tile
+dumb shape and color
+
+## Scoring 
+
+Revise Game State interface 
+
+```
+score  : Map Coordinate Placements -> Natural
 ```
 
 ## Game State 
 
 ```
-type RefGameState  = [rgs Board [Listof PlayerState]]
-type PlayerState   = [ps [Listof Tile] Natural]
+type [GameState X] = [rgs Map X]
+type RefState      = [GameState SoPlayer]
+type InfoState     = [GameState Natural]
+type SoPlayer      = [ps [Setof Tile] Natural]
 
-type tRefGameState = [tras Board [Listof Natural]]
+type Placements = [Listof [placement Coordinate Tile]]
+legal? : Map Coordinate Placements -> Option<Map>
 ```
 
 ## Map
@@ -33,6 +60,11 @@ start-map : Tile -> Map
 add-tile : Map Coordinate Tile -> Map 
 ;; extend the given tile to the map at the specified coordinate
 ;; if the coordinate specifies a place that neighbors at least one existing tile
+```
+
+```
+render : Map -> Image
+;; show map graphically 
 ```
 
 ```
@@ -56,5 +88,3 @@ type Coordinate = [Pair Integer Integer]
 
 - symbolic
 - render
-
-

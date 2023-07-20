@@ -10,6 +10,7 @@
  (contract-out
   [start-map  (-> tile? map?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
+  [fits       (-> map? coordinate? tile? (or/c candidate? #false))]
   [render-map (-> map? 2:image?)]))
 
 (module+ examples
@@ -30,9 +31,11 @@
 (require (prefix-in 2: 2htdp/image))
 
 (module+ examples
+  (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ test
+  (require (submod ".."))
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
@@ -63,7 +66,7 @@
       (occupied b (below-of c))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; candidates : Map Tile -> [Listof Candidate]
+#; { Map Tile -> [Listof Candidate]}
 ;; at which coordinates can the given tile be placed to satisfy the "continues line" predicate
 ;; and what are its neighbors
 
@@ -71,27 +74,31 @@
 
 #; {Map Tile -> [Setof Candidate]}
 (module+ test
-  (check-equal? (select starter-map starter-tile) starter-can)
-  (check-equal? (select start+1-map starter-tile) start+1-can))
-(define (select map t)
-  (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits? map co t))] #:when can)
+  (check-equal? (find-candidates starter-map starter-tile) starter-can)
+  (check-equal? (find-candidates start+1-map starter-tile) start+1-can))
+(define (find-candidates map t)
+  (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits map co t))] #:when can)
     can))
 
-#; {Map Coordinate Tile -> (U Candidate False)}
-(define (fits? map co tile)
+#; {Map Coordinate Tile -> [Option Candidate]}
+;; would the `tile` fit into this `map` at coordinate `co`
+(define (fits map co tile)
   (define left  (neighbor-tile map co left-of))
   (define top   (neighbor-tile map co top-of))
   (define right (neighbor-tile map co right-of))
   (define below (neighbor-tile map co below-of))
   (and (fit-line left tile right)
        (fit-line top tile below)
+       ;; --- if it fits both ways, return: 
        (candidate co left top right below)))
 
-#; {Map Coordinate [Coordinate -> Coordinate] -> (U Tile False)}
-(define (neighbor-tile map co selector)
-  (hash-ref map (selector co) #false))
+#; {Map Coordinate [Coordinate -> Coordinate] -> [Option Tile]}
+;; what's the tile (if any) that neighbors `co` in `direction`
+(define (neighbor-tile map co direction)
+  (hash-ref map (direction co) #false))
 
-#; {(U Tile False) Tile (U Tile False) -> Boolean}
+#; {[Option Tile] Tile [Option Tile] -> Boolean}
+;; is the tile compatible with the tiles on either side (if any) or both (if they exist) 
 (define (fit-line left tile right)
   (define color (tile-color tile))
   (define shape (tile-shape tile))
@@ -128,7 +135,7 @@
   (if (occupied map (next-coordinate co)) '[] (list (next-coordinate co))))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {Map Coordinate -> (U Tile False)}
+#; {Map Coordinate -> [Option Tile]}
 (define (occupied b co)
   (hash-ref b co #false))
 
@@ -208,14 +215,7 @@
   (define start+1-can (set-remove starter-can (candidate [coordinate  0 -1] #f #f starter-tile #f)))
   
   (define lshaped-map
-    (let* ([s starter-map]
-           [s (add-tile s (coordinate -1  0) (tile '8star 'green))]
-           [s (add-tile s (coordinate +1  0) (tile 'square 'blue))]
-           [s (add-tile s (coordinate +1 +1) (tile 'circle 'yellow))]
-           [s (add-tile s (coordinate +1 +2) (tile 'clover 'purple))]
-           [s (add-tile s (coordinate +1 +3) (tile 'diamond 'yellow))]
-           [s (add-tile s (coordinate  0 +3) (tile 'circle 'orange))])
-      s)))
+    (for/fold ([s starter-map]) ([t starter-tile*] [co lshaped-coordinates]) (add-tile s co t))))
 
 (module+ test
   (render-map starter-map)
