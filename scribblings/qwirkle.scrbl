@@ -12,15 +12,15 @@
 @; -----------------------------------------------------------------------------
 @author{Matthias Felleisen}
 
-@top[#:tag "Q"]{@red{The Game: Q}}
+@top[#:tag "Q"]{@red{The Q Game}}
 
 @margin-note*{@(scale .5 [bitmap/file qwirkle.png])}
 
 @; -----------------------------------------------------------------------------
 
-The chosen game is inspired by @link[qwirkle-rules]{@emph{Qwirkle}}. Playing
-the actual game may help develop some intuition but the physical game and the 
-implementation differ. 
+The game is inspired by @link[qwirkle-rules]{@emph{Qwirkle}}.  the actual game
+may help develop some intuition but the physical game and the implementation
+differ.
 
 @margin-note{Most of the time when we discuss ideas, the words ``referee'',
 ``player'', and so on refer to software components @emph{not} people.
@@ -30,15 +30,14 @@ To remind you of their inanimate nature, it is best to use ``its'' or
 @; -----------------------------------------------------------------------------
 @bold{Informal Overview}
 
-The Q game is a tile-based game without a board. Instead players place the tiles
-on an infinitely large ``table.'' Still, the square shape of the tiles and the
-rules of the game induce the notions of row and column on the evolving formation
-of tiles.
+The Q game is a tile-based game. Players place the tiles on an infinitely large
+``table.'' The square shape of the tiles and the rules of the game induce the
+notions of row and column on the evolving map formation.
 
-Players place these tiles according to basic rules on the table. Every placement
-yields a certain number of points. When a player can use all of its tiles during
-a single turn, the game ends. The game also ends when all game tiles have been
-placed or all players pass during a turn. 
+Players place tiles according to rather basic rules. Every placement yields a
+certain number of points. When a player can use all of its tiles during a single
+turn, the game ends. The game also ends when all game tiles have been placed or
+all players pass during a round. 
 
 The player with the highest total score wins. 
 
@@ -54,9 +53,7 @@ Our version of the game comes with 36 kinds of tiles:
  ]
 }
 @; -----------------------------------------------------------------------------
-There are a total of 1080 tiles, 30 of each kind. This is one possible rendering
-of these tile shapes; your own style may vary as long as the shape and color are
-distinct and recognizable as one of the above categories. 
+Altogether there are a total of 1080 tiles, 30 of each kind. 
 
 @; -----------------------------------------------------------------------------
 @bold{Setting up the Game}
@@ -65,7 +62,8 @@ The @emph{referee} hands each player six randomly chosen tiles. It then places
 one tile on the ``table.'' Once this first tile is placed, the players take
 turns in descending order of age, starting with the oldest.
 
-The players do not tell each other which tiles they own. 
+The players do not tell each other which tiles they own. By contrast, the
+current scores of the players is public knowledge. 
 
 @; -----------------------------------------------------------------------------
 @bold{Playing a Turn}
@@ -85,21 +83,21 @@ When granted a turn, a player may take one of the following three actions:
   The returned tiles are added to the referee's collection of tiles, to be
   handed out in the future as needed.}
 
-  @item{@emph{place} at least one tile.
+  @item{@emph{place} at least one tile or possibly all. 
 
-  A placement must satisfy these conditions:
-
+  A placement of tiles must satisfy these conditions:
+  @; ------------------------------------------------------------------
   @itemlist[
-    @item{every place tile must share a side with an already placed tile;}
+    @item{every tile placed must share a side with at least one placed tile;}
 
-    @item{the first tile placed must match the color of the shape of an adjacent
-    tile;}
+    @item{every tile placed must match the color or the shape of any adjacent tile;}
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
     ]
   The referee hands the player as many tiles as it placed, randomly drawn from
- its collection.}
+  its collection or all remaining tiles if the player placed more than the
+  referee owns.}
   
 ]
 @; -----------------------------------------------------------------------------
@@ -112,15 +110,17 @@ tiles, a player receives points as follows:
 
 @itemlist[
 
-@item{A player receives one point per tile placed with a row or column,
- including for existing tiles within this row or column, respectively.}
+@item{A player receives one point per tile placed.}
+
+@item{A player receives one point per tile within a row or column that one (or
+ more) of its newly placed tiles extends.}
 
 @item{A player receives six bonus points for completing a Q, which is a sequence
  of tiles that contains all shapes or all colors.}
 
 @item{A player also receives six bonus points for placing all tiles in its
-possession.} 
-
+ possession.} 
+ 
 ]
 @; -----------------------------------------------------------------------------
 The referee scores each turn and tracks the scores of all players. It shares the
@@ -136,13 +136,9 @@ The game ends if one of the following condition holds:
  @item{at the end of a round if all remaining players pass;}
 
  @item{at the end of a turn if a player has placed all tiles in its
- possession and the referee does not have any more tiles to hand out; or}
+ possession; or}
 
- @item{if there are no players left.}
+ @item{there are no players left after a turn.}
 
 ]
 @; -----------------------------------------------------------------------------
-
-@; -----------------------------------------------------------------------------
-@bold{Warning} Like with all software projects, the details of the game may
-change as experimentation with the prototypes suggests improvements. 
