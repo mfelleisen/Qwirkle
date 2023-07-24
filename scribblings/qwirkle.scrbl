@@ -90,7 +90,8 @@ When granted a turn, a player may take one of the following three actions:
   @itemlist[
     @item{every tile placed must share a side with at least one placed tile;}
 
-    @item{every tile placed must match the color or the shape of any adjacent tile;}
+    @item{every tile placed must match the color or shape of any adjacent
+    tiles along a line;}
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
