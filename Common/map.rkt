@@ -5,25 +5,37 @@
 ;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type Map}
- map? 
+ map?
+
+ #; {type Candidate}
+ candidate?
+ candidate-left
+ candidate-top
+ candidate-right
+ candidate-below
  
  (contract-out
   [start-map  (-> tile? map?)]
+  [adjacent?  (-> map? coordinate? boolean?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
-  [fits       (-> map? coordinate? tile? (or/c candidate? #false))]
-  [render-map (-> map? 2:image?)]))
+  [render-map (-> map? 2:image?)]
+  [fits
+   ;; would the `tile` fit into this `map` at coordinate `co`
+   (-> map? coordinate? tile? (or/c candidate? #false))]))
 
 (module+ examples
   (provide starter-free
-           start+1-map
+           start+1-map-unfit
            start+1-free
            start+1-can))
 
 (module+ examples
+  (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
   (provide
+   map0
    starter-map
    starter-can
-   lshaped-map))
+   lshaped-map-unfit))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
@@ -43,7 +55,6 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 #; {type map = [Hashof Coordinate Tile]}
-#; {type Candidate  = [candidate Coordinate Option<Tile> Option<Tile> Option<Tile> Option<Tile>]}
 
 (define map? hash?)
 
@@ -59,29 +70,32 @@
   (hash-set b c t))
 
 #; {Map Coordinate -> Boolean}
+(module+ test
+  (check-true (adjacent? starter-map #s(coordinate 0 -1))))
 (define (adjacent? b c)
-  (or (occupied b (left-of c))
-      (occupied b (top-of c))
-      (occupied b (right-of c))
-      (occupied b (below-of c))))
+  (tile? (or (occupied b (left-of c))
+             (occupied b (top-of c))
+             (occupied b (right-of c))
+             (occupied b (below-of c)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; { Map Tile -> [Listof Candidate]}
 ;; at which coordinates can the given tile be placed to satisfy the "continues line" predicate
 ;; and what are its neighbors
 
+#; {type Candidate  = [candidate Coordinate Option<Tile> Option<Tile> Option<Tile> Option<Tile>]}
 (struct candidate [place left top right below] #:prefab)
+
 
 #; {Map Tile -> [Setof Candidate]}
 (module+ test
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
-  (check-equal? (find-candidates start+1-map starter-tile) start+1-can))
+  (check-equal? (find-candidates start+1-map-unfit starter-tile) start+1-can))
 (define (find-candidates map t)
   (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits map co t))] #:when can)
     can))
 
 #; {Map Coordinate Tile -> [Option Candidate]}
-;; would the `tile` fit into this `map` at coordinate `co`
 (define (fits map co tile)
   (define left  (neighbor-tile map co left-of))
   (define top   (neighbor-tile map co top-of))
@@ -99,28 +113,32 @@
 
 #; {[Option Tile] Tile [Option Tile] -> Boolean}
 ;; is the tile compatible with the tiles on either side (if any) or both (if they exist) 
-(define (fit-line left tile right)
+(define (fit-line one-side tile other-side)
   (define color (tile-color tile))
   (define shape (tile-shape tile))
   ;; tile/m
   (cond
-    [(and (not left) (not right)) #true]
-    [(not left) (or (equal? (tile-shape right) shape) (equal? (tile-color right) color))]
-    ((not right) (or (equal? (tile-shape left) shape) (equal? (tile-color left) color)))
+    [(and (not one-side) (not other-side)) #true]
+    [(not one-side)
+     (or (equal? (tile-shape other-side) shape) (equal? (tile-color other-side) color))]
+    ((not other-side)
+     (or (equal? (tile-shape one-side) shape) (equal? (tile-color one-side) color)))
     [else (or
-           (and (equal? (tile-shape left) shape) (equal? (tile-shape right) shape))
-           (and (equal? (tile-color left) color) (equal? (tile-color right) color)))]))
+           (and (equal? (tile-shape one-side) shape) (equal? (tile-shape other-side) shape))
+           (and (equal? (tile-color one-side) color) (equal? (tile-color other-side) color)))]))
 
 #; {Map -> [Setof Coordinate]}
+;; all coordinates of spots that neighbor an existing tile 
 (module+ test
   (check-equal? (all-free-neighbors starter-map) (apply set starter-free))
-  (check-equal? (all-free-neighbors start+1-map) start+1-free))
+  (check-equal? (all-free-neighbors start+1-map-unfit) start+1-free))
 (define (all-free-neighbors map)
   (define as-list (hash-map map list))
   (for/fold ([r (set)]) ([cell (in-list as-list)])
     (foldr (λ (n s) (set-add s n)) r (free-neighbors map (first cell)))))
 
 #; {Map Coordinate -> [Listof Coordinate]}
+;; the free neighbors of one coordinate 
 (module+ test
   (check-equal? (free-neighbors starter-map origin) starter-free))
 (define (free-neighbors map co)
@@ -198,6 +216,32 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
+
+  #; {Map [Listof Tile] [Listof Coordinate] -> Map}
+  (define (add-tile* starter-map starter-tile* lshaped-coordinates)
+    (for/fold ([s starter-map]) ([t starter-tile*] [co lshaped-coordinates]) (add-tile s co t))))
+
+(module+ examples
+  (define map0 ;; base scenario 
+    (let* ([s (start-map #s(tile clover red))]
+           [s (add-tile s #s(coordinate +1 0) #s(tile diamond red))]
+           [s (add-tile s #s(coordinate +2 0) #s(tile circle red))])
+      s))
+
+  ;; maps from the Qwirkle web page 
+  (define map1 (add-tile* map0 tiles0 coord0))
+  (define map2 (add-tile* map1 tiles1 coord1))
+  (define map3 (add-tile* map2 tiles2 coord2))
+  (define map4 (add-tile* map3 tiles3 coord3))
+  (define map5 (add-tile* map4 tiles4 coord4))
+  (define map6 (add-tile* map5 tiles5 coord5))
+  (define map7 (add-tile* map6 tiles6 coord6))
+  (define map8 (add-tile* map7 tiles7 coord7))
+  (define map9 (add-tile* map8 tiles8 coord8))
+  (define map10 (add-tile* map9 tiles9 coord9))
+  (define map11 (add-tile* map10 tiles10 coord10)))
+  
+(module+ examples
   (define starter-map (start-map starter-tile))
   (define starter-free [list [coordinate 0 -1] [coordinate -1 0] [coordinate 0 +1] [coordinate +1 0]])
   (define starter-can
@@ -206,7 +250,7 @@
          (candidate [coordinate  0 +1] starter-tile #f #f #f)
          (candidate [coordinate +1  0] #f starter-tile #f #f)])
   
-  (define start+1-map (add-tile starter-map (coordinate 0 -1) (tile '8star 'green)))
+  (define start+1-map-unfit (add-tile starter-map (coordinate 0 -1) (tile '8star 'green)))
   (define start+1-free
     (let* ([s (rest starter-free)]
            [t (list (coordinate 0 -2) (coordinate -1 -1) (coordinate +1 -1))]
@@ -214,12 +258,28 @@
       (apply set s)))
   (define start+1-can (set-remove starter-can (candidate [coordinate  0 -1] #f #f starter-tile #f)))
   
-  (define lshaped-map
-    (for/fold ([s starter-map]) ([t starter-tile*] [co lshaped-coordinates]) (add-tile s co t))))
+  (define lshaped-map-unfit (add-tile* starter-map starter-tile* lshaped-coordinates)))
 
-(module+ test
-  (render-map starter-map)
-  '---
-  (render-map start+1-map)
-  '---
-  (render-map lshaped-map))
+(module+ test ;; simplistic examples
+  'start+1-map-unfit
+  (render-map start+1-map-unfit)
+
+  'lshaped-map-unfit
+  (render-map lshaped-map-unfit)
+
+  'starter-map 
+  (render-map starter-map))
+
+(module+ test ;; scenarios from Qwirkle 
+  'map0 (render-map map0) 
+  'map1 (render-map map1)
+  'map2 (render-map map2)
+  'map3 (render-map map3)
+  'map4 (render-map map4)
+  'map5 (render-map map5)
+  'map6 (render-map map6)
+  'map7 (render-map map7)
+  'map8 (render-map map8)
+  'map10 (render-map map10)
+  'map11 (render-map map11))
+  

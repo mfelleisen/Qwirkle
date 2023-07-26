@@ -37,9 +37,13 @@
 
 (module+ examples
   (provide
+   +starter-tile
+
    starter-tile
    starter-tile*
-   qwirkle-tile*))
+   qwirkle-tile*
+
+   tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require 2htdp/image)
@@ -51,6 +55,7 @@
 
 (module+ examples
   (define starter-tile (tile 'star 'red))
+  (define +starter-tile (tile 'circle 'red))
 
   (define 8-green (tile '8star 'green))
   (define sq-blue (tile 'square 'blue))
@@ -60,7 +65,19 @@
   (define ci-ange (tile 'circle 'orange))
 
   (define starter-tile* [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
-  (define qwirkle-tile* [build-list 6 (λ _ 8-green)]))
+  (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
+  
+  (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
+  (define tiles1 (list #s(tile circle blue)))
+  (define tiles2 (list #s(tile clover green) #s(tile diamond green)))
+  (define tiles3 (list #s(tile 8star green) #s(tile circle green)))
+  (define tiles4 (list #s(tile square orange) #s(tile square red)))
+  (define tiles5 (list #s(tile 8star yellow) #s(tile 8star orange)))
+  (define tiles6 (list #s(tile star orange) #s(tile diamond orange)))
+  (define tiles7 (list #s(tile diamond yellow) #s(tile circle yellow)))
+  (define tiles8 (list #s(tile 8star red)))
+  (define tiles9 (list #s(tile star red)   #s(tile star orange) #s(tile star blue)))
+  (define tiles10 (list #s(tile square yellow) #s(tile square blue))))
   
 ;; ---------------------------------------------------------------------------------------------------
 ;; the shapes and colors
