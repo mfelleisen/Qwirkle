@@ -1,0 +1,43 @@
+#lang racket
+
+;; this file exists to 
+
+(require (for-syntax syntax/parse))
+
+(define-syntax (req->prov stx)
+  (syntax-parse stx
+    [(_ ((~literal prefix-in) x spec))
+     #:with prov #'(all-from-out spec)
+     #'(begin
+         (require (prefix-in x spec))
+         (provide prov))]
+    [(_ spec)
+     #:with prov #'(all-from-out spec)
+     #'(begin
+         (require spec)
+         (provide prov))]))
+
+; (req->prov Qwirkle/Common/coordinates)
+(req->prov Qwirkle/Common/tiles)
+
+; (req->prov (prefix-in players: Qwirkle/Common/players))
+; (req->prov Qwirkle/Common/directions)
+; (req->prov Qwirkle/Players/mechanics)
+; (req->prov Qwirkle/Referee/referee)
+
+; (req->prov Qwirkle/Server/server)
+; (req->prov Qwirkle/Client/client)
+
+; (req->prov Qwirkle/Lib/colors)
+
+; (req->prov (prefix-in state: Qwirkle/Common/states))
+; (req->prov (prefix-in board: Qwirkle/Common/boards))
+
+; (req->prov (submod Qwirkle/Common/tiles examples))
+
+; (req->prov (submod Qwirkle/Common/boards json))
+; (req->prov (submod Qwirkle/Common/coordinates json))
+; (req->prov (submod Qwirkle/Common/directions json))
+; (req->prov (submod Qwirkle/Common/players json))
+; (req->prov (submod Qwirkle/Common/states json))
+; (req->prov (submod Qwirkle/Common/tiles json))
