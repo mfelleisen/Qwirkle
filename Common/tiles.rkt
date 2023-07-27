@@ -45,8 +45,25 @@
 
    tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10))
 
+(module+ json
+  (provide
+   SHAPE
+   COLOR 
+   (contract-out 
+    [tile->jsexpr (-> tile? jsexpr?)]
+    [jsexpr->tile (-> jsexpr? (or/c tile? #false))])))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require 2htdp/image)
+
+(module+ json
+  (require json))
+
+(module+ test
+  (require (submod ".."))
+  (require (submod ".." examples))
+  (require (submod ".." json))
+  (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
 (struct tile [shape color] #:prefab)
@@ -143,3 +160,30 @@
          [h (image-height s)]
          [s (rectangle w h 'solid 'white)])
     s))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  #; {type JTile  = Hasheq[('Shape, JShape), ('Color, JColor)]}
+  #; {type JShape = (U "star" "8star" "square" "circle" "clover" "diamond")}
+  #; {type JColor = (U "red" "green" "blue" "yellow" "orange" "purple")}
+
+  (define SHAPE 'shape)
+  (define COLOR 'color)
+
+  #; {Tile -> JTile}
+  (define (tile->jsexpr t)
+    (match-define [tile shape color] t)
+    (hasheq SHAPE (~a shape) COLOR (~a color)))
+
+  #; {JSexpr -> Option<Tile>}
+  (define (jsexpr->tile j)
+    (match j
+      [(hash-table
+        [(? (curry eq? SHAPE)) (app string->symbol (? shape? s))]
+        [(? (curry eq? COLOR)) (app string->symbol (? color? c))])
+       (tile s c)]
+      [_ (eprintf "tile object does not match schema\n  ~a\n" (jsexpr->string j))
+         #false])))
+
+(module+ test
+  (check-equal? (jsexpr->tile (tile->jsexpr +starter-tile)) +starter-tile))

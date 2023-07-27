@@ -29,7 +29,25 @@
    +starter-coor
    lshaped-coordinates))
 
-;; -----------------------------------------------------------------------------
+(module+ json
+  (provide
+   ROW
+   COLUMN 
+   (contract-out
+    [coordinate->jsexpr (-> coordinate? jsexpr?)]
+    [jsexpr->coordinate (-> jsexpr? coordinate?)])))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  (require json))
+
+(module+ test
+  (require (submod ".."))
+  (require (submod ".." examples))
+  (require (submod ".." json))
+  (require rackunit))
+
+;; ---------------------------------------------------------------------------------------------------
 (struct coordinate [row column] #:prefab)
 (define origin [coordinate 0 0])
 
@@ -83,7 +101,7 @@
   (define coord9 (list #s(coordinate +4 0) #s(coordinate +4 -1) #s(coordinate +4 +1)))
   (define coord10 (list #s(coordinate +3 +4) #s(coordinate +4 +4)))
 
-   (define +starter-coor (coordinate 0 -1))
+  (define +starter-coor (coordinate 0 -1))
 
   (define lshaped-coordinates
     [list (coordinate -1  0)
@@ -92,3 +110,24 @@
           (coordinate +1 +2)
           (coordinate +1 +3)
           (coordinate  0 +3)]))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  (define ROW 'row)
+  (define COLUMN 'column)
+  
+  #; {JSexpr -> (U False Coordinate)}
+  (define (jsexpr->coordinate j)
+    (match j
+      [(hash-table [(? (curry eq? ROW)) (? integer? r)] [(? (curry eq? COLUMN)) (? integer? c)])
+       (coordinate r c)]
+      [_ (eprintf "tile object does not match schema\n  ~a\n" (jsexpr->string j))
+         #false]))
+  
+  #; {Coordinate -> JCoordinate}
+  (define (coordinate->jsexpr rb)
+    (match-define [coordinate r c] rb)
+    (hasheq ROW r COLUMN c)))
+
+(module+ test
+  (check-equal? (jsexpr->coordinate (coordinate->jsexpr (first coord0))) (first coord0)))

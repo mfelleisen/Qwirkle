@@ -7,7 +7,10 @@
  #; {type Map}
  map?
 
- #; {type Candidate}
+ #; {type Candidate  = [candidate Coordinate Option<Tile> Option<Tile> Option<Tile> Option<Tile>]}
+ ;; at which coordinates can the given tile be placed to satisfy the "continues line" predicate
+ ;; and what are its neighbors
+ 
  candidate?
  candidate-left
  candidate-top
@@ -19,6 +22,8 @@
   [adjacent?  (-> map? coordinate? boolean?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
+  [find-candidates
+   (-> map? tile? (set/c candidate?))]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
    (-> map? coordinate? tile? (or/c candidate? #false))]))
@@ -27,15 +32,19 @@
   (provide starter-free
            start+1-map-unfit
            start+1-free
-           start+1-can))
-
-(module+ examples
+           start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
   (provide
    map0
    starter-map
    starter-can
    lshaped-map-unfit))
+
+(module+ json
+  (provide
+   (contract-out
+    [map->jsexpr (-> map? jsexpr?)]
+    [jsexpr->map (-> jsexpr? (or/c map? #false))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
@@ -46,9 +55,14 @@
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
+(module+ json
+  (require (submod Qwirkle/Common/tiles json))
+  (require json))
+
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
+  (require (submod ".." json))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
@@ -79,13 +93,9 @@
              (occupied b (below-of c)))))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; { Map Tile -> [Listof Candidate]}
-;; at which coordinates can the given tile be placed to satisfy the "continues line" predicate
-;; and what are its neighbors
+#; {Map Tile -> [Listof Candidate]}
 
-#; {type Candidate  = [candidate Coordinate Option<Tile> Option<Tile> Option<Tile> Option<Tile>]}
 (struct candidate [place left top right below] #:prefab)
-
 
 #; {Map Tile -> [Setof Candidate]}
 (module+ test
@@ -166,9 +176,6 @@
   (define rows (map (render-row -column) sorted))
   (apply 2:above/align 'left (cons #;{needed for the starter maps} 2:empty-image rows)))
 
-#; {type TileMatrix = [Listof TileRow]}
-#; {type TileRow    = [Listof [List Coordinate Tile]]}
-
 #; {Integer -> TileRow -> [Listof Image]}
 ;; also fills gaps 
 (define ((render-row left-most) row0)
@@ -195,7 +202,11 @@
     [(= n 1) blank]
     [else (apply 2:beside (make-list n blank))]))
 
-#; {Map -> TileRow}
+;; ---------------------------------------------------------------------------------------------------
+#; {type TileMatrix = [Listof TileRow]}
+#; {type TileRow    = [Listof [List Coordinate Tile]]}
+
+#; {Map -> (values Integer Intger TileMatrix)}
 (define (sort-map-in-top-down-left-to-right-order b)
   (define as-list (hash-map b list))
   (define row-min (apply min (map (compose coordinate-row first) as-list)))
@@ -282,4 +293,41 @@
   'map8 (render-map map8)
   'map10 (render-map map10)
   'map11 (render-map map11))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  
+  #; {Map -> JMap}
+  (define (map->jsexpr b)
+    (define-values [-column +column sorted] (sort-map-in-top-down-left-to-right-order b))
+    (rows->jsexpr sorted))
+
+  #; {TileMatrix -> JRow}
+  (define (rows->jsexpr rows)
+    (for/list ([r rows])
+      (define row-index (coordinate-row (first (first r))))
+      (cons row-index (1row->jsexpr r))))
+
+  #; {TileRow -> JCell}
+  (define (1row->jsexpr row)
+    (for/list ([c row])
+      (match-define [list co ti] c)
+      (list (coordinate-column co) (tile->jsexpr ti))))
+
+  #; {JSexpr -> Option<Tile>}
+  (define (jsexpr->map j)
+    (match j
+      [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile?))) ...)) ...)
+       (for/fold ([h (hash)]) ([r row])
+         (match-define (list ri cell ...) r)
+         (for/fold ([h h]) ([c cell])
+           (match-define [list ci ti] c)
+           (hash-set h (coordinate ri ci) (jsexpr->tile ti))))]
+      [_ (eprintf "map object does not match schema\n  ~a\n" (jsexpr->string j #:indent 4))
+         #false])))
+                     
+(module+ test
+  (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
+  (check-equal? (jsexpr->map (map->jsexpr map1)) map1)
+  (check-equal? (jsexpr->map (map->jsexpr map2)) map2))
   

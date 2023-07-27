@@ -62,8 +62,10 @@ The @emph{referee} hands each player six randomly chosen tiles. It then places
 one tile on the ``table.'' Once this first tile is placed, the players take
 turns in descending order of age, starting with the oldest.
 
-The players do not tell each other which tiles they own. By contrast, the
-current scores of the players is public knowledge. 
+The players do not tell each other which tiles they own.
+
+The current scores of the players is public knowledge as is the order in which
+they take turns. 
 
 @; -----------------------------------------------------------------------------
 @bold{Playing a Turn}
@@ -134,7 +136,7 @@ The game ends if one of the following condition holds:
 
 @itemlist[
 
- @item{at the end of a round if all remaining players pass;}
+ @item{at the end of a round if all remaining players pass or replace their tiles;}
 
  @item{at the end of a turn if a player has placed all tiles in its
  possession; or}
