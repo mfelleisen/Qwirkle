@@ -3,8 +3,27 @@
 ;; a data representation of the referee's knowledge and the player's knowledge about the game
 
 (provide
- create-ref-state
- render-ref-state)
+ #; {type [RefState Y]}
+ state?
+
+ #; {type Placement = [Listof (placement Coordinate Tile)]}
+ placement? 
+
+ (contract-out
+  (placement (-> coordinate? tile? placement?))
+
+  [create-ref-state (-> map? [listof [list/c [listof tile?] any/c]] state?)]
+  [render-ref-state (-> state? 2:image?)]
+  [legal?           (-> state? (listof placement?) (or/c #false map?))]
+  [complete-turn
+   ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
+   #; {complete-turn s gmap delta old-tiles new-tiles}
+   ;; PROTICOL assume that for some coord* 
+   #; (legal? s (map placement cord* old-tiles))
+   ;; yields gmap
+   #; (score s gmap)
+   ;; yields delta 
+   (-> state? map? natural? (listof tile?) (listof tile?) state?)]))
 
 (module+ examples
   (provide
@@ -15,6 +34,10 @@
    
    starter-players
    ref-starter-state
+   handouts
+   starter-players-handout
+   ref-starter-state-handout
+   
    info-starter-state
    lshaped-placement*))
 
@@ -23,6 +46,7 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/tiles)
 (require (prefix-in 2: 2htdp/image))
+(require SwDev/Lib/list)
 
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
@@ -30,6 +54,7 @@
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ test
+  (require (submod ".."))
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/map examples))
@@ -60,41 +85,30 @@
 (module+ examples
   (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
   (define ref-starter-state (create-ref-state starter-map starter-players))
-  (define info-starter-state (ref-state-to-info-state ref-starter-state)))
+  (define info-starter-state (ref-state-to-info-state ref-starter-state))
+  
+  (define handouts (make-list 6 #s(tile diamind green)))
+  (define starter-players-handout [list [list qwirkle-tile* 'player2] [list handouts 'player1]])
+  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; render a referee state 
+#; {State Map Natural [Listof Tile] [Listof Tile] -> State}
 
-#; {[Y] [RefState Y] -> Image}
-(define (render-ref-state gs)
-  (match-define [state gmap [list sop ...]] gs)
-  (define gmap-image (render-map gmap))
-  (define sop-images (render-sop* sop render-sop))
-  (2:beside/align 'top gmap-image hblank sop-images))
+(module+ test
+  (check-equal? 
+   (complete-turn ref-starter-state starter-map 0 starter-tile* handouts)
+   ref-starter-state-handout))
 
-#; {InforState -> Image}
-(define (render-info-state is)
-  (match-define [state gmap [list score ...]] is)
-  (define gmap-image (render-map gmap))
-  (define score-imgs (render-sop* score (λ (s) (2:text (~a s) 20 'black))))
-  (2:beside/align 'top gmap-image hblank score-imgs))
+(define (complete-turn s new-map delta-score old-tile* new-tiles)
+  (match-define [state _ (cons first-player others)] s)
+  (define first-player++  (swap-tiles-and-points first-player delta-score old-tile* new-tiles))
+  (define new-player-order (list-rotate+ (cons first-player++ others)))
+  (state new-map new-player-order))
 
-#; {[Y] Y [Y ->Image] -> Image}
-(define (render-sop* l-sop render-sop)
-  (define sop-images (map render-sop l-sop))
-  (for/fold ([r (first sop-images)]) ([s (rest sop-images)])
-    (2:above/align 'left r vblank s)))
-
-#; {[Y] {SoPlayer Y} -> Image}
-(define (render-sop 1sop)
-  (match-define [sop score tiles player] 1sop)
-  (define tiles-image (map render-tile tiles))
-  (define score-image (2:text (number->string score) 20 'black))
-  (define player-image (2:text (~a player) 20 'black))
-  (apply 2:beside/align 'top player-image hblank score-image hblank tiles-image))
-
-(define hblank (2:rectangle 10 1 'solid 'white))
-(define vblank (2:rectangle 1 10 'solid 'white))
+#; {Player N [Listof Tile] [Listof Tile] -> Player}
+(define (swap-tiles-and-points player delta old-tile* new-tile*)
+  (match-define [sop score tiles payload] player)
+  (sop (+ score delta) (append new-tile* (remove* old-tile* tiles)) payload))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {type Placement* = [Listof Placement]}
@@ -104,9 +118,7 @@
 
 (module+ examples
   (define lshaped-placement* 
-    (for/list ([t starter-tile*] [co lshaped-coordinates]) (placement co t))))
-
-(module+ examples
+    (for/list ([t starter-tile*] [co lshaped-coordinates]) (placement co t)))
   (define +starter-plmt (list (placement +starter-coor +starter-tile)))
   (define +ref-starte-state (state starter-map (list (sop 0 (list +starter-tile) 'player13)))))
 
@@ -144,7 +156,10 @@
 (module+ test
   (define plmnt1 (map placement coord1 tiles1))
   (check-equal? (all-adjacent-and-fits? map1 plmnt1) map2)
-  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt))))
+  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)))
+
+  (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
+  (check-false (all-adjacent-and-fits? starter-map plmnt-2-away)))
 
 (define (all-adjacent-and-fits? gmap0 placements)
   (let/ec return 
@@ -193,6 +208,38 @@
   (define score11 12))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; render a referee state 
+
+#; {[Y] [RefState Y] -> Image}
+(define (render-ref-state gs)
+  (match-define [state gmap [list sop ...]] gs)
+  (define gmap-image (render-map gmap))
+  (define sop-images (render-sop* sop render-sop))
+  (2:beside/align 'top gmap-image hblank sop-images))
+
+#; {InforState -> Image}
+(define (render-info-state is)
+  (match-define [state gmap [list score ...]] is)
+  (define gmap-image (render-map gmap))
+  (define score-imgs (render-sop* score (λ (s) (2:text (~a s) 20 'black))))
+  (2:beside/align 'top gmap-image hblank score-imgs))
+
+#; {[Y] Y [Y ->Image] -> Image}
+(define (render-sop* l-sop render-sop)
+  (define sop-images (map render-sop l-sop))
+  (for/fold ([r (first sop-images)]) ([s (rest sop-images)])
+    (2:above/align 'left r vblank s)))
+
+#; {[Y] {SoPlayer Y} -> Image}
+(define (render-sop 1sop)
+  (match-define [sop score tiles player] 1sop)
+  (define tiles-image (map render-tile tiles))
+  (define score-image (2:text (number->string score) 20 'black))
+  (define player-image (2:text (~a player) 20 'black))
+  (apply 2:beside/align 'top player-image hblank score-image hblank tiles-image))
+
+(define hblank (2:rectangle 10 1 'solid 'white))
+(define vblank (2:rectangle 1 10 'solid 'white))
 (module+ test
   'infor-starter-state
   (render-info-state info-starter-state)
