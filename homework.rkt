@@ -18,7 +18,7 @@
          (provide prov))]))
 
 ; (req->prov Qwirkle/Common/coordinates)
-(req->prov Qwirkle/Common/tiles)
+; (req->prov Qwirkle/Common/tiles)
 
 ; (req->prov (prefix-in players: Qwirkle/Common/players))
 ; (req->prov Qwirkle/Common/directions)
@@ -35,8 +35,8 @@
 
 ; (req->prov (submod Qwirkle/Common/tiles examples))
 
-; (req->prov (submod Qwirkle/Common/boards json))
-; (req->prov (submod Qwirkle/Common/coordinates json))
+(req->prov (submod Qwirkle/Common/tiles json))
+(req->prov (submod Qwirkle/Common/coordinates json))
 ; (req->prov (submod Qwirkle/Common/directions json))
 ; (req->prov (submod Qwirkle/Common/players json))
 ; (req->prov (submod Qwirkle/Common/states json))
