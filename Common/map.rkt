@@ -296,6 +296,11 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
+
+  #; {type JMap = [List [List Integer Cell ...] ...]}
+  ;; the Integer denotes the row index for all Cells in this row 
+  #; {type Cell = [List Integer JTile]}
+  ;; the Integer denotes the column index for the tile 
   
   #; {Map -> JMap}
   (define (map->jsexpr b)
