@@ -14,7 +14,9 @@
 
   [create-ref-state (-> map? [listof [list/c [listof tile?] any/c]] state?)]
   [render-ref-state (-> state? 2:image?)]
-  [legal?           (-> state? (listof placement?) (or/c #false map?))]
+  [legal?
+   #; {(U PubKnowledge [RefState Y]) [Listof Placement] -> (U Map? False)}
+   (-> state? (listof placement?) (or/c #false map?))]
   [complete-turn
    ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
    #; {complete-turn s gmap delta old-tiles new-tiles}
@@ -23,22 +25,25 @@
    ;; yields gmap
    #; (score s gmap)
    ;; yields delta 
-   (-> state? map? natural? (listof tile?) (listof tile?) state?)]))
+   (-> state? map? natural? (listof tile?) (listof tile?) state?)]
+  [ref-state-to-info-state (-> state? state?)]))
 
 (module+ examples
   (provide
    +starter-tile
    +starter-coor
    +starter-plmt
-   +ref-starte-state
+   +ref-starter-state
    
    starter-players
    ref-starter-state
+   +ref-atop-state
    handouts
    starter-players-handout
    ref-starter-state-handout
    
    info-starter-state
+   place-atop-starter
    lshaped-placement*))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -66,21 +71,30 @@
 (struct sop [score tiles player] #:prefab)
 
 #; {type [GameState X] = [rgs Map [Listof X]]}
-;;      where [Listof X] specifies the order of 
+;;      where [Listof X] specifies the order of turns that players take from here on out 
 #; {type [RefState Y]  = [GameState [SoPlayer Y]]}
-#; {type InfoState     = [GameState Natural]}
+;;      what the referee knows about the game 
+#; {type PubKnowledge  = [GameState (cons [SoPlayer (U String Symbol)] Natural)]}
+;;      what a player may know about the game: its own state (named) and the score of others
 #; {type [SoPlayer Y]  = [sop Natural [Listof Tile] Y]}
-;;      where Y is typically an external player or just a symbol 
+;;      where Y is typically an external player or just a symbolic name 
+
+#; {SoPlayer -> SoPlayer}
+(define (sop-special first)
+  (match-define [sop score tiles payload] first)
+  (cond
+    [(or (symbol? payload) (string? payload)) first]
+    [else (object-name payload)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Y] Map [Listof [List [Listof Tile] Y]] -> [RefState Y]}
 (define (create-ref-state gmap payload)
   (state gmap (map (λ (p) (apply sop 0 p)) payload)))
 
-#; {[Y] [RefState Y] -> InfoState}
+#; {[Y] [RefState Y] -> PubKnowledge}
 (define (ref-state-to-info-state rgs)
-  (match-define [state gmap players] rgs)
-  (state gmap (map sop-score players)))
+  (match-define [state gmap (cons first players)] rgs)
+  (state gmap (cons (sop-special first) (map sop-score players))))
 
 (module+ examples
   (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
@@ -92,7 +106,7 @@
   (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {State Map Natural [Listof Tile] [Listof Tile] -> State}
+ #; {[RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
 
 (module+ test
   (check-equal? 
@@ -117,15 +131,17 @@
 (struct placement [coordinate tile] #:prefab)
 
 (module+ examples
-  (define lshaped-placement* 
-    (for/list ([t starter-tile*] [co lshaped-coordinates]) (placement co t)))
+  (define place-atop-starter (list (placement origin #s(tile circle red))))
+  (define lshaped-placement* (map placement lshaped-coordinates starter-tile*))
   (define +starter-plmt (list (placement +starter-coor +starter-tile)))
-  (define +ref-starte-state (state starter-map (list (sop 0 (list +starter-tile) 'player13)))))
+  (define +ref-starter-state (state starter-map (list (sop 0 (list +starter-tile) 'player13))))
+  (define +ref-atop-state (state map0 (list (sop 0 (list #s(tile circle red)) 'player13)))))
 
 #; {[RefState Y] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
 
 (module+ test
+  (check-false (legal? +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal? ref-starter-state lshaped-placement*) "b/c p* is lshaped")
 
   #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
@@ -136,7 +152,7 @@
     (define gstate0 (state gmap (list player0)))
     (check (legal? gstate0 plmnt0) expected msg))
 
-  ;; run all scenarios 
+  ;; run all scenarios
   (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
         [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
         [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
@@ -188,6 +204,7 @@
 (define same-rows (same (compose coordinate-row placement-coordinate)))
 (define same-columns (same (compose coordinate-column placement-coordinate)))
 
+#;
 (module+ test
   (check-true (same-rows plmnt1)))
 
@@ -212,21 +229,21 @@
 
 #; {[Y] [RefState Y] -> Image}
 (define (render-ref-state gs)
-  (match-define [state gmap [list sop ...]] gs)
+  (match-define [state gmap (cons first [list sop ...])] gs)
   (define gmap-image (render-map gmap))
-  (define sop-images (render-sop* sop render-sop))
+  (define sop-images (render-sop* first sop render-sop))
   (2:beside/align 'top gmap-image hblank sop-images))
 
 #; {InforState -> Image}
 (define (render-info-state is)
-  (match-define [state gmap [list score ...]] is)
+  (match-define [state gmap (cons first [list score ...])] is)
   (define gmap-image (render-map gmap))
-  (define score-imgs (render-sop* score (λ (s) (2:text (~a s) 20 'black))))
+  (define score-imgs (render-sop* first score (λ (s) (2:text (~a s) 20 'black))))
   (2:beside/align 'top gmap-image hblank score-imgs))
 
-#; {[Y] Y [Y ->Image] -> Image}
-(define (render-sop* l-sop render-sop)
-  (define sop-images (map render-sop l-sop))
+#; {[Y] SoPlayer Y [Y ->Image] -> Image}
+(define (render-sop* one l-sop render-one)
+  (define sop-images (cons (render-sop one) (map render-one l-sop)))
   (for/fold ([r (first sop-images)]) ([s (rest sop-images)])
     (2:above/align 'left r vblank s)))
 
