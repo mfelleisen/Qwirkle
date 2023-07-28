@@ -12,6 +12,7 @@
  ;; and what are its neighbors
  
  candidate?
+ candidate-place 
  candidate-left
  candidate-top
  candidate-right
@@ -19,11 +20,13 @@
  
  (contract-out
   [start-map  (-> tile? map?)]
-  [adjacent?  (-> map? coordinate? boolean?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
   [find-candidates
    (-> map? tile? (set/c candidate?))]
+  [adjacent?
+   ;; is the coordinate adjacent to, and not on top of, an occupied space?
+   (-> map? coordinate? boolean?)]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
    (-> map? coordinate? tile? (or/c candidate? #false))]))
@@ -85,12 +88,14 @@
 
 #; {Map Coordinate -> Boolean}
 (module+ test
-  (check-true (adjacent? starter-map #s(coordinate 0 -1))))
+  (check-true (adjacent? starter-map #s(coordinate 0 -1)))
+  (check-false (adjacent? starter-map origin)))
 (define (adjacent? b c)
-  (tile? (or (occupied b (left-of c))
-             (occupied b (top-of c))
-             (occupied b (right-of c))
-             (occupied b (below-of c)))))
+  (and (false? (hash-ref b c #false))
+       (tile? (or (occupied b (left-of c))
+                  (occupied b (top-of c))
+                  (occupied b (right-of c))
+                  (occupied b (below-of c))))))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Map Tile -> [Listof Candidate]}
