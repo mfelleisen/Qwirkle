@@ -39,5 +39,5 @@
 (req->prov (submod Qwirkle/Common/coordinates json))
 ; (req->prov (submod Qwirkle/Common/directions json))
 ; (req->prov (submod Qwirkle/Common/players json))
-; (req->prov (submod Qwirkle/Common/states json))
+(req->prov (submod Qwirkle/Common/game-state json))
 ; (req->prov (submod Qwirkle/Common/tiles json))

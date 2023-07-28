@@ -46,6 +46,17 @@
    place-atop-starter
    lshaped-placement*))
 
+(module+ json
+  (provide
+   MAP PLAYERS SCORE TILES COORDINATE ATILE
+
+   (contract-out
+    [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
+    [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))]
+    [state->jsexpr (-> state? jsexpr?)]
+    [jsexpr->state (-> jsexpr? (or/c state? #false))])))
+  
+
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/map)
@@ -58,9 +69,16 @@
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
+(module+ json
+  (require (submod Qwirkle/Common/map json))
+  (require (submod Qwirkle/Common/coordinates json))
+  (require (submod Qwirkle/Common/tiles json))
+  (require json))
+
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
+  (require (submod ".." json))
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
@@ -106,7 +124,7 @@
   (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 ;; ---------------------------------------------------------------------------------------------------
- #; {[RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
+#; {[RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
 
 (module+ test
   (check-equal? 
@@ -262,3 +280,100 @@
   (render-info-state info-starter-state)
   'ref-starte-state
   (render-ref-state ref-starter-state))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  (define MAP 'map)
+  (define PLAYERS 'players)
+  (define SCORE 'score)
+  (define TILES 'tile*)
+  (define ATILE '1tile)
+  (define COORDINATE 'coordinate)
+
+  #; {type JState     = { MAP : JMap, PLAYERS : [Listof JPlayer] }}
+  #; {type JPlayer    = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
+  #; {type Placemenst = [Listof 1Placement]}
+  #; {type 1Placement = { TILE : JTile, COORDINATE : JCoordinate }}
+
+  #; {PubKnowledge -> JState}
+  (define (state->jsexpr rb)
+    (match-define [state gmap players] rb)
+    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr players)))
+
+  #; {[Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
+  (define (players->jsexpr players)
+    (map 1player->jsexpr players))
+
+  #; {(U SoPlayer Natural) -> JPlayer}
+  (define (1player->jsexpr 1player)
+    (match 1player
+      ([sop score tiles _] (hasheq SCORE score TILES (map tile->jsexpr tiles)))
+      ([? natural?] 1player)))
+
+  #; {Placements -> [Listof JPlacement]}
+  (define (placements->jsexpr p*)
+    (map 1placement->jsexpr p*))
+  
+  #; {1Placement -> 1Placement}
+  (define (1placement->jsexpr p)
+    (match-define [placement co ti] p)
+    (hasheq ATILE (tile->jsexpr ti) COORDINATE (coordinate->jsexpr co)))
+  
+  #; {JSexpr -> OPtion<Coordinate>}
+  (define (jsexpr->state j)
+    (match j
+      [(hash-table
+        [(? (curry eq? MAP)) (app jsexpr->map (? hash? gmap))]
+        [(? (curry eq? PLAYERS)) (app jsexpr->players (cons first (list n ...)))])
+       (state gmap (cons first n))]
+      [_ (eprintf "state object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
+         #false]))
+
+  #; {JSexpr -> Option<PubKnknowledge>}
+  ;; used on player side only 
+  (define (jsexpr->players j)
+    (match j
+      [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...))
+       (cons first n)]
+      [_ (eprintf "players array does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
+         #false]))
+
+  #; {JSexpr -> Option{SoPlayer}}
+  (define (jsexpr->1player j)
+    (match j
+      [(hash-table
+        [(? (curry eq? SCORE)) (? natural? s)]
+        [(? (curry eq? TILES)) (app jsexpr->tiles (list t ...))])
+       (sop s t 'player1)]
+      [_ (eprintf "state object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
+         #false]))
+
+  #; {JSexpr -> Option{[Listof Tile]}}
+  (define (jsexpr->tiles j)
+    (match j
+      [(list (app jsexpr->tile (? tile? t)) ...) t]
+      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
+         #false]))
+
+  #; {JSexpr -> Option{[Listof Placement]}}
+  (define (jsexpr->placements j)
+    (match j
+      [(list (app jsexpr->1placement (? placement? p)) ...) p]
+      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
+         #false]))
+
+  #; {JSexpr -> Option{Placement>}}
+  (define (jsexpr->1placement j)
+    (match j
+      [(hash-table
+        [(? (curry eq? COORDINATE)) (app jsexpr->coordinate (? coordinate? co))]
+        [(? (curry eq? ATILE)) (app jsexpr->tile (? tile? ti))])
+       (placement co ti)]
+      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
+         #false])))
+  
+(module+ test
+  (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state)
+
+  (define placement0 (map placement coord0 tiles0))
+  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0))

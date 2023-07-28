@@ -146,6 +146,8 @@
 (module+ json
   (define ROW 'row)
   (define COLUMN 'column)
+
+  #; {type JCoordinate = [Hash ROW Integer COLUMN Integer]}
   
   #; {JSexpr -> (U False Coordinate)}
   (define (jsexpr->coordinate j)

@@ -85,15 +85,16 @@ When granted a turn, a player may take one of the following three actions:
   The returned tiles are added to the referee's collection of tiles, to be
   handed out in the future as needed.}
 
-  @item{@emph{place} at least one tile or possibly all. 
+  @item{@emph{place} at least one tile or several tiles, which are then added to
+  the map in sequential order.   
 
   A placement of tiles must satisfy these conditions:
   @; ------------------------------------------------------------------
   @itemlist[
     @item{every tile placed must share a side with at least one placed tile;}
 
-    @item{every tile placed must match the color or shape of any adjacent
-    tiles along a line;}
+    @item{every tile placed must match the color or shape of any
+    directly adjacent tiles along a line;}
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
