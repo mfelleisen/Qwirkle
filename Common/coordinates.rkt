@@ -26,8 +26,7 @@
   (provide
    coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10
    
-   +starter-coor
-   lshaped-coordinates))
+   +starter-coor lshaped-coordinates))
 
 (module+ json
   (provide
@@ -35,7 +34,7 @@
    COLUMN 
    (contract-out
     [coordinate->jsexpr (-> coordinate? jsexpr?)]
-    [jsexpr->coordinate (-> jsexpr? coordinate?)])))
+    [jsexpr->coordinate (-> jsexpr? (or/c coordinate? #false))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -87,11 +86,32 @@
     [(> rc rd) #false]
     [(= rc rd) (< cc cd)]))
 
+;; ---------------------------------------------------------------------------------------------------
+
 (module+ examples
   
   (define coord0 (list #s(coordinate +3 0) #s(coordinate +3 +1) #s(coordinate +3 +2)))
+  (define can001 ;; candidates for map0, (first tiles0)
+    '(#s(coordinate -1 0)
+      #s(coordinate 0 -1)
+      #s(coordinate 0 1)
+      #s(coordinate 1 -1)
+      #s(coordinate 1 1)
+      #s(coordinate 2 -1)
+      #s(coordinate 2 1)
+      #s(coordinate 3 0)))
+
   (define coord1 (list #s(coordinate +2 +1)))
   (define coord2 (list #s(coordinate 0 -1)   #s(coordinate +1 -1)))
+  (define can221 ;; candidates for map2, (first tiles2)
+    '(#s(coordinate -1 0)
+      #s(coordinate 0 -1)
+      #s(coordinate 0 1)))
+  (define can222 '(#s(coordinate 1 -1)))
+
+  (provide can001 can221 can222 can992 can993)
+
+
   (define coord3 (list #s(coordinate -1 -1) #s(coordinate +2 -1)))
   (define coord4 (list #s(coordinate +3 +3) #s(coordinate +4 +3)))
   (define coord5 (list #s(coordinate -1 -2)  #s(coordinate -1 -3)))
@@ -99,6 +119,17 @@
   (define coord7 (list #s(coordinate +1 -2)    #s(coordinate +2 -2)))
   (define coord8 (list #s(coordinate -1 0)))
   (define coord9 (list #s(coordinate +4 0) #s(coordinate +4 -1) #s(coordinate +4 +1)))
+
+  (define can992
+    '(#s(coordinate -2 -3)
+      #s(coordinate -1 -4)
+      #s(coordinate 0 -4)
+      #s(coordinate 1 -4)
+      #s(coordinate 2 3)
+      #s(coordinate 3 4)))
+
+  (define can993 '(#s(coordinate 0 -4) #s(coordinate 4 1)))
+
   (define coord10 (list #s(coordinate +3 +4) #s(coordinate +4 +4)))
 
   (define +starter-coor (coordinate 0 -1))
@@ -121,7 +152,7 @@
     (match j
       [(hash-table [(? (curry eq? ROW)) (? integer? r)] [(? (curry eq? COLUMN)) (? integer? c)])
        (coordinate r c)]
-      [_ (eprintf "tile object does not match schema\n  ~a\n" (jsexpr->string j))
+      [_ (eprintf "coordinate object does not match schema\n  ~a\n" (jsexpr->string j))
          #false]))
   
   #; {Coordinate -> JCoordinate}
