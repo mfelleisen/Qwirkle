@@ -166,8 +166,7 @@
   (define (check-legal check gmap tiles* coord* expected msg)
     (define plmnt0 (map placement coord* tiles*))
     ;; for socring there should be no 'all tiles down' bonus 
-    (define player0 (sop 0 (cons +starter-tile tiles*) (~a 'player msg)))
-    (define gstate0 (state gmap (list player0)))
+    (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
     (check (legal? gstate0 plmnt0) expected msg))
 
   ;; run all scenarios
@@ -298,11 +297,13 @@
   #; {PubKnowledge -> JState}
   (define (state->jsexpr rb)
     (match-define [state gmap players] rb)
-    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr players)))
+    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr rb  players)))
 
-  #; {[Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
-  (define (players->jsexpr players)
-    (map 1player->jsexpr players))
+  #; {Any [Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
+  (define (players->jsexpr gstate players)
+    (match players
+      [(list (? sop?) (? natural? n) ...) (map 1player->jsexpr players)]
+      [_ (error 'state->jsexpr "PubKnowledge expected, given ~v" gstate)]))
 
   #; {(U SoPlayer Natural) -> JPlayer}
   (define (1player->jsexpr 1player)
@@ -345,7 +346,7 @@
         [(? (curry eq? SCORE)) (? natural? s)]
         [(? (curry eq? TILES)) (app jsexpr->tiles (list t ...))])
        (sop s t 'player1)]
-      [_ (eprintf "state object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
+      [_ (eprintf "player object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
          #false]))
 
   #; {JSexpr -> Option{[Listof Tile]}}
@@ -359,7 +360,7 @@
   (define (jsexpr->placements j)
     (match j
       [(list (app jsexpr->1placement (? placement? p)) ...) p]
-      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
+      [_ (eprintf "placements array does not match schema\n  ~a\n" (jsexpr->string j))
          #false]))
 
   #; {JSexpr -> Option{Placement>}}
@@ -369,11 +370,30 @@
         [(? (curry eq? COORDINATE)) (app jsexpr->coordinate (? coordinate? co))]
         [(? (curry eq? ATILE)) (app jsexpr->tile (? tile? ti))])
        (placement co ti)]
-      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
-         #false])))
+      [_ (eprintf "placement array does not match schema\n  ~a\n" (jsexpr->string j))
+         #false]))
+
+  (provide jsexpr->1player jsexpr->players jsexpr->tiles jsexpr->1placement))
   
 (module+ test
   (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state)
-
+  
   (define placement0 (map placement coord0 tiles0))
-  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0))
+  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0)
+
+  ;; -------------------------------------------------------------------------------------------------
+  (define-syntax-rule (check-message port rgxp body ...)
+    (let ([os (open-output-string)]
+          [mg (~a "looking for " rgxp)])
+      (begin0
+        (parameterize ([port os])
+          body ...)
+        (close-output-port os)
+        (check-true (cons? (regexp-match rgxp (get-output-string os))) mg))))
+  
+  (check-false (check-message current-error-port  #px"state" (jsexpr->state 1)))
+  (check-false (check-message current-error-port  #px"player" (jsexpr->1player 1)))
+  (check-false (check-message current-error-port  #px"players" (jsexpr->players 1)))
+  (check-false (check-message current-error-port  #px"tiles" (jsexpr->tiles 1)))
+  (check-false (check-message current-error-port  #px"placements" (jsexpr->placements '["1"])))
+  (check-false (check-message current-error-port  #px"placement" (jsexpr->1placement 1))))
