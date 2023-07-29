@@ -10,6 +10,12 @@
  coordinate-row
  coordinate-column
 
+ #; {Coordinate -> Coordinate}
+ add1-row
+ sub1-row
+ add1-column
+ sub1-column
+
  #; Coordinate 
  origin
 
@@ -85,6 +91,20 @@
     [(< rc rd) #true]
     [(> rc rd) #false]
     [(= rc rd) (< cc cd)]))
+
+;; ---------------------------------------------------------------------------------------------------
+
+#; {Coordinate -> Coordinate -> Coordinate}
+(define (coordinate+-1 delta-coordinate)
+  (match-define [coordinate δ-row δ-column] delta-coordinate)
+  (λ (co)
+    (match-define [coordinate row column] co)
+    (coordinate (+ row δ-row) (+ column δ-column))))
+
+(define add1-row (coordinate+-1 (coordinate +1 0)))
+(define sub1-row (coordinate+-1 (coordinate -1 0)))
+(define add1-column (coordinate+-1 (coordinate 0 +1)))
+(define sub1-column (coordinate+-1 (coordinate 0 -1)))
 
 ;; ---------------------------------------------------------------------------------------------------
 
