@@ -17,6 +17,12 @@
  candidate-top
  candidate-right
  candidate-below
+
+ row?
+ column?
+ line-index
+ line-max
+ line-min 
  
  (contract-out
   [start-map  (-> tile? map?)]
@@ -33,7 +39,10 @@
    (-> map? coordinate? boolean?)]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
-   (-> map? coordinate? tile? (or/c candidate? #false))]))
+   (-> map? coordinate? tile? (or/c candidate? #false))]
+  [max-and-min
+   #; {Map [Listof Coordinate] -> Line}
+   (-> map? [listof coordinate?] (or/c row? column?))]))
 
 (module+ examples
   (provide starter-free start+1-map-unfit start+1-free start+1-can)
@@ -63,6 +72,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
@@ -222,6 +232,23 @@
 
 #; {TileRow TileMatrixƒ  -> TileMatrixƒ}
 (define (add-cell cr m) (cons (reverse cr) m))
+
+;; ---------------------------------------------------------------------------------------------------
+(struct line [index min max] #:prefab)
+(struct row line () #:prefab)
+(struct column line () #:prefab)
+
+#; {Map [Listof Coordinate] -> Line}
+(module+ test
+  (check-true (row? (max-and-min map1 coord1)))
+  (check-false (column? (max-and-min map1 coord1))))
+
+(define (max-and-min gmap coordinate*)
+  (match-define [list row-min row-max col-min col-max] (mins-maxs gmap))
+  (cond
+    [(same-row coordinate*)    => (λ (row#) (row row# col-min col-max))]
+    [(same-column coordinate*) => (λ (column#) (column column# row-min row-max))]
+    [else (error 'max-and-min "can't happen")]))
 
 #; {(U Map [Listof [List Coordinate Tile]]) -> (list Integer Integer Integer Integer)}
 (define (mins-maxs gmap)

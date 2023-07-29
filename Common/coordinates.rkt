@@ -19,6 +19,10 @@
  #; Coordinate 
  origin
 
+ #; {[Listof Coordinate] -> Option<Integer>}
+ same-row
+ same-column
+
  #; {Coordinate Coordinate -> Boolean}
  top-down-left-to-right-order<
 
@@ -91,6 +95,19 @@
     [(< rc rd) #true]
     [(> rc rd) #false]
     [(= rc rd) (< cc cd)]))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Placement -> M] -> Placement* -> Option<Integer>}
+(define [(same selector) placements]
+  (define all-selected (map selector placements))
+  (if (apply = all-selected) (first all-selected) #false))
+
+(module+ test
+  (check-true (integer? (same-row coord1)))
+  (check-false (same-column '(#s(coordinate 1 1) #s(coordinate 3 2)))))
+
+(define same-row    (same coordinate-row))
+(define same-column (same coordinate-column))
 
 ;; ---------------------------------------------------------------------------------------------------
 

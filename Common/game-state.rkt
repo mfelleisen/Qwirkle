@@ -178,9 +178,11 @@
     (check-legal check-equal? m0 tt cc m+ (~a "step " ii))))
 
 (define (legal? gstate placements)
+  (define placed-tiles (map placement-tile placements))
+  (define coordinate*  (map placement-coordinate placements))
   (and
-   (current-player-owns-tiles (first (state-players gstate)) (map placement-tile placements))
-   (or (same-rows placements) (same-columns placements))
+   (current-player-owns-tiles (first (state-players gstate)) placed-tiles)
+   (or (same-row coordinate*) (same-column coordinate*))
    (all-adjacent-and-fits? (state-map gstate) placements)))
 
 #; {Map Placemennt* -> Option<Map>}
@@ -214,19 +216,46 @@
       (cons? (member placed tiles-owned))
       (set! tiles-owned (remove placed tiles-owned)))))
 
-#; {[Placement -> M] -> Placement* -> Boolean}
-(define [(same selector) placements]
-  (apply = (map selector placements)))
-
-(define same-rows (same (compose coordinate-row placement-coordinate)))
-(define same-columns (same (compose coordinate-column placement-coordinate)))
-
-#;
-(module+ test
-  (check-true (same-rows plmnt1)))
-
 ;; ---------------------------------------------------------------------------------------------------
 ;; scoring a placement 
+
+;; move same-row, same-column to map, and base on coordinates
+;; move max-and-min to map, based on coordinates
+
+#; {[Y] [RefState Y] Placements -> Natural}
+(define (score gstate placements)
+  (define gmap  (state-map gstate))
+  (define coord (map placement-coordinate placements))
+  (define line (max-and-min gmap coord))
+  (+ (length placements)
+     (score-same-line-segments gmap line placements)
+     (score-orthoginal-lines gmap line placements)))
+
+#; {Map Line Placements -> Natural}
+;; # of points for all segments of the placement line that contain a new placement 
+(define (score-same-line-segments gmap line placements)
+  (cond
+    [(row? line)    1]
+    [(column? line) 2]))
+
+#; {Map Line -> [Listof [Listof Coordinate]]}
+(module+ test
+  (all-row-segments map1 (max-and-min map1 coord1)))
+(define (all-row-segments gmap l)
+  (define min (line-min l))
+  (define max (line-max l))
+  (define index (line-index l))
+  (for/fold ([current '()] [segment* '()] [focus (coordinate index min)] #:result segment*)
+            ([i (in-range min (+ max 1))])
+    (define spot (hash-ref gmap focus #false))
+    (if spot
+        (values (cons spot current) segment* (add1-row focus))
+        (values '[] (cons current segment*) (add1-row focus)))))
+    
+#; {Map Placements -> Natural}
+;; # of points for all lines orthogonal to the placement line that contain one new placement 
+(define (score-orthoginal-lines gmap placements)
+  1)
 
 (module+ test 
   (define score1 10)
