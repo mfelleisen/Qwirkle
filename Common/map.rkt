@@ -22,6 +22,10 @@
   [start-map  (-> tile? map?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
+  #; {(U Map [Listof [List Coordinate Tile]]) -> (list Integer Integer Integer Integer)}
+  [mins-maxs
+   ;; compute (list row-min row-max column-min column-max)
+   (-> map? (list/c integer? integer? integer? integer?))]
   [find-candidates
    (-> map? tile? (set/c candidate?))]
   [adjacent?
@@ -32,16 +36,9 @@
    (-> map? coordinate? tile? (or/c candidate? #false))]))
 
 (module+ examples
-  (provide starter-free
-           start+1-map-unfit
-           start+1-free
-           start+1-can)
+  (provide starter-free start+1-map-unfit start+1-free start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
-  (provide
-   map0
-   starter-map
-   starter-can
-   lshaped-map-unfit))
+  (provide map0 starter-map starter-can lshaped-map-unfit))
 
 (module+ json
   (provide
@@ -177,7 +174,8 @@
 
 #; {Map -> Image}
 (define (render-map b)
-  (define-values [-column +column sorted] (sort-map-in-top-down-left-to-right-order b))
+  (match-define [list _1 _2 -column _3] (mins-maxs b))
+  (define sorted (sort-map-in-top-down-left-to-right-order b))
   (define rows (map (render-row -column) sorted))
   (apply 2:above/align 'left (cons #;{needed for the starter maps} 2:empty-image rows)))
 
@@ -212,23 +210,28 @@
 #; {type TileRow    = [Listof [List Coordinate Tile]]}
 
 #; {Map -> (values Integer Intger TileMatrix)}
-(define (sort-map-in-top-down-left-to-right-order b)
-  (define as-list (hash-map b list))
-  (define row-min (apply min (map (compose coordinate-row first) as-list)))
-  (define row-max (apply max (map (compose coordinate-row first) as-list)))
-  (define col-min (apply min (map (compose coordinate-column first) as-list)))
-  (define col-max (apply max (map (compose coordinate-column first) as-list)))
+(define (sort-map-in-top-down-left-to-right-order gmap)
+  (define as-list (hash-map gmap list))
+  (match-define [list row-min _1 _2 _3] (mins-maxs as-list))
   (define sorted  (sort as-list top-down-left-to-right-order< #:key first))
-  (define matrix
-    (for/fold ([m '()] [cr '()] [i row-min] #:result (reverse (add-cell cr m))) ([cell sorted])
-      (define row# (coordinate-row (first cell)))
-      (if (= row# i)
-          (values m                (cons cell cr) i)
-          (values (add-cell cr m)  (list cell)    row#))))
-  (values col-min col-max matrix))
+  (for/fold ([m '()] [cr '()] [i row-min] #:result (reverse (add-cell cr m))) ([cell sorted])
+    (define row# (coordinate-row (first cell)))
+    (if (= row# i)
+        (values m                (cons cell cr) i)
+        (values (add-cell cr m)  (list cell)    row#))))
 
 #; {TileRow TileMatrixƒ  -> TileMatrixƒ}
 (define (add-cell cr m) (cons (reverse cr) m))
+
+#; {(U Map [Listof [List Coordinate Tile]]) -> (list Integer Integer Integer Integer)}
+(define (mins-maxs gmap)
+  (define as-list (if (cons? gmap) gmap (hash-map gmap list)))
+  (define coords  (map first as-list))
+  (define row-min (apply min (map coordinate-row coords)))
+  (define row-max (apply max (map coordinate-row coords)))
+  (define col-min (apply min (map coordinate-column coords)))
+  (define col-max (apply max (map coordinate-column coords)))
+  (list row-min row-max col-min col-max))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
@@ -308,9 +311,8 @@
   ;; the Integer denotes the column index for the tile 
   
   #; {Map -> JMap}
-  (define (map->jsexpr b)
-    (define-values [-column +column sorted] (sort-map-in-top-down-left-to-right-order b))
-    (rows->jsexpr sorted))
+  (define (map->jsexpr gmap)
+    (rows->jsexpr (sort-map-in-top-down-left-to-right-order gmap)))
 
   #; {TileMatrix -> JRow}
   (define (rows->jsexpr rows)
@@ -340,4 +342,3 @@
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
   (check-equal? (jsexpr->map (map->jsexpr map1)) map1)
   (check-equal? (jsexpr->map (map->jsexpr map2)) map2))
-  
