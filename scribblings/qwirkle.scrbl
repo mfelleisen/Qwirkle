@@ -107,17 +107,21 @@ When granted a turn, a player may take one of the following three actions:
 @; -----------------------------------------------------------------------------
 The referee eliminates any player that violates any rules during a turn.
 
-@bold{Scoring a Turn}
+@bold{Scoring a Turn} A player that passes or exchanges its tiles receives no
+points. 
 
-A player that passes or exchanges its tiles receives no points. For placing
-tiles, a player receives points as follows:
-
+If the player requests a placement, the referee checks whether it is legal and
+constructs the extended map. Based on this new map, the referee assigns points
+for a turn as follows: 
+@; -----------------------------------------------------------------------------
 @itemlist[
+
+@item{}
 
 @item{A player receives one point per tile placed.}
 
-@item{A player receives one point per tile within a row or column that one (or
- more) of its newly placed tiles extends.}
+@item{A player receives one point per tile within a row or column that
+ at least one of its newly placed tiles extends.}
 
 @item{A player receives six bonus points for completing a Q, which is a sequence
  of tiles that contains all shapes or all colors.}
@@ -127,8 +131,8 @@ tiles, a player receives points as follows:
  
 ]
 @; -----------------------------------------------------------------------------
-The referee scores each turn and tracks the scores of all players. It shares the
-scores of all players with the player to whom it grants a turn.
+The referee keep track of the scores on a per turn basis and shares the scores
+of all players with the player to whom it grants a turn.
 
 @; -----------------------------------------------------------------------------
 @bold{Ending a Game} 
