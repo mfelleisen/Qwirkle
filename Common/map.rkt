@@ -18,11 +18,9 @@
  candidate-right
  candidate-below
 
+ #; {type Line = Row || Column}
  row?
  column?
- line-index
- line-max
- line-min 
  
  (contract-out
   [start-map  (-> tile? map?)]
@@ -38,10 +36,15 @@
    (-> map? coordinate? tile? (or/c candidate? #false))]
   
   [all-row-segments
-   (-> map? line? (listof (listof (list coordinate? tile?))))]
+   (-> map? line? (listof (listof coordinate?)))]
   [all-column-segments
-   (-> map? line? (listof (listof (list coordinate? tile?))))]
-
+   (-> map? line? (listof (listof coordinate?)))]
+  
+  [walk-row-orthogonally
+   (-> map? coordinate? natural?)]
+  [walk-column-orthogonally
+   (-> map? coordinate? natural?)]
+   
   [create-line
    #; {Map [Listof Coordinate] -> Line}
    (-> map? [listof coordinate?] (or/c row? column?))]))
@@ -237,18 +240,10 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-#; {[Integer Integer -> Coordinate]
-    [Coordinate -> Coordinate]
-    ->
-    (Map Line -> [Listof [Listof Coordinate]])}
+#; {type Segment = [Listof Coordinate]}
 
-(module+ test
-  (for/list ([pred  (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-             [map   (list map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-             [coord (list coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)])
-    (define line (create-line map coord))
-    (if (row? line) (all-row-segments map line) (all-column-segments map line))))
-
+#; {[Integer Integer -> Coordinate] [Coordinate -> Coordinate] -> (Map Line -> [Listof Segment])}
+;; the contiguous segements on this map along a row or column along the given line 
 (define ((all-segments coordinate add1) gmap l)
   (define min (line-min l))
   (define max (line-max l))
@@ -257,17 +252,46 @@
             ([i (in-range min (+ max 1))])
     (define spot (hash-ref gmap focus #false))
     (define next (add1 focus))
-    (if spot
-        (values (cons (list focus spot) crrnt) segment* next)
-        (values '[] (seg+ crrnt segment*) next))))
+    (if spot (values (cons focus crrnt) segment* next) (values '[] (seg+ crrnt segment*) next))))
 
-#; {Map Line -> [Listof [Listof Coordinate]]}
+#; {Map Line -> [Listof Segment]}
+(module+ test
+  (for/list ([pred  (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+             [map   (list map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+             [coord (list coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)])
+    (define line (create-line map coord))
+    (if (row? line) (all-row-segments map line) (all-column-segments map line))))
 (define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))
 (define all-column-segments (all-segments (λ (x y) [coordinate y x]) add1-row))
 
 #; {Segment [Listof Segment] -> [Listof Segment]}
 (define (seg+ cr m) (if (empty? cr) m (cons (reverse cr) m)))
-    
+
+(define ((walk-line-orthogonally up down) gmap focus0)
+  (define s (+ (walk gmap focus0 up) (walk gmap focus0 down) -1 #;"for double countng"))
+  (if (= s 1) 0 s))
+
+#; {Map Coordinate [Coordinate -> Coordinate] -> Natural}
+;; how far can we walk starting from `focus0` on `gmap` alomg `step`
+(define (walk gmap focus0 step)
+  (let walk ([focus focus0])
+    (define spot (hash-ref gmap focus #false))
+    (if (false? spot) 0 (+ (walk (step focus)) 1))))
+
+#; {Map Coordinate -> Natural}
+;; the length of a run in both directions from co
+(module+ test
+  (define line (create-line map1 coord0))
+  (check-equal? 
+   (for/sum ([co coord0])
+     (if (row? line)
+         (walk-column-orthogonally map1 co)
+         (walk-row-orthogonally map1 co)))
+   4
+   "walk- map0 map1"))
+
+(define walk-column-orthogonally (walk-line-orthogonally add1-row sub1-row))
+(define walk-row-orthogonally (walk-line-orthogonally add1-column sub1-column))
 
 ;; ---------------------------------------------------------------------------------------------------
 (struct line [index min max] #:prefab)
