@@ -28,10 +28,6 @@
   [start-map  (-> tile? map?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
-  #; {(U Map [Listof [List Coordinate Tile]]) -> (list Integer Integer Integer Integer)}
-  [mins-maxs
-   ;; compute (list row-min row-max column-min column-max)
-   (-> map? (list/c integer? integer? integer? integer?))]
   [find-candidates
    (-> map? tile? (set/c candidate?))]
   [adjacent?
@@ -40,7 +36,13 @@
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
    (-> map? coordinate? tile? (or/c candidate? #false))]
-  [max-and-min
+  
+  [all-row-segments
+   (-> map? line? (listof (listof (list coordinate? tile?))))]
+  [all-column-segments
+   (-> map? line? (listof (listof (list coordinate? tile?))))]
+
+  [create-line
    #; {Map [Listof Coordinate] -> Line}
    (-> map? [listof coordinate?] (or/c row? column?))]))
 
@@ -230,8 +232,42 @@
         (values m                (cons cell cr) i)
         (values (add-cell cr m)  (list cell)    row#))))
 
-#; {TileRow TileMatrixƒ  -> TileMatrixƒ}
+#; {TileRow TileMatrix  -> TileMatrix}
 (define (add-cell cr m) (cons (reverse cr) m))
+
+;; ---------------------------------------------------------------------------------------------------
+
+#; {[Integer Integer -> Coordinate]
+    [Coordinate -> Coordinate]
+    ->
+    (Map Line -> [Listof [Listof Coordinate]])}
+
+(module+ test
+  (for/list ([pred  (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+             [map   (list map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+             [coord (list coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)])
+    (define line (create-line map coord))
+    (if (row? line) (all-row-segments map line) (all-column-segments map line))))
+
+(define ((all-segments coordinate add1) gmap l)
+  (define min (line-min l))
+  (define max (line-max l))
+  (define index (line-index l))
+  (for/fold ([crrnt '()] [segment* '()] [focus (coordinate index min)] #:result (seg+ crrnt segment*))
+            ([i (in-range min (+ max 1))])
+    (define spot (hash-ref gmap focus #false))
+    (define next (add1 focus))
+    (if spot
+        (values (cons (list focus spot) crrnt) segment* next)
+        (values '[] (seg+ crrnt segment*) next))))
+
+#; {Map Line -> [Listof [Listof Coordinate]]}
+(define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))
+(define all-column-segments (all-segments (λ (x y) [coordinate y x]) add1-row))
+
+#; {Segment [Listof Segment] -> [Listof Segment]}
+(define (seg+ cr m) (if (empty? cr) m (cons (reverse cr) m)))
+    
 
 ;; ---------------------------------------------------------------------------------------------------
 (struct line [index min max] #:prefab)
@@ -240,16 +276,17 @@
 
 #; {Map [Listof Coordinate] -> Line}
 (module+ test
-  (check-true (row? (max-and-min map1 coord1)))
-  (check-false (column? (max-and-min map1 coord1))))
+  (check-true (row? (create-line map1 coord1)))
+  (check-false (column? (create-line map1 coord1))))
 
-(define (max-and-min gmap coordinate*)
+(define (create-line gmap coordinate*)
   (match-define [list row-min row-max col-min col-max] (mins-maxs gmap))
   (cond
     [(same-row coordinate*)    => (λ (row#) (row row# col-min col-max))]
     [(same-column coordinate*) => (λ (column#) (column column# row-min row-max))]
     [else (error 'max-and-min "can't happen")]))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {(U Map [Listof [List Coordinate Tile]]) -> (list Integer Integer Integer Integer)}
 (define (mins-maxs gmap)
   (define as-list (if (cons? gmap) gmap (hash-map gmap list)))
