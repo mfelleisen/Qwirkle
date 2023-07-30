@@ -13,10 +13,19 @@
   (placement (-> coordinate? tile? placement?))
 
   [create-ref-state (-> map? [listof [list/c [listof tile?] any/c]] state?)]
-  [render-ref-state (-> state? 2:image?)]
+  
+  [ref-state-to-info-state (-> state? state?)]
+  
   [legal?
    #; {(U PubKnowledge [RefState Y]) [Listof Placement] -> (U Map? False)}
    (-> state? (listof placement?) (or/c #false map?))]
+  
+  [score
+   ;; legal confirmed, new map evaluated with placements that produced it 
+   ;; referee must add bonus for finish
+   ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
+   (-> map? (listof placement?) natural?)]
+  
   [complete-turn
    ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
    #; {complete-turn s gmap delta old-tiles new-tiles}
@@ -26,7 +35,8 @@
    #; (score s gmap)
    ;; yields delta 
    (-> state? map? natural? (listof tile?) (listof tile?) state?)]
-  [ref-state-to-info-state (-> state? state?)]))
+
+  [render-ref-state (-> state? 2:image?)]))
 
 (module+ examples
   (provide
@@ -219,56 +229,72 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; scoring a placement 
 
-;; move same-row, same-column to map, and base on coordinates
-;; move max-and-min to map, based on coordinates
-
-#; {[Y] [RefState Y] Placements -> Natural}
-(define (score gstate placements)
-  (define gmap  (state-map gstate))
-  (define coord (map placement-coordinate placements))
-  (define line (max-and-min gmap coord))
-  (+ (length placements)
-     (score-same-line-segments gmap line placements)
-     (score-orthoginal-lines gmap line placements)))
-
-#; {Map Line Placements -> Natural}
-;; # of points for all segments of the placement line that contain a new placement 
-(define (score-same-line-segments gmap line placements)
-  (cond
-    [(row? line)    1]
-    [(column? line) 2]))
-
-#; {Map Line -> [Listof [Listof Coordinate]]}
-(module+ test
-  (all-row-segments map1 (max-and-min map1 coord1)))
-(define (all-row-segments gmap l)
-  (define min (line-min l))
-  (define max (line-max l))
-  (define index (line-index l))
-  (for/fold ([current '()] [segment* '()] [focus (coordinate index min)] #:result segment*)
-            ([i (in-range min (+ max 1))])
-    (define spot (hash-ref gmap focus #false))
-    (if spot
-        (values (cons spot current) segment* (add1-row focus))
-        (values '[] (cons current segment*) (add1-row focus)))))
-    
 #; {Map Placements -> Natural}
-;; # of points for all lines orthogonal to the placement line that contain one new placement 
-(define (score-orthoginal-lines gmap placements)
-  1)
+(define (score gmap placements)
+  (define coord (map placement-coordinate placements))
+  (define line  (create-line gmap coord))
+  (+ (length placements)
+     (score-same-line-segments gmap line coord)
+     (score-orthoginal-lines gmap line coord)))
 
-(module+ test 
-  (define score1 10)
-  (define score2 7)
-  (define score3 9)
-  (define score4 10)
-  (define score5 9)
-  (define score6 6)
-  (define score7 6)
-  (define score8 12)
-  (define score9 10)
+#; {Map Line [Listof Coordinate] -> Natural}
+;; lengths for all segments of the placement line that contain a new placement
+(module+ test
+  (define line2 (create-line map2 coord1))
+  (check-equal? (score-same-line-segments map2 line2 coord1) 2))
+(define (score-same-line-segments gmap line coords)
+  (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
+  (let sum-of-overlaps ([segment* segment*])
+    (cond
+      [(empty? segment*) 0]
+      [else (+ (contains-1-placement (first segment*) coords) (sum-of-overlaps (rest segment*)))])))
+
+#;{Segment [Listof Coordinate] -> Natural}
+(define (contains-1-placement 1segment coords)
+  (define count
+    (for/first ([s 1segment] #:when (member s coords))
+      (length 1segment)))
+  (bonus-for-full-row (if (false? count) 0 count)))
+
+#; {Map [Listof Coord] -> Natural}
+;; lengths for all lines orthogonal to the placement line that contain one new placement 
+(define (score-orthoginal-lines gmap line coord)
+  (define score (if (row? line) walk-column-orthogonally walk-row-orthogonally))
+  (for/sum ([co coord])
+    (bonus-for-full-row (score gmap co))))
+
+#; {Natural -> Natural}
+(define (bonus-for-full-row count)
+  (if (= count 6) 12 count))
+
+(module+ test
+  (define score1  10)
+  (define score2   5)
+  (define score3   8)
+  (define score4   9)
+  (define score5   8)
+  (define score6   5)
+  (define score7   5)
+  (define score8  12)
+  (define score9  10)
   (define score10 21)
-  (define score11 12))
+  (define score11 11)
+
+  #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
+  (define (check-score gmap coord* tiles* expected msg)
+    (define plmnt0 (map placement coord* tiles*))
+    ;; for socring there should be no 'all tiles down' bonus 
+    (check-equal? (score gmap plmnt0) expected msg))
+
+  ;; run all scenarios
+  (for ([m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
+        [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
+        [cc (list coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)]
+        [sc (list score1 score2 score3 score4 score5 score6 score7 score8 score9 score10 score11)]
+        [ii (in-naturals)])
+    (check-score m+ cc tt sc (~a "scoring map " (+ ii 1))))
+
+  (check-equal? (score map10 (map placement coord9 tiles9)) score10 "Q bonus missing"))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; render a referee state 
