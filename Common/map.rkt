@@ -257,11 +257,15 @@
 
 #; {Map Line -> [Listof Segment]}
 (module+ test
-  (for/list ([pred  (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-             [map   (list map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-             [coord (list coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)])
-    (define line (create-line map coord))
-    (if (row? line) (all-row-segments map line) (all-column-segments map line))))
+  (check-equal?
+   (length
+    (for/list ([pred  (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+               [map   (list map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+               [coord (list coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)])
+      (define line (create-line map coord))
+      (if (row? line) (all-row-segments map line) (all-column-segments map line))))
+   9
+   "silly check to mask output"))
 (define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))
 (define all-column-segments (all-segments (λ (x y) [coordinate y x]) add1-row))
 
