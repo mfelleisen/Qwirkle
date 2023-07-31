@@ -10,8 +10,6 @@
  placement? 
 
  (contract-out
-  (placement (-> coordinate? tile? placement?))
-
   [create-ref-state (-> map? [listof [list/c [listof tile?] any/c]] state?)]
   
   [ref-state-to-info-state (-> state? state?)]
@@ -83,6 +81,7 @@
   (require (submod Qwirkle/Common/map json))
   (require (submod Qwirkle/Common/coordinates json))
   (require (submod Qwirkle/Common/tiles json))
+  (require Qwirkle/Lib/parse-json)
   (require json))
 
 (module+ test
@@ -134,7 +133,7 @@
   (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
+#; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
 
 (module+ test
   (check-equal? 
@@ -165,28 +164,11 @@
   (define +ref-starter-state (state starter-map (list (sop 0 (list +starter-tile) 'player13))))
   (define +ref-atop-state (state map0 (list (sop 0 (list #s(tile circle red)) 'player13)))))
 
+;; ---------------------------------------------------------------------------------------------------
+;; legality of placements
+
 #; {[RefState Y] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
-
-(module+ test
-  (check-false (legal? +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
-  (check-false (legal? ref-starter-state lshaped-placement*) "b/c p* is lshaped")
-
-  #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
-  (define (check-legal check gmap tiles* coord* expected msg)
-    (define plmnt0 (map placement coord* tiles*))
-    ;; for socring there should be no 'all tiles down' bonus 
-    (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
-    (check (legal? gstate0 plmnt0) expected msg))
-
-  ;; run all scenarios
-  (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-        [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
-        [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
-        [cc (list coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)]
-        [ii (in-naturals)])
-    (check-legal check-equal? m0 tt cc m+ (~a "step " ii))))
-
 (define (legal? gstate placements)
   (define placed-tiles (map placement-tile placements))
   (define coordinate*  (map placement-coordinate placements))
@@ -197,15 +179,11 @@
 
 #; {Map Placemennt* -> Option<Map>}
 ;; create the map that the placements specify and check at each step that a tile can be placed & fits
-
 (module+ test
-  (define plmnt1 (map placement coord1 tiles1))
-  (check-equal? (all-adjacent-and-fits? map1 plmnt1) map2)
-  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)))
-
+  (check-equal? (all-adjacent-and-fits? map1 (map placement coord1 tiles1)) map2)
+  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)) "aa 1")
   (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
-  (check-false (all-adjacent-and-fits? starter-map plmnt-2-away)))
-
+  (check-false (all-adjacent-and-fits? starter-map plmnt-2-away) "aa 2"))
 (define (all-adjacent-and-fits? gmap0 placements)
   (let/ec return 
     (for/fold ([gmap gmap0]) ([p placements])
@@ -226,6 +204,25 @@
       (cons? (member placed tiles-owned))
       (set! tiles-owned (remove placed tiles-owned)))))
 
+(module+ test ;; legal? integration tests 
+  (check-false (legal? +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
+  (check-false (legal? ref-starter-state lshaped-placement*) "b/c p* is lshaped")
+
+  #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
+  (define (check-legal check gmap tiles* coord* expected msg)
+    (define plmnt0 (map placement coord* tiles*))
+    ;; for socring there should be no 'all tiles down' bonus 
+    (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
+    (check (legal? gstate0 plmnt0) expected msg))
+
+  ;; run all scenarios
+  (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
+        [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
+        [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
+        [cc (list coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)]
+        [ii (in-naturals)])
+    (check-legal check-equal? m0 tt cc m+ (~a "step " ii))))
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; scoring a placement 
 
@@ -238,7 +235,7 @@
      (score-orthoginal-lines gmap line coord)))
 
 #; {Map Line [Listof Coordinate] -> Natural}
-;; lengths for all segments of the placement line that contain a new placement
+;; lengths for all segments of the placement line that contain a new placement, plus bonus 
 (module+ test
   (define line2 (create-line map2 coord1))
   (check-equal? (score-same-line-segments map2 line2 coord1) 2))
@@ -247,17 +244,19 @@
   (let sum-of-overlaps ([segment* segment*])
     (cond
       [(empty? segment*) 0]
-      [else (+ (contains-1-placement (first segment*) coords) (sum-of-overlaps (rest segment*)))])))
+      [else (+ (bonus-for-full-row (contains-1-placement (first segment*) coords))
+               (sum-of-overlaps (rest segment*)))])))
 
 #;{Segment [Listof Coordinate] -> Natural}
+;; lengt of segment if it contain one placement; 0 otherwise 
 (define (contains-1-placement 1segment coords)
   (define count
     (for/first ([s 1segment] #:when (member s coords))
       (length 1segment)))
-  (bonus-for-full-row (if (false? count) 0 count)))
+  (if (false? count) 0 count))
 
 #; {Map [Listof Coord] -> Natural}
-;; lengths for all lines orthogonal to the placement line that contain one new placement 
+;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus 
 (define (score-orthoginal-lines gmap line coord)
   (define score (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([co coord])
@@ -352,19 +351,18 @@
   #; {PubKnowledge -> JState}
   (define (state->jsexpr rb)
     (match-define [state gmap players] rb)
-    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr rb  players)))
+    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr players)))
 
-  #; {Any [Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
-  (define (players->jsexpr gstate players)
-    (match players
-      [(list (? sop?) (? natural? n) ...) (map 1player->jsexpr players)]
-      [_ (error 'state->jsexpr "PubKnowledge expected, given ~v" gstate)]))
+  #; {[Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
+  (define/contract (players->jsexpr players)
+    (-> (cons/c sop? (listof natural?)) (listof jsexpr?))
+    (map 1player->jsexpr players))
 
   #; {(U SoPlayer Natural) -> JPlayer}
   (define (1player->jsexpr 1player)
     (match 1player
-      ([sop score tiles _] (hasheq SCORE score TILES (map tile->jsexpr tiles)))
-      ([? natural?] 1player)))
+      [(sop score tiles _) (hasheq SCORE score TILES (map tile->jsexpr tiles))]
+      [(? natural?) 1player]))
 
   #; {Placements -> [Listof JPlacement]}
   (define (placements->jsexpr p*)
@@ -376,79 +374,36 @@
     (hasheq ATILE (tile->jsexpr ti) COORDINATE (coordinate->jsexpr co)))
   
   #; {JSexpr -> OPtion<Coordinate>}
-  (define (jsexpr->state j)
-    (match j
-      [(hash-table
-        [(? (curry eq? MAP)) (app jsexpr->map (? hash? gmap))]
-        [(? (curry eq? PLAYERS)) (app jsexpr->players (cons first (list n ...)))])
-       (state gmap (cons first n))]
-      [_ (eprintf "state object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
-         #false]))
+  (def/jsexpr-> state
+    #:object {[MAP map (? hash? gmap)] [PLAYERS players (cons first (list n ...))]}
+    (state gmap (cons first n)))
 
   #; {JSexpr -> Option<PubKnknowledge>}
   ;; used on player side only 
-  (define (jsexpr->players j)
-    (match j
-      [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...))
-       (cons first n)]
-      [_ (eprintf "players array does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
-         #false]))
+  (def/jsexpr-> players
+    #:array [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...)) (cons first n)])
 
   #; {JSexpr -> Option{SoPlayer}}
-  (define (jsexpr->1player j)
-    (match j
-      [(hash-table
-        [(? (curry eq? SCORE)) (? natural? s)]
-        [(? (curry eq? TILES)) (app jsexpr->tiles (list t ...))])
-       (sop s t 'player1)]
-      [_ (eprintf "player object does not match schema\n  ~a\n" (jsexpr->string j #:indent 2))
-         #false]))
+  (def/jsexpr-> 1player
+    #:object {[SCORE (? natural? s)] [TILES tiles (list t ...)]}
+    (sop s t 'player1))
 
   #; {JSexpr -> Option{[Listof Tile]}}
-  (define (jsexpr->tiles j)
-    (match j
-      [(list (app jsexpr->tile (? tile? t)) ...) t]
-      [_ (eprintf "tiles array does not match schema\n  ~a\n" (jsexpr->string j))
-         #false]))
+  (def/jsexpr-> tiles #:array [(list (app jsexpr->tile (? tile? t)) ...) t]) 
 
   #; {JSexpr -> Option{[Listof Placement]}}
-  (define (jsexpr->placements j)
-    (match j
-      [(list (app jsexpr->1placement (? placement? p)) ...) p]
-      [_ (eprintf "placements array does not match schema\n  ~a\n" (jsexpr->string j))
-         #false]))
+  (def/jsexpr-> placements #:array [(list (app jsexpr->1placement (? placement? p)) ...) p])
 
   #; {JSexpr -> Option{Placement>}}
-  (define (jsexpr->1placement j)
-    (match j
-      [(hash-table
-        [(? (curry eq? COORDINATE)) (app jsexpr->coordinate (? coordinate? co))]
-        [(? (curry eq? ATILE)) (app jsexpr->tile (? tile? ti))])
-       (placement co ti)]
-      [_ (eprintf "placement array does not match schema\n  ~a\n" (jsexpr->string j))
-         #false]))
+  (def/jsexpr-> 1placement
+    #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE      tile (? tile? ti)]}
+    (placement co ti))
 
+  ;; for testing only 
   (provide jsexpr->1player jsexpr->players jsexpr->tiles jsexpr->1placement))
   
 (module+ test
   (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state)
   
   (define placement0 (map placement coord0 tiles0))
-  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0)
-
-  ;; -------------------------------------------------------------------------------------------------
-  (define-syntax-rule (check-message port rgxp body ...)
-    (let ([os (open-output-string)]
-          [mg (~a "looking for " rgxp)])
-      (begin0
-        (parameterize ([port os])
-          body ...)
-        (close-output-port os)
-        (check-true (cons? (regexp-match rgxp (get-output-string os))) mg))))
-  
-  (check-false (check-message current-error-port  #px"state" (jsexpr->state 1)))
-  (check-false (check-message current-error-port  #px"player" (jsexpr->1player 1)))
-  (check-false (check-message current-error-port  #px"players" (jsexpr->players 1)))
-  (check-false (check-message current-error-port  #px"tiles" (jsexpr->tiles 1)))
-  (check-false (check-message current-error-port  #px"placements" (jsexpr->placements '["1"])))
-  (check-false (check-message current-error-port  #px"placement" (jsexpr->1placement 1))))
+  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0))

@@ -71,6 +71,7 @@
 
 (module+ json
   (require (submod Qwirkle/Common/tiles json))
+  (require Qwirkle/Lib/parse-json)
   (require json))
 
 (module+ test
@@ -415,16 +416,13 @@
       (list (coordinate-column co) (tile->jsexpr ti))))
 
   #; {JSexpr -> Option<Tile>}
-  (define (jsexpr->map j)
-    (match j
-      [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile?))) ...)) ...)
-       (for/fold ([h (hash)]) ([r row])
-         (match-define (list ri cell ...) r)
-         (for/fold ([h h]) ([c cell])
-           (match-define [list ci ti] c)
-           (hash-set h (coordinate ri ci) (jsexpr->tile ti))))]
-      [_ (eprintf "map object does not match schema\n  ~a\n" (jsexpr->string j #:indent 4))
-         #false])))
+  (def/jsexpr-> map #:array
+    [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile?))) ...)) ...)
+     (for/fold ([h (hash)]) ([r row])
+       (match-define (list ri cell ...) r)
+       (for/fold ([h h]) ([c cell])
+         (match-define [list ci ti] c)
+         (hash-set h (coordinate ri ci) (jsexpr->tile ti))))]))
                      
 (module+ test
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)

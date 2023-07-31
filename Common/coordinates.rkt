@@ -48,6 +48,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
+  (require Qwirkle/Lib/parse-json)
   (require json))
 
 (module+ test
@@ -187,12 +188,7 @@
   #; {type JCoordinate = [Hash ROW Integer COLUMN Integer]}
   
   #; {JSexpr -> (U False Coordinate)}
-  (define (jsexpr->coordinate j)
-    (match j
-      [(hash-table [(? (curry eq? ROW)) (? integer? r)] [(? (curry eq? COLUMN)) (? integer? c)])
-       (coordinate r c)]
-      [_ (eprintf "coordinate object does not match schema\n  ~a\n" (jsexpr->string j))
-         #false]))
+  (def/jsexpr-> coordinate #:object {[ROW (? integer? r)] [COLUMN (? integer? c)]} (coordinate r c))
   
   #; {Coordinate -> JCoordinate}
   (define (coordinate->jsexpr rb)

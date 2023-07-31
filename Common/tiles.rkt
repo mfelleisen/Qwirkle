@@ -57,6 +57,7 @@
 (require 2htdp/image)
 
 (module+ json
+  (require Qwirkle/Lib/parse-json)
   (require json))
 
 (module+ test
@@ -176,14 +177,8 @@
     (hasheq SHAPE (~a shape) COLOR (~a color)))
 
   #; {JSexpr -> Option<Tile>}
-  (define (jsexpr->tile j)
-    (match j
-      [(hash-table
-        [(? (curry eq? SHAPE)) (app string->symbol (? shape? s))]
-        [(? (curry eq? COLOR)) (app string->symbol (? color? c))])
-       (tile s c)]
-      [_ (eprintf "tile object does not match schema\n  ~a\n" (jsexpr->string j))
-         #false])))
+  (def/jsexpr-> tile #:object {[SHAPE symbol (? shape? s)] [COLOR symbol (? color? c)]} (tile s c))
+  (define jsexpr->symbol string->symbol))
 
 (module+ test
   (check-equal? (jsexpr->tile (tile->jsexpr +starter-tile)) +starter-tile))
