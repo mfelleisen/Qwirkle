@@ -180,6 +180,17 @@
   (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
   (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12)))))
 
+(module+ examples
+  (provide special-state special-placements)
+
+  (define special-state
+    (create-ref-state special-map (list '((#s(tile diamond green) #s(tile star green)) ps))))
+
+  (define special-placements
+    (list 
+     (placement #s(coordinate -1 1) #s(tile diamond green))
+     (placement #s(coordinate -3 1) #s(tile star green)))))
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
 
@@ -223,6 +234,8 @@
 (module+ test ;; legal? integration tests 
   (check-false (legal? +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal? ref-starter-state lshaped-placement*) "b/c p* is lshaped")
+
+  (check-true (map? (legal? special-state special-placements)))
 
   #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
   (define (check-legal check gmap tiles* coord* expected msg)
@@ -310,7 +323,8 @@
         [ii (in-naturals)])
     (check-score m+ cc tt sc (~a "scoring map " (+ ii 1))))
 
-  (check-equal? (score map10 (map placement coord9 tiles9)) score10 "Q bonus missing"))
+  (check-equal? (score map10 (map placement coord9 tiles9)) score10 "Q bonus missing")
+  (check-equal? (score (legal? special-state special-placements) special-placements) 10) "2 segments")
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; render a referee state 
@@ -400,25 +414,19 @@
       [(natural? t) (state gmap (cons first n) t)]
       [else         (state gmap (cons first n) (jsexpr->tiles t))]))
 
-  #; {JSexpr -> Option<PubKnknowledge>}
-  ;; used on player side only 
   (def/jsexpr-> players
     #:array [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...)) (cons first n)])
 
-  #; {JSexpr -> Option{SoPlayer}}
   (def/jsexpr-> 1player
     #:object {[SCORE (? natural? s)] [TILES tiles (list t ...)]}
     (sop s t 'player1))
 
-  #; {JSexpr -> Option{[Listof Tile]}}
   (def/jsexpr-> tiles #:array [(list (app jsexpr->tile (? tile? t)) ...) t]) 
 
-  #; {JSexpr -> Option{[Listof Placement]}}
   (def/jsexpr-> placements #:array [(list (app jsexpr->1placement (? placement? p)) ...) p])
 
-  #; {JSexpr -> Option{Placement>}}
   (def/jsexpr-> 1placement
-    #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE      tile (? tile? ti)]}
+    #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE tile (? tile? ti)]}
     (placement co ti))
 
   ;; for testing only 

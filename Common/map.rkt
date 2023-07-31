@@ -52,7 +52,8 @@
 (module+ examples
   (provide starter-free start+1-map-unfit start+1-free start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
-  (provide map0 starter-map starter-can lshaped-map-unfit))
+  (provide map0 starter-map starter-can lshaped-map-unfit)
+  (provide special-map))
 
 (module+ json
   (provide
@@ -99,6 +100,19 @@
 (define (add-tile b c t)
   (hash-set b c t))
 
+(module+ examples
+  (define special-map
+    (let* ([s (start-map                      #s(tile circle red))]
+           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
+           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
+           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
+           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           ;; hooks 
+           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
+           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))])
+      s)))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {Map Coordinate -> Boolean}
 (module+ test
   (check-true (adjacent? starter-map #s(coordinate 0 -1)))
@@ -380,9 +394,12 @@
   (render-map lshaped-map-unfit)
 
   'starter-map 
-  (render-map starter-map))
+  (render-map starter-map)
 
-(module+ test ;; scenarios from Qwirkle 
+  'special
+  (render-map special-map))
+
+(module+ test ;; scenarios from Qwirkle
   'map0 (render-map map0) 
   'map1 (render-map map1)
   'map2 (render-map map2)
