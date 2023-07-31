@@ -116,8 +116,6 @@ for a turn as follows:
 @; -----------------------------------------------------------------------------
 @itemlist[
 
-@item{}
-
 @item{A player receives one point per tile placed.}
 
 @item{A player receives one point per tile within a row or column that

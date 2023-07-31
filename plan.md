@@ -10,7 +10,8 @@ referee              player
 
 (scenario 1)
   | <== Placements === | 
-  | 	 	       |
+  | -- [setof Tile] -> |
+  | <== Void ========= | 
 
 (scenario 2)
   | <== [setof Tile] = | 
