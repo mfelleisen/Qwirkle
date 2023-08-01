@@ -6,10 +6,6 @@
  #; {type [RefState Y]}
  state?
 
- #; {type Placement = [Listof (placement Coordinate Tile)]}
- placement?
- placement-tile 
-
  (contract-out
   [create-ref-state
    (->* (map? [listof [list/c [listof tile?] any/c]]) (#:tiles0 (listof tile?)) state?)]
@@ -41,32 +37,22 @@
 
   [render-ref-state (-> state? 2:image?)]))
 
-(provide ;; for integration testing 
- (contract-out 
-  [placement (-> coordinate? tile? placement?)]))
-
 (module+ examples
   (provide
-   +starter-tile
-   +starter-coor
-   +starter-plmt
+   ; +starter-tile
+   ; +starter-coor
    +ref-starter-state
    
    starter-players
    ref-starter-state
-   +ref-atop-state
    handouts
    starter-players-handout
-   ref-starter-state-handout
-   
-   info-starter-state
-   place-atop-starter
-   lshaped-placement*
 
+   +ref-atop-state
+   ref-starter-state-handout
+   info-starter-state
    special-state
-   special-placements
-   bad-state
-   bad-spec-plmnt))
+   bad-state))
 
 (module+ json
   (provide
@@ -82,6 +68,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/map)
+(require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
 (require (prefix-in 2: 2htdp/image))
 (require SwDev/Lib/list)
@@ -89,6 +76,7 @@
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/coordinates examples))
+  (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ json
@@ -103,6 +91,7 @@
   (require (submod ".." examples))
   (require (submod ".." json))
   (require (submod Qwirkle/Common/coordinates examples))
+  (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
@@ -176,48 +165,7 @@
   (sop (+ score delta) (append new-tile* (remove* old-tile* tiles)) payload))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {type Placement* = [Listof Placement]}
-;; placements in the order in which the tiles are put down 
-#; {type Placement  = [placement Coordinate Tile]}
-(struct placement [coordinate tile] #:prefab)
-
-(module+ examples
-  (require (for-syntax syntax/parse))
-  (require (for-syntax racket/syntax))
-  
-  (define-syntax (def/placements stx)
-    (syntax-parse stx
-      [(_ n)
-       #:with name (format-id stx "plmt~a" (syntax-e #'n))
-       #:with coord (format-id stx "coord~a" (syntax-e #'n))
-       #:with tiles (format-id stx "tiles~a" (syntax-e #'n))
-       #'(begin
-           (provide name)
-           (define name (map placement coord tiles)))]))
-
-  (def/placements 0)
-  (def/placements 1)
-  (def/placements 2)
-  (def/placements 3)
-  (def/placements 4)
-  (def/placements 5)
-  (def/placements 6)
-  (def/placements 7)
-  (def/placements 8)
-  (def/placements 9)
-  (def/placements 10)
-
-  (define place-atop-starter (list (placement origin #s(tile circle red))))
-  (define +starter-plmt (list (placement +starter-coor +starter-tile)))
-  (define lshaped-placement* (map placement lshaped-coordinates starter-tile*))
-  (define special-placements
-    (list 
-     (placement #s(coordinate -1 1) #s(tile diamond green))
-     (placement #s(coordinate -3 1) #s(tile star green))))
-
-  (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
-
-(module+ examples
+(module+ examples ;; states and successor states 
   (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
   (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12))))
 
@@ -230,7 +178,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
 
-#; {[RefState Y] Placement* -> Option<Map>}
+#; {[Y] [RefState Y] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
 (define (legal gstate placements)
   (define placed-tiles (map placement-tile placements))
@@ -274,18 +222,18 @@
   (check-true (map? (legal special-state special-placements)))
   (check-false (legal bad-state bad-spec-plmnt))
 
-  #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
-  (define (check-legal check gmap pp expected msg)
+  #; {Map [Listof Placement] Option<Map> String -> Void}
+  (define (check-legal gmap pp expected msg)
     (define tiles* (map placement-tile pp))
     (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
-    (check (legal gstate0 pp) expected msg))
+    (check-equal? (legal gstate0 pp) expected msg))
 
   ;; run all scenarios
   (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
         [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
         [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
         [ii (in-naturals)])
-    (check-legal check-equal? m0 pp m+ (~a "step " ii))))
+    (check-legal m0 pp m+ (~a "step " ii))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; scoring a placement 
@@ -331,7 +279,7 @@
 (define (bonus-for-full-row count)
   (if (= count 6) 12 count))
 
-(module+ test
+(module+ test ;; scoring tests 
   (define score1  10)
   (define score2   5)
   (define score3   8)
