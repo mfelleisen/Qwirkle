@@ -7,7 +7,8 @@
  state?
 
  #; {type Placement = [Listof (placement Coordinate Tile)]}
- placement? 
+ placement?
+ placement-tile 
 
  (contract-out
   [create-ref-state
@@ -16,7 +17,7 @@
   [ref-state-to-info-state
    (-> state? state?)]
   
-  [legal?
+  [legal
    #; {(U PubKnowledge [RefState Y]) [Listof Placement] -> (U Map? False)}
    (-> state? (listof placement?) (or/c #false map?))]
   
@@ -24,16 +25,18 @@
    ;; legal confirmed, new map evaluated with placements that produced it 
    ;; referee must add bonus for finish
    ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
+   ;; the ref must consult the state and determine whether the active player has placed all tiles
+   ;; --> introduce score+ function that determines by itself whether this is true??? 
    (->* (map? (listof placement?)) (#:finishing natural?) natural?)]
   
   [complete-turn
    ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
    #; {complete-turn s gmap delta old-tiles new-tiles}
-   ;; PROTICOL assume that for some coord* 
-   #; (legal? s (map placement cord* old-tiles))
+   ;; PROTICOL assume that for some placements
+   #; (legal s placements)
    ;; yields gmap
-   #; (score s gmap)
-   ;; yields delta 
+   #; (score gmap placements)
+   ;; yields delta between `(state-map s)` and `gmap`
    (-> state? map? natural? (listof tile?) state?)]
 
   [render-ref-state (-> state? 2:image?)]))
@@ -58,7 +61,12 @@
    
    info-starter-state
    place-atop-starter
-   lshaped-placement*))
+   lshaped-placement*
+
+   special-state
+   special-placements
+   bad-state
+   bad-spec-plmnt))
 
 (module+ json
   (provide
@@ -174,29 +182,57 @@
 (struct placement [coordinate tile] #:prefab)
 
 (module+ examples
+  (require (for-syntax syntax/parse))
+  (require (for-syntax racket/syntax))
+  
+  (define-syntax (def/placements stx)
+    (syntax-parse stx
+      [(_ n)
+       #:with name (format-id stx "plmt~a" (syntax-e #'n))
+       #:with coord (format-id stx "coord~a" (syntax-e #'n))
+       #:with tiles (format-id stx "tiles~a" (syntax-e #'n))
+       #'(begin
+           (provide name)
+           (define name (map placement coord tiles)))]))
+
+  (def/placements 0)
+  (def/placements 1)
+  (def/placements 2)
+  (def/placements 3)
+  (def/placements 4)
+  (def/placements 5)
+  (def/placements 6)
+  (def/placements 7)
+  (def/placements 8)
+  (def/placements 9)
+  (def/placements 10)
+
   (define place-atop-starter (list (placement origin #s(tile circle red))))
-  (define lshaped-placement* (map placement lshaped-coordinates starter-tile*))
   (define +starter-plmt (list (placement +starter-coor +starter-tile)))
-  (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
-  (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12)))))
-
-(module+ examples
-  (provide special-state special-placements)
-
-  (define special-state
-    (create-ref-state special-map (list '((#s(tile diamond green) #s(tile star green)) ps))))
-
+  (define lshaped-placement* (map placement lshaped-coordinates starter-tile*))
   (define special-placements
     (list 
      (placement #s(coordinate -1 1) #s(tile diamond green))
-     (placement #s(coordinate -3 1) #s(tile star green)))))
+     (placement #s(coordinate -3 1) #s(tile star green))))
+
+  (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
+
+(module+ examples
+  (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
+  (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12))))
+
+  (define special-tiles (map placement-tile special-placements))
+  (define special-state (create-ref-state special-map (list (list special-tiles 'ps))))
+
+  (define bad-map   (legal special-state special-placements))
+  (define bad-state (create-ref-state bad-map (list '((#s(tile square green)) ps)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
 
 #; {[RefState Y] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
-(define (legal? gstate placements)
+(define (legal gstate placements)
   (define placed-tiles (map placement-tile placements))
   (define coordinate*  (map placement-coordinate placements))
   (and
@@ -207,7 +243,7 @@
 #; {Map Placemennt* -> Option<Map>}
 ;; create the map that the placements specify and check at each step that a tile can be placed & fits
 (module+ test
-  (check-equal? (all-adjacent-and-fits? map1 (map placement coord1 tiles1)) map2)
+  (check-equal? (all-adjacent-and-fits? map1 plmt1) map2)
   (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)) "aa 1")
   (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
   (check-false (all-adjacent-and-fits? starter-map plmnt-2-away) "aa 2"))
@@ -231,26 +267,25 @@
       (cons? (member placed tiles-owned))
       (set! tiles-owned (remove placed tiles-owned)))))
 
-(module+ test ;; legal? integration tests 
-  (check-false (legal? +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
-  (check-false (legal? ref-starter-state lshaped-placement*) "b/c p* is lshaped")
+(module+ test ;; legal integration tests 
+  (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
+  (check-false (legal ref-starter-state lshaped-placement*) "b/c p* is lshaped")
 
-  (check-true (map? (legal? special-state special-placements)))
+  (check-true (map? (legal special-state special-placements)))
+  (check-false (legal bad-state bad-spec-plmnt))
 
   #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
-  (define (check-legal check gmap tiles* coord* expected msg)
-    (define plmnt0 (map placement coord* tiles*))
-    ;; for socring there should be no 'all tiles down' bonus 
+  (define (check-legal check gmap pp expected msg)
+    (define tiles* (map placement-tile pp))
     (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
-    (check (legal? gstate0 plmnt0) expected msg))
+    (check (legal gstate0 pp) expected msg))
 
   ;; run all scenarios
   (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
         [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
-        [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
-        [cc (list coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)]
+        [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
         [ii (in-naturals)])
-    (check-legal check-equal? m0 tt cc m+ (~a "step " ii))))
+    (check-legal check-equal? m0 pp m+ (~a "step " ii))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; scoring a placement 
@@ -308,23 +343,15 @@
   (define score9  10)
   (define score10 21)
   (define score11 11)
-
-  #; {[Any Map String -> Void] Map [Listof Tile] [Listoor Coordinate] Option<Map> String -> Void}
-  (define (check-score gmap coord* tiles* expected msg)
-    (define plmnt0 (map placement coord* tiles*))
-    ;; for socring there should be no 'all tiles down' bonus 
-    (check-equal? (score gmap plmnt0) expected msg))
-
-  ;; run all scenarios
+  
   (for ([m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
-        [tt (list tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10)]
-        [cc (list coord0 coord1 coord2 coord3 coord4 coord5 coord6 coord7 coord8 coord9 coord10)]
+        [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
         [sc (list score1 score2 score3 score4 score5 score6 score7 score8 score9 score10 score11)]
         [ii (in-naturals)])
-    (check-score m+ cc tt sc (~a "scoring map " (+ ii 1))))
+    (check-equal? (score m+ pp) sc (~a "scoring map " (+ ii 1))))
 
-  (check-equal? (score map10 (map placement coord9 tiles9)) score10 "Q bonus missing")
-  (check-equal? (score (legal? special-state special-placements) special-placements) 10) "2 segments")
+  (check-equal? (score map10 plmt9) score10 "Q bonus missing")
+  (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; render a referee state 
@@ -434,6 +461,4 @@
   
 (module+ test
   (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state)
-  
-  (define placement0 (map placement coord0 tiles0))
-  (check-equal? (jsexpr->placements (placements->jsexpr placement0)) placement0))
+  (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
