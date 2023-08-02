@@ -18,7 +18,7 @@
          (provide prov))]))
 
 ; (req->prov Qwirkle/Common/coordinates)
-; (req->prov Qwirkle/Common/tiles)
+(req->prov Qwirkle/Common/tiles)
 
 ; (req->prov (prefix-in players: Qwirkle/Common/players))
 ; (req->prov Qwirkle/Common/directions)

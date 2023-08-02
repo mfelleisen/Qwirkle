@@ -102,3 +102,35 @@
   (check-equal? (nsd&g-strategy info-+ref-starter-state) ref-place)
   (check-equal? (nsd&g-strategy info-starter-state) REPLACEMENT)
   (check-equal? (nsd&g-strategy info-bad-state) PASS))
+
+;; ---------------------------------------------------------------------------------------------------
+
+#; {Strategy PubKnowledge -> (U PASS REPLACE [Listof Placement])}
+(define (iterate-strategy s pk0)
+  (let until ([so-far '()] [pk pk0])
+    (set! pk* (cons pk pk*))
+    (define action (s pk))
+    (cond
+      [(or (equal? PASS action) (equal? REPLACEMENT action))
+       (if (empty? so-far) action (reverse so-far))]
+      [else (until (cons action so-far) (apply-action pk action))])))
+
+(define pk* '())
+(define !!! (λ () (set! pk* '())))
+
+(module+ test
+  (define info-special-place*
+    '(#s(placement #s(coordinate -5 1) #s(tile star green))
+      #s(placement #s(coordinate -6 1) #s(tile diamond green))))
+  (define info-special-places*dug
+    '(#s(placement #s(coordinate -3 1) #s(tile star green))
+      #s(placement #s(coordinate -1 1) #s(tile diamond green))))
+
+  ;; these have tiles that don't fit 
+  (check-equal? (iterate-strategy nsd&g-strategy info-bad-state) PASS)
+  (check-equal? (iterate-strategy d&g-strategy info-starter-state) REPLACEMENT)
+
+  ;; the following two run out of tiles
+  (check-equal? (iterate-strategy nsd&g-strategy info-special-state) info-special-places*dug)
+  (check-equal? (iterate-strategy d&g-strategy info-special-state) info-special-place*)
+  (check-equal? (iterate-strategy d&g-strategy info-+ref-starter-state) (list ref-place)))
