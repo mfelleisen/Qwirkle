@@ -79,11 +79,11 @@ When granted a turn, a player may take one of the following three actions:
   @item{@emph{exchange} all of its tiles for new ones, which is only possible if
   the referee still has enough tiles;
 
-  The referee hands back the same number of tiles, randomly drawn from its own
-  collection. 
+  The referee hands back the same number of tiles, drawn from its own
+  (randomly arranged) collection.
 
-  The returned tiles are added to the referee's collection of tiles, to be
-  handed out in the future as needed.}
+  The returned tiles are added to the end of the referee's collection
+  of tiles, to be handed out in the future as needed.}
 
   @item{@emph{place} at least one tile or several tiles, which are then added to
   the map in sequential order.   
