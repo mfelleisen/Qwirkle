@@ -64,8 +64,8 @@ turns in descending order of age, starting with the oldest.
 
 The players do not tell each other which tiles they own.
 
-The current scores of the players is public knowledge as is the order in which
-they take turns. 
+The current scores of the players is public knowledge as is the number of
+remaining tiles and the order in which they take turns.
 
 @; -----------------------------------------------------------------------------
 @bold{Playing a Turn}

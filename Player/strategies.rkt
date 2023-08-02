@@ -25,6 +25,12 @@
 ;; 'star '8star 'square 'circle 'clover 'diamond
 ;; 'red 'green 'blue 'yellow 'orange 'purple
 
+(module+ examples
+  (provide
+   the-special-place
+   ref-place
+   constrained-special))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/map)
@@ -33,6 +39,9 @@
 (require Qwirkle/Common/tiles)
 
 (module+ test
+  (require (submod ".."))
+  (require (submod ".." examples))
+           
   (require (submod Qwirkle/Common/game-state examples))
   (require rackunit))
 
@@ -48,6 +57,11 @@
     [(> (length my-tiles) remaining) PASS]
     [else REPLACEMENT]))
 
+(module+ examples
+  (define constrained-special #s(placement #s(coordinate -3 1) #s(tile star green)))
+  (define the-special-place #s(placement #s(coordinate -5 1) #s(tile star green)))
+  (define ref-place #s(placement #s(coordinate -1 0) #s(tile circle red))))
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; dumb and greedy strategy: pick "smallest" coordinate of all feasible candidates for the first tile 
 
@@ -61,8 +75,6 @@
 (define dag-strategy (make-strategy smallest))
 
 (module+ test
-  (define the-special-place #s(placement #s(coordinate -5 1) #s(tile star green)))
-  (define ref-place #s(placement #s(coordinate -1 0) #s(tile circle red)))
   (check-equal? (dag-strategy info-special-state) the-special-place)
   (check-equal? (dag-strategy info-+ref-starter-state) ref-place)
   (check-equal? (dag-strategy info-starter-state) REPLACEMENT)
@@ -88,7 +100,6 @@
 (define ldasg-strategy (make-strategy most-constrained-placement))
 
 (module+ test
-  (define constrained-special #s(placement #s(coordinate -3 1) #s(tile star green)))
   (check-equal? (ldasg-strategy info-special-state) constrained-special)
   (check-equal? (ldasg-strategy info-+ref-starter-state) ref-place)
   (check-equal? (ldasg-strategy info-starter-state) REPLACEMENT)
