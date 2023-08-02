@@ -13,6 +13,9 @@
   [tile (-> (or/c 'star '8star 'square 'circle 'clover 'diamond)
             (or/c 'red 'green 'blue 'yellow 'orange 'purple)
             tile?)])
+
+ #; {Tile Tile -> Boolean}
+ tile< 
  
  #; {Tile -> Image}
  render-tile
@@ -131,6 +134,25 @@
 (define ALL-COLORS '(red green blue yellow orange purple))
 
 (define (color? x) (cons? (member x ALL-COLORS)))
+
+;; ---------------------------------------------------------------------------------------------------
+
+;; 'star '8star 'square 'circle 'clover 'diamond
+;; with preference given to colors in the following order
+;; 'red 'green 'blue 'yellow 'orange 'purple
+
+(define SHAPE-NAMES (map first ALL-SHAPES))
+(define (tile< s t)
+  (match-define [tile ss sc] s)
+  (match-define [tile ts tc] t)
+  (or (< (index-of SHAPE-NAMES ss) (index-of SHAPE-NAMES ts))
+      (and (= (index-of SHAPE-NAMES ss) (index-of SHAPE-NAMES ts))
+           (< (index-of ALL-COLORS sc) (index-of ALL-COLORS tc)))))
+
+(module+ test
+  (check-true (tile< (tile '8star 'red) (tile 'square 'red)))
+  (check-true (tile< (tile '8star 'red) (tile '8star 'green)))
+  (check-false (tile< (tile '8star 'red) (tile '8star 'red))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render-all-shapes [t values])
