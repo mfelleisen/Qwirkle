@@ -79,11 +79,12 @@
 
 (module+ json
   (provide
-   MAP PLAYERS SCORE TILES COORDINATE ATILE
+   #; {type JState     = { MAP : JMap, PLAYERS : [Listof JPlayer], TILES : (U Natural [Listof Tile]) }}
+   #; {type JPlayer    = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
+   
+   MAP PLAYERS SCORE TILES ; COORDINATE ATILE
 
    (contract-out
-    [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
-    [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))]
     [state->jsexpr (-> state? jsexpr?)]
     [jsexpr->state (-> jsexpr? (or/c state? #false))])))
   
@@ -98,13 +99,12 @@
 
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
-  (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ json
   (require (submod Qwirkle/Common/map json))
-  (require (submod Qwirkle/Common/coordinates json))
+  (require (submod Qwirkle/Common/placement json))
   (require (submod Qwirkle/Common/tiles json))
   (require Qwirkle/Lib/parse-json)
   (require json))
@@ -395,13 +395,6 @@
   (define PLAYERS 'players)
   (define SCORE 'score)
   (define TILES 'tile*)
-  (define ATILE '1tile)
-  (define COORDINATE 'coordinate)
-
-  #; {type JState     = { MAP : JMap, PLAYERS : [Listof JPlayer] }}
-  #; {type JPlayer    = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
-  #; {type Placemenst = [Listof 1Placement]}
-  #; {type 1Placement = { TILE : JTile, COORDINATE : JCoordinate }}
 
   #; {PubKnowledge -> JState}
   (define (state->jsexpr rb)
@@ -420,16 +413,6 @@
       [(sop score tiles _) (hasheq SCORE score TILES (map tile->jsexpr tiles))]
       [(? natural?) 1player]))
 
-  #; {Placements -> [Listof JPlacement]}
-  (define (placements->jsexpr p*)
-    (map 1placement->jsexpr p*))
-  
-  #; {1Placement -> 1Placement}
-  (define (1placement->jsexpr p)
-    (define co (placement-coordinate p))
-    (define ti (placement-tile p))
-    (hasheq ATILE (tile->jsexpr ti) COORDINATE (coordinate->jsexpr co)))
-  
   #; {JSexpr -> OPtion<Coordinate>}
   (def/jsexpr-> state
     #:object {[MAP map (? hash? gmap)]
@@ -447,16 +430,9 @@
     (sop s t 'player1))
 
   (def/jsexpr-> tiles #:array [(list (app jsexpr->tile (? tile? t)) ...) t]) 
-
-  (def/jsexpr-> placements #:array [(list (app jsexpr->1placement (? placement? p)) ...) p])
-
-  (def/jsexpr-> 1placement
-    #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE tile (? tile? ti)]}
-    (placement co ti))
-
+  
   ;; for testing only 
-  (provide jsexpr->1player jsexpr->players jsexpr->tiles jsexpr->1placement))
+  (provide jsexpr->1player jsexpr->players jsexpr->tiles))
   
 (module+ test
-  (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state)
-  (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
+  (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state))

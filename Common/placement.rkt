@@ -27,6 +27,17 @@
    special-placements
    bad-spec-plmnt))
 
+(module+ json
+  (provide
+   #; {type JPlacemenst = [Listof 1Placement]}
+   #; {type J1Placement = { TILE : JTile, COORDINATE : JCoordinate }}
+   
+   COORDINATE ATILE
+
+   (contract-out
+    [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
+    [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))])))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/tiles)
@@ -34,6 +45,18 @@
 (module+ examples
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples)))
+
+(module+ json
+  (require (submod Qwirkle/Common/coordinates json))
+  (require (submod Qwirkle/Common/tiles json))
+  (require Qwirkle/Lib/parse-json)
+  (require json))
+
+(module+ test
+  (require (submod ".."))
+  (require (submod ".." examples))
+  (require (submod ".." json))
+  (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {type Placement* = [Listof Placement]}
@@ -87,3 +110,27 @@
      (placement #s(coordinate -3 1) #s(tile star green))))
 
   (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  (define ATILE '1tile)
+  (define COORDINATE 'coordinate)
+
+  #; {Placements -> [Listof JPlacement]}
+  (define (placements->jsexpr p*)
+    (map 1placement->jsexpr p*))
+  
+  #; {1Placement -> 1Placement}
+  (define (1placement->jsexpr p)
+    (define co (placement-coordinate p))
+    (define ti (placement-tile p))
+    (hasheq ATILE (tile->jsexpr ti) COORDINATE (coordinate->jsexpr co)))
+
+  (def/jsexpr-> placements #:array [(list (app jsexpr->1placement (? placement? p)) ...) p])
+
+  (def/jsexpr-> 1placement
+    #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE tile (? tile? ti)]}
+    (placement co ti)))
+
+(module+ test 
+  (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
