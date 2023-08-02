@@ -36,8 +36,10 @@
    COORDINATE ATILE JPASS JREPLACEMENT
 
    (contract-out
+    [action->jsexpr     (-> action? jsexpr?)]
+    [jsexpr->action     (-> jsexpr? (or/c action? #false))]
     [action*->jsexpr    (-> action*? jsexpr?)]
-    [jsexpr->action*    (-> jsexpr? action*?)]
+    [jsexpr->action*    (-> jsexpr? (or/c action*? #false))]
     [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
     [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))])))
 
@@ -127,12 +129,26 @@
       [(equal? a REPLACEMENT) JREPLACEMENT]
       [else (placements->jsexpr a)]))
 
+  (define (action->jsexpr a)
+    (cond
+      [(equal? a PASS) JPASS]
+      [(equal? a REPLACEMENT) JREPLACEMENT]
+      [else (1placement->jsexpr a)]))
+
   (define (jsexpr->action* j)
     (match j
       [(regexp JPASS) PASS]
       [(regexp JREPLACEMENT) REPLACEMENT]
       [(list i ...) (jsexpr->placements j)]
-      [_ (eprintf "" (jsexpr->string j #:indent 4))
+      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string j #:indent 4))
+         #false]))
+
+  (define (jsexpr->action j)
+    (match j
+      [(regexp JPASS) PASS]
+      [(regexp JREPLACEMENT) REPLACEMENT]
+      [(app jsexpr->placements (? placement p)) p]
+      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string j #:indent 4))
          #false]))
 
   #; {Placements -> [Listof JPlacement]}
@@ -155,5 +171,6 @@
   (check-equal? (jsexpr->action* (action*->jsexpr PASS)) PASS)
   (check-equal? (jsexpr->action* (action*->jsexpr REPLACEMENT)) REPLACEMENT)
   (check-equal? (jsexpr->action* (action*->jsexpr plmt0)) plmt0)
+  (check-false (jsexpr->action* 1))
 
   (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
