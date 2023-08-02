@@ -3,8 +3,21 @@
 ;; a data representation of the referee's knowledge and the player's knowledge about the game
 
 (provide
- #; {type [RefState Y]}
+ #; {type [GameState X Y] = [state Map [Listof X] Y]}
+ ;;      where [Listof X] specifies the order of turns that players take from here on out 
+ #; {type [RefState Y]    = [GameState [SoPlayer Y]] [Listof Tile]}
+ ;;      what the referee knows about the game 
+ #; {type PubKnowledge    = [GameState (cons [SoPlayer (U String Symbol)] Natural) Natural]}
+ ;;      what a player may know about the game: its own state (named) and the score of others
  state?
+ state-map
+ state-players
+ state-tiles
+
+ #; {type [SoPlayer Y]    = [sop Natural [Listof Tile] Y]}
+ ;;      where Y is typically an external player or just a symbolic name 
+ sop-tiles
+ sop-score 
 
  (contract-out
   [create-ref-state
@@ -41,18 +54,25 @@
   (provide
    ; +starter-tile
    ; +starter-coor
-   +ref-starter-state
-   
    starter-players
    ref-starter-state
+   info-starter-state
+
+   ref-starter-state-handout
+   info-starter-state-handout
+
+   +ref-starter-state
+   info-+ref-starter-state
+   
    handouts
    starter-players-handout
 
    +ref-atop-state
-   ref-starter-state-handout
-   info-starter-state
+   
    special-state
-   bad-state))
+   info-special-state
+   bad-state
+   info-bad-state))
 
 (module+ json
   (provide
@@ -100,15 +120,6 @@
 (struct state [map players tiles] #:prefab)
 (struct sop [score tiles player] #:prefab)
 
-#; {type [GameState X Y] = [state Map [Listof X] Y]}
-;;      where [Listof X] specifies the order of turns that players take from here on out 
-#; {type [RefState Y]    = [GameState [SoPlayer Y]] [Listof Tile]}
-;;      what the referee knows about the game 
-#; {type PubKnowledge    = [GameState (cons [SoPlayer (U String Symbol)] Natural) Natural]}
-;;      what a player may know about the game: its own state (named) and the score of others
-#; {type [SoPlayer Y]    = [sop Natural [Listof Tile] Y]}
-;;      where Y is typically an external player or just a symbolic name 
-
 #; {SoPlayer -> SoPlayer}
 (define (sop-special first)
   (match-define [sop score tiles payload] first)
@@ -131,9 +142,10 @@
   (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
   (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
   (define info-starter-state (ref-state-to-info-state ref-starter-state))
-
+  ;; what `ref-starter-state` evolves into after the tiles have been handed out 
   (define starter-players-handout [list [list qwirkle-tile* 'player2] [list handouts 'player1]])
-  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
+  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout))
+  (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout)))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
@@ -167,13 +179,16 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; states and successor states 
   (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
+  (define info-+ref-starter-state (ref-state-to-info-state +ref-starter-state))
   (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12))))
 
   (define special-tiles (map placement-tile special-placements))
   (define special-state (create-ref-state special-map (list (list special-tiles 'ps))))
+  (define info-special-state (ref-state-to-info-state special-state))
 
   (define bad-map   (legal special-state special-placements))
-  (define bad-state (create-ref-state bad-map (list '((#s(tile square green)) ps)))))
+  (define bad-state (create-ref-state bad-map (list '((#s(tile square orange)) ps))))
+  (define info-bad-state (ref-state-to-info-state bad-state)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
@@ -198,7 +213,8 @@
 (define (all-adjacent-and-fits? gmap0 placements)
   (let/ec return 
     (for/fold ([gmap gmap0]) ([p placements])
-      (match-define [placement co ti] p)
+      (define co (placement-coordinate p))
+      (define ti (placement-tile p))
       (unless (and (adjacent? gmap co) (candidate? (fits gmap co ti)))
         (return #false))
       (add-tile gmap co ti))))
@@ -377,7 +393,8 @@
   
   #; {1Placement -> 1Placement}
   (define (1placement->jsexpr p)
-    (match-define [placement co ti] p)
+    (define co (placement-coordinate p))
+    (define ti (placement-tile p))
     (hasheq ATILE (tile->jsexpr ti) COORDINATE (coordinate->jsexpr co)))
   
   #; {JSexpr -> OPtion<Coordinate>}
