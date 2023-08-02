@@ -38,6 +38,10 @@
  ;; the very first string is "" to make the table square 
  render-all-shapes)
 
+(provide ;; for homework 
+ ALL-SHAPES
+ ALL-COLORS)
+
 (module+ examples
   (provide
    +starter-tile
