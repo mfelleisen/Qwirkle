@@ -1,14 +1,20 @@
 #lang racket
 
+;; a data representation for placements and actions
 
 (provide
- #; {type Placement = [Listof (placement Coordinate Tile)]}
- (struct-out placement))
+ #; {type Action = REPLACEMENT || PASS || Placement }
+ action? 
+ PASS
+ REPLACEMENT
 
-#;
-(provide ;; for integration testing 
+ #; {type Placement = [Listof (placement Coordinate Tile)]}
+ #; (struct-out placement)
+ placement?
  (contract-out 
-  [placement (-> coordinate? tile? placement?)]))
+  [placement (-> coordinate? tile? placement?)])
+ placement-coordinate
+ placement-tile)
 
 (module+ examples
   (provide
@@ -31,6 +37,15 @@
 ;; placements in the order in which the tiles are put down 
 #; {type Placement  = [placement Coordinate Tile]}
 (struct placement [coordinate tile] #:prefab)
+
+(define REPLACEMENT (gensym 'replacement))
+(define PASS        (gensym 'pass))
+
+#; {Any -> Boolean : Action}
+(define (action? x)
+  (or (placement? x)
+      (equal? x REPLACEMENT)
+      (equal? x PASS)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
