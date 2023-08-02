@@ -48,6 +48,9 @@
    ;; yields delta between `(state-map s)` and `gmap`
    (-> state? map? natural? (listof tile?) state?)]
 
+  [apply-action
+   (-> state? placement? state?)]
+
   [render-ref-state (-> state? 2:image?)]))
 
 (module+ examples
@@ -189,6 +192,36 @@
   (define bad-map   (legal special-state special-placements))
   (define bad-state (create-ref-state bad-map (list '((#s(tile square orange)) ps))))
   (define info-bad-state (ref-state-to-info-state bad-state)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; apply a single placement to a PubKnowledge state w/o updating the score .. should it? 
+
+(module+ test
+  (define info-state-after-first-special-placement
+    #s(state
+       #hash((#s(coordinate -1 1) . #s(tile diamond green))
+             (#s(coordinate -3 0) . #s(tile star red))
+             (#s(coordinate -2 0) . #s(tile 8star red))
+             (#s(coordinate -4 1) . #s(tile clover green))
+             (#s(coordinate 0 0) . #s(tile circle red))
+             (#s(coordinate 0 1) . #s(tile circle green))
+             (#s(coordinate -4 0) . #s(tile clover red))
+             (#s(coordinate -1 0) . #s(tile diamond red)))
+       (#s(sop 0 (#s(tile star green)) ps))
+       0))
+  
+  (check-equal? (apply-action info-special-state (first special-placements))
+                info-state-after-first-special-placement "place first special on info-pk"))
+
+#; {PubKnowledge Placement -> PubKnowledge}
+(define (apply-action pk p)
+  (match-define [state gmap (cons first others) pk-tiles]  pk)
+  (define co (placement-coordinate p))
+  (define ti (placement-tile p))
+  (define new-map (add-tile gmap co ti))
+  (match-define [sop score player-tiles payload] first)
+  (define first++ (sop score (remove ti player-tiles) payload))
+  (state new-map (cons first++ others) pk-tiles))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
