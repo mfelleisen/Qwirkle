@@ -79,8 +79,8 @@
 
 (module+ json
   (provide
-   #; {type JState     = { MAP : JMap, PLAYERS : [Listof JPlayer], TILES : (U Natural [Listof Tile]) }}
-   #; {type JPlayer    = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
+   #; {type JState  = { MAP : JMap, PLAYERS : [Listof JPlayer], TILES : (U Natural [Listof Tile]) }}
+   #; {type JPlayer = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
    
    MAP PLAYERS SCORE TILES ; COORDINATE ATILE
 

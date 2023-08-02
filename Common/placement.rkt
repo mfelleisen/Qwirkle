@@ -29,12 +29,15 @@
 
 (module+ json
   (provide
-   #; {type JPlacemenst = [Listof 1Placement]}
+   #; {type JAction*    = "pass" || "replace" || JPlacements}
+   #; {type JPlacements = [Listof 1Placement]}
    #; {type J1Placement = { TILE : JTile, COORDINATE : JCoordinate }}
    
-   COORDINATE ATILE
+   COORDINATE ATILE JPASS JREPLACEMENT
 
    (contract-out
+    [action*->jsexpr    (-> action*? jsexpr?)]
+    [jsexpr->action*    (-> jsexpr? action*?)]
     [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
     [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))])))
 
@@ -115,6 +118,22 @@
 (module+ json
   (define ATILE '1tile)
   (define COORDINATE 'coordinate)
+  (define JPASS "pass")
+  (define JREPLACEMENT "replace")
+
+  (define (action*->jsexpr a)
+    (cond
+      [(equal? a PASS) JPASS]
+      [(equal? a REPLACEMENT) JREPLACEMENT]
+      [else (placements->jsexpr a)]))
+
+  (define (jsexpr->action* j)
+    (match j
+      [(regexp JPASS) PASS]
+      [(regexp JREPLACEMENT) REPLACEMENT]
+      [(list i ...) (jsexpr->placements j)]
+      [_ (eprintf "" (jsexpr->string j #:indent 4))
+         #false]))
 
   #; {Placements -> [Listof JPlacement]}
   (define (placements->jsexpr p*)
@@ -132,5 +151,9 @@
     #:object {[COORDINATE coordinate (? coordinate? co)] [ATILE tile (? tile? ti)]}
     (placement co ti)))
 
-(module+ test 
+(module+ test
+  (check-equal? (jsexpr->action* (action*->jsexpr PASS)) PASS)
+  (check-equal? (jsexpr->action* (action*->jsexpr REPLACEMENT)) REPLACEMENT)
+  (check-equal? (jsexpr->action* (action*->jsexpr plmt0)) plmt0)
+
   (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
