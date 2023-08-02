@@ -17,6 +17,8 @@
  candidate-top
  candidate-right
  candidate-below
+ (contract-out 
+  [candidate-constraints# (-> candidate? natural?)])
 
  #; {type Line = Row || Column}
  row?
@@ -128,6 +130,11 @@
 #; {Map Tile -> [Listof Candidate]}
 
 (struct candidate [place left top right below] #:prefab)
+
+#; {Candidate -> Natural}
+(define (candidate-constraints# c)
+  (match-define [candidate place x y z w] c)
+  (+ (or (and x 1) 0) (or (and y 1) 0) (or (and z 1) 0) (or (and w 1) 0)))
 
 #; {Map Tile -> [Setof Candidate]}
 (module+ test
