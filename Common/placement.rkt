@@ -3,10 +3,13 @@
 ;; a data representation for placements and actions
 
 (provide
- #; {type Action = REPLACEMENT || PASS || Placement }
- action? 
+ #; {type Action = REPLACEMENT || PASS || Placement}
+ action?
+ #; {type LAction = REPLACEMENT || PASS || [Listof Placement]}
+ action*? 
  PASS
  REPLACEMENT
+
 
  #; {type Placement = [Listof (placement Coordinate Tile)]}
  #; (struct-out placement)
@@ -43,9 +46,10 @@
 
 #; {Any -> Boolean : Action}
 (define (action? x)
-  (or (placement? x)
-      (equal? x REPLACEMENT)
-      (equal? x PASS)))
+  (or (placement? x) (equal? x REPLACEMENT) (equal? x PASS)))
+
+(define (action*? x)
+  (or (and (list? x) (andmap placement? x)) (equal? x REPLACEMENT) (equal? x PASS)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
