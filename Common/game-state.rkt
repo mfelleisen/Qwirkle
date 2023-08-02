@@ -86,7 +86,8 @@
 
    (contract-out
     [state->jsexpr (-> state? jsexpr?)]
-    [jsexpr->state (-> jsexpr? (or/c state? #false))])))
+    [jsexpr->state (-> jsexpr? (or/c state? #false))]
+    [jsexpr->pk    (-> jsexpr? (or/c state? #false))])))
   
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -397,7 +398,7 @@
   (define TILES 'tile*)
 
   #; {PubKnowledge -> JState}
-  (define (state->jsexpr rb)
+  (define (state->jsexpr rb) ;; should be called state->pk 
     (match-define [state gmap players tiles] rb)
     (define jtiles (if (natural? tiles) tiles (map tile->jsexpr tiles)))
     (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr players) TILES jtiles))
@@ -412,15 +413,18 @@
     (match 1player
       [(sop score tiles _) (hasheq SCORE score TILES (map tile->jsexpr tiles))]
       [(? natural?) 1player]))
-
-  #; {JSexpr -> OPtion<Coordinate>}
+  
   (def/jsexpr-> state
     #:object {[MAP map (? hash? gmap)]
               [PLAYERS players (cons first (list n ...))]
-              [TILES (and t (or (? natural?) (list (? tile?) ...)))]}
-    (cond
-      [(natural? t) (state gmap (cons first n) t)]
-      [else         (state gmap (cons first n) (jsexpr->tiles t))]))
+              [TILES tiles (list (? tile? t) ...)]}
+    (state gmap (cons first n) t))
+
+  (def/jsexpr-> pk
+    #:object {[MAP map (? hash? gmap)]
+              [PLAYERS players (cons first (list n ...))]
+              [TILES (? natural? t)]}
+    (state gmap (cons first n) t))
 
   (def/jsexpr-> players
     #:array [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...)) (cons first n)])
@@ -435,4 +439,5 @@
   (provide jsexpr->1player jsexpr->players jsexpr->tiles))
   
 (module+ test
-  (check-equal? (jsexpr->state (state->jsexpr info-starter-state)) info-starter-state))
+  ; (check-equal? (jsexpr->state (state->jsexpr ref-starter-state)) ref-starter-state)
+  (check-equal? (jsexpr->pk (state->jsexpr info-starter-state)) info-starter-state))
