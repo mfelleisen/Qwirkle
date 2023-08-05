@@ -1,6 +1,7 @@
 #lang racket
 
 ;; a data representation of the referee's knowledge and the player's knowledge about the game
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type [GameState X Y] = [state Map [Listof X] Y]}

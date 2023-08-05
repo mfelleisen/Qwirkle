@@ -1,8 +1,8 @@
 #lang racket
 
-;; data representation of map
-
+;; data representation of a Q map
 ;; ---------------------------------------------------------------------------------------------------
+
 (provide
  #; {type Map}
  map?

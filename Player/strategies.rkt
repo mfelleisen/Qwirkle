@@ -1,6 +1,7 @@
 #lang racket
 
-;; simple strategies for picking a single placement 
+;; simple strategies for picking a single placement and iterating those
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type Strategy = PubKnowledge -> (U Placement 'pass 'replace)}

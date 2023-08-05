@@ -1,6 +1,7 @@
 #lang racket
 
-;; a data representation for placements and actions
+;; a data representation for player actions, esp. placements
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type Action = REPLACEMENT || PASS || Placement}

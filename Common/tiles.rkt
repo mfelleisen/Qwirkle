@@ -1,6 +1,7 @@
 #lang racket
 
 ;; data representation of tiles, shapes, and colors
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type Tile}

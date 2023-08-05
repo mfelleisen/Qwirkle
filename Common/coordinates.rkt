@@ -1,8 +1,8 @@
 #lang racket
 
 ;; data representation of map coordinates
-
 ;; -----------------------------------------------------------------------------
+
 (provide
  #; {type Coordinate}
  coordinate?
