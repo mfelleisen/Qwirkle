@@ -28,8 +28,11 @@
   [start-map  (-> tile? map?)]
   [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
+  
   [find-candidates
+   ;; where can the given tile extend this map 
    (-> map? tile? (set/c candidate?))]
+  
   [adjacent?
    ;; is the coordinate adjacent to, and not on top of, an occupied space?
    (-> map? coordinate? boolean?)]
@@ -38,24 +41,30 @@
    (-> map? coordinate? tile? (or/c candidate? #false))]
   
   [all-row-segments
-   (-> map? line? (listof (listof coordinate?)))]
+   ;; gather all continuous segments of tiles in the specified row 
+   (-> map? line? (listof (listof placement?)))]
   [all-column-segments
-   (-> map? line? (listof (listof coordinate?)))]
+   ;; gather all continuous segments of tiles in the specified column
+   (-> map? line? (listof (listof placement?)))]
   
   [walk-row-orthogonally
-   (-> map? coordinate? natural?)]
+   ;; gather a continuous run of tiles in both row directions, starting from the coordinate 
+   (-> map? coordinate? (listof tile?))]
   [walk-column-orthogonally
-   (-> map? coordinate? natural?)]
+   ;; gather a continuous run of tiles in both column directions, starting from the coordinate 
+   (-> map? coordinate? (listof tile?))]
    
   [create-line
    #; {Map [Listof Coordinate] -> Line}
+   ;; compute the maximal extent of the row or column that thet given coordinates determine
+   ;; ASSUME the given list of coordinates have the same row or column coordinate 
    (-> map? [listof coordinate?] (or/c row? column?))]))
 
 (module+ examples
   (provide starter-free start+1-map-unfit start+1-free start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
   (provide map0 starter-map starter-can lshaped-map-unfit)
-  (provide special-map))
+  (provide special-map special-map+green-circle-at--2-2 special-map+green-circle-at--2-2++))
 
 (module+ json
   (provide
@@ -66,6 +75,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/tiles)
+(require Qwirkle/Common/placement)
 (require (prefix-in 2: 2htdp/image))
 
 (module+ examples
@@ -112,9 +122,44 @@
            ;; hooks 
            [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
            [s (add-tile s #s(coordinate  0 1) #s(tile circle green))])
+      s))
+
+  (define special-map+green-circle-at--2-2
+    (let* ([s (start-map                      #s(tile circle red))]
+           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
+           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
+           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
+           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           ;; hooks 
+           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
+           [s (add-tile s #s(coordinate -4 2) #s(tile clover purple))]
+           [s (add-tile s #s(coordinate -3 2) #s(tile circle purple))]
+           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))]
+           [s (add-tile s #s(coordinate  0 2) #s(tile circle yellow))]
+           [s (add-tile s #s(coordinate +1 2) #s(tile circle purple))]
+           [s (add-tile s #s(coordinate -1 2) #s(tile circle blue))])
+      s))
+
+  (define special-map+green-circle-at--2-2++
+    (let* ([s (start-map                      #s(tile circle red))]
+           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
+           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
+           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
+           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           ;; hooks 
+           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
+           [s (add-tile s #s(coordinate -4 2) #s(tile clover purple))]
+           [s (add-tile s #s(coordinate -3 2) #s(tile circle purple))]
+           [s (add-tile s #s(coordinate -2 2) #s(tile circle orange))]
+           [s (add-tile s #s(coordinate -1 2) #s(tile circle blue))]
+           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))]
+           [s (add-tile s #s(coordinate +1 2) #s(tile circle purple))]
+           [s (add-tile s #s(coordinate  0 2) #s(tile circle yellow))])
       s)))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; basic adjacency 
+
 #; {Map Coordinate -> Boolean}
 (module+ test
   (check-true (adjacent? starter-map #s(coordinate 0 -1)))
@@ -127,6 +172,8 @@
                   (occupied b (below-of c))))))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; candidates 
+
 #; {Map Tile -> [Listof Candidate]}
 
 (struct candidate [place left top right below] #:prefab)
@@ -136,6 +183,9 @@
   (match-define [candidate place x y z w] c)
   (+ (or (and x 1) 0) (or (and y 1) 0) (or (and z 1) 0) (or (and w 1) 0)))
 
+;; ---------------------------------------------------------------------------------------------------
+;; all candidates 
+
 #; {Map Tile -> [Setof Candidate]}
 (module+ test
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
@@ -143,6 +193,9 @@
 (define (find-candidates map t)
   (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits map co t))] #:when can)
     can))
+
+;; ---------------------------------------------------------------------------------------------------
+;; fitting a tile into the map at a coordinate 
 
 #; {Map Coordinate Tile -> [Option Candidate]}
 (define (fits map co tile)
@@ -176,6 +229,9 @@
            (and (equal? (tile-shape one-side) shape) (equal? (tile-shape other-side) shape))
            (and (equal? (tile-color one-side) color) (equal? (tile-color other-side) color)))]))
 
+;; ---------------------------------------------------------------------------------------------------
+;; the neighboring coordinate of a map
+
 #; {Map -> [Setof Coordinate]}
 ;; all coordinates of spots that neighbor an existing tile 
 (module+ test
@@ -188,8 +244,7 @@
 
 #; {Map Coordinate -> [Listof Coordinate]}
 ;; the free neighbors of one coordinate 
-(module+ test
-  (check-equal? (free-neighbors starter-map origin) starter-free))
+(module+ test (check-equal? (free-neighbors starter-map origin) starter-free))
 (define (free-neighbors map co)
   (append (1-neighbor map co left-of)
           (1-neighbor map co top-of)
@@ -243,6 +298,8 @@
     [else (apply 2:beside (make-list n blank))]))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; translating a sparese map into a matrix representation 
+
 #; {type TileMatrix = [Listof TileRow]}
 #; {type TileRow    = [Listof [List Coordinate Tile]]}
 
@@ -261,8 +318,7 @@
 (define (add-cell cr m) (cons (reverse cr) m))
 
 ;; ---------------------------------------------------------------------------------------------------
-
-#; {type Segment = [Listof Coordinate]}
+#; {type Segment = [Listof Placemen]}
 
 #; {[Integer Integer -> Coordinate] [Coordinate -> Coordinate] -> (Map Line -> [Listof Segment])}
 ;; the contiguous segements on this map along a row or column along the given line 
@@ -274,9 +330,15 @@
             ([i (in-range min (+ max 1))])
     (define spot (hash-ref gmap focus #false))
     (define next (add1 focus))
-    (if spot (values (cons focus crrnt) segment* next) (values '[] (seg+ crrnt segment*) next))))
+    (if spot (values (cons (placement focus spot) crrnt) segment* next) (values '[] (seg+ crrnt segment*) next))))
+
+#; {Segment [Listof Segment] -> [Listof Segment]}
+(define (seg+ cr m) (if (empty? cr) m (cons (reverse cr) m)))
 
 #; {Map Line -> [Listof Segment]}
+(define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))
+(define all-column-segments (all-segments (λ (x y) [coordinate y x]) add1-row))
+
 (module+ test
   (check-equal?
    (length
@@ -287,32 +349,31 @@
       (if (row? line) (all-row-segments map line) (all-column-segments map line))))
    9
    "silly check to mask output"))
-(define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))
-(define all-column-segments (all-segments (λ (x y) [coordinate y x]) add1-row))
 
-#; {Segment [Listof Segment] -> [Listof Segment]}
-(define (seg+ cr m) (if (empty? cr) m (cons (reverse cr) m)))
-
+;; ---------------------------------------------------------------------------------------------------
+#; {[Coordinate -> Coordinate] [Coordinate -> Coordinate] -> Map Coordinate -> [Listof Tile]}
+;; starting from `focus0` walk `gmap` in `up and `down` direction to gather a continuous run of tiles 
 (define ((walk-line-orthogonally up down) gmap focus0)
-  (define s (+ (walk gmap focus0 up) (walk gmap focus0 down) -1 #;"for double countng"))
-  (if (= s 1) 0 s))
+  (define spot0 (hash-ref gmap focus0)) ;; to inclue only once 
+  (define s (append (rest (walk gmap focus0 up)) (list spot0) (rest (walk gmap focus0 down))))
+  (if (empty? (rest s)) '[] s))
 
-#; {Map Coordinate [Coordinate -> Coordinate] -> Natural}
+#; {Map Coordinate [Coordinate -> Coordinate] -> [Listof Tile]}
 ;; how far can we walk starting from `focus0` on `gmap` alomg `step`
 (define (walk gmap focus0 step)
   (let walk ([focus focus0])
     (define spot (hash-ref gmap focus #false))
-    (if (false? spot) 0 (+ (walk (step focus)) 1))))
+    (if (false? spot) '[] (cons spot (walk (step focus))))))
 
 #; {Map Coordinate -> Natural}
 ;; the length of a run in both directions from co
 (module+ test
   (define line (create-line map1 coord0))
   (check-equal? 
-   (for/sum ([co coord0])
+   (let ([co (first coord0)])
      (if (row? line)
-         (walk-column-orthogonally map1 co)
-         (walk-row-orthogonally map1 co)))
+         (length (walk-column-orthogonally map1 co))
+         (length (walk-row-orthogonally map1 co))))
    4
    "walk- map0 map1"))
 
@@ -320,6 +381,8 @@
 (define walk-row-orthogonally (walk-line-orthogonally add1-column sub1-column))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; maximal extents of rows and colums 
+
 (struct line [index min max] #:prefab)
 (struct row line () #:prefab)
 (struct column line () #:prefab)
@@ -404,7 +467,13 @@
   (render-map starter-map)
 
   'special
-  (render-map special-map))
+  (render-map special-map)
+  
+  'special-map+green-circle-at--2-2
+  (render-map special-map+green-circle-at--2-2)
+
+  'special-map+green-circle-at--2-2++
+  (render-map special-map+green-circle-at--2-2++))
 
 (module+ test ;; scenarios from Qwirkle
   'map0 (render-map map0) 

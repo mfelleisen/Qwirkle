@@ -74,6 +74,9 @@
    
    special-state
    info-special-state
+
+   special-state+green-circle-at--2-2
+   
    bad-state
    info-bad-state))
 
@@ -189,6 +192,9 @@
   (define special-tiles (map placement-tile special-placements))
   (define special-state (create-ref-state special-map (list (list special-tiles 'ps))))
   (define info-special-state (ref-state-to-info-state special-state))
+  
+  (define special-state+green-circle-at--2-2
+    (create-ref-state special-map+green-circle-at--2-2 `[([#s(tile circle orange)] ppp)]))
 
   (define bad-map   (legal special-state special-placements))
   (define bad-state (create-ref-state bad-map (list '((#s(tile square orange)) ps))))
@@ -204,8 +210,8 @@
              (#s(coordinate -3 0) . #s(tile star red))
              (#s(coordinate -2 0) . #s(tile 8star red))
              (#s(coordinate -4 1) . #s(tile clover green))
-             (#s(coordinate 0 0) . #s(tile circle red))
-             (#s(coordinate 0 1) . #s(tile circle green))
+             (#s(coordinate  0 0) . #s(tile circle red))
+             (#s(coordinate  0 1) . #s(tile circle green))
              (#s(coordinate -4 0) . #s(tile clover red))
              (#s(coordinate -1 0) . #s(tile diamond red)))
        (#s(sop 0 (#s(tile star green)) ps))
@@ -266,6 +272,9 @@
       (set! tiles-owned (remove placed tiles-owned)))))
 
 (module+ test ;; legal integration tests 
+  (check-equal? (legal special-state+green-circle-at--2-2 place-green-circle-at--2-2)
+                special-map+green-circle-at--2-2++)
+  
   (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal ref-starter-state lshaped-placement*) "b/c p* is lshaped")
 
@@ -286,49 +295,53 @@
     (check-legal m0 pp m+ (~a "step " ii))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; scoring a placement 
+;; scoring placements
+
+(define Q-BONUS 6)
 
 #; {Map Placements -> Natural}
 (define (score gmap placements #:finishing (finishing-bonus 0))
   (define coord (map placement-coordinate placements))
   (define line  (create-line gmap coord))
-  (+ (length placements)                         ;; task 1 
-     finishing-bonus                             ;; task 2 
-     (score-same-line-segments gmap line coord)  ;; task 3 
-     (score-orthoginal-lines gmap line coord)))  ;; task 4 
+  (+ (length placements)                             ;; task 1 
+     finishing-bonus                                 ;; task 2 
+     (score-same-line-segments gmap line placements) ;; task 3 
+     (score-orthoginal-lines gmap line coord)))      ;; task 4 
 
 #; {Map Line [Listof Coordinate] -> Natural}
 ;; lengths for all segments of the placement line that contain a new placement, plus bonus 
-(module+ test
-  (define line2 (create-line map2 coord1))
-  (check-equal? (score-same-line-segments map2 line2 coord1) 2))
-(define (score-same-line-segments gmap line coords)
+(define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
   (let sum-of-overlaps ([segment* segment*])
     (cond
       [(empty? segment*) 0]
-      [else (+ (bonus-for-full-row (contains-1-placement (first segment*) coords))
-               (sum-of-overlaps (rest segment*)))])))
+      [(= (length (first segment*)) 1) (sum-of-overlaps (rest segment*))]
+      [else
+       (define 1segment (first segment*))
+       (define count (contains-1-placement 1segment placements))
+       (+ (q-bonus (map placement-tile 1segment) count) (sum-of-overlaps (rest segment*)))])))
 
-#;{Segment [Listof Coordinate] -> Natural}
+#;{Segment [Listof Placement] -> Natural}
 ;; lengt of segment if it contain one placement; 0 otherwise 
-(define (contains-1-placement 1segment coords)
+(define (contains-1-placement 1segment placements)
   (define count
-    (for/first ([s 1segment] #:when (member s coords))
+    (for/first ([s 1segment] #:when (member s placements))
       (length 1segment)))
   (if (false? count) 0 count))
 
 #; {Map [Listof Coord] -> Natural}
-;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus 
+;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus
 (define (score-orthoginal-lines gmap line coord)
   (define score (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([co coord])
-    (bonus-for-full-row (score gmap co))))
+    (define continuous-run (score gmap co))
+    (q-bonus continuous-run (length continuous-run))))
 
-#; {Natural -> Natural}
-(define (bonus-for-full-row count)
-  (if (= count 6) 12 count))
+#; {[Listof Tile] Natural -> Natural}
+(define (q-bonus line count)
+  (if (or (all-colors? line) (all-shapes? line)) (+ Q-BONUS count) count))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
   (define score1  10)
   (define score2   5)
@@ -347,6 +360,10 @@
         [sc (list score1 score2 score3 score4 score5 score6 score7 score8 score9 score10 score11)]
         [ii (in-naturals)])
     (check-equal? (score m+ pp) sc (~a "scoring map " (+ ii 1))))
+
+  ;; not a run of like-tiles or colors and not a Q !! 
+  (check-equal? (score special-map+green-circle-at--2-2++ place-green-circle-at--2-2) 7 "not run")
+  
 
   (check-equal? (score map10 plmt9) score10 "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))

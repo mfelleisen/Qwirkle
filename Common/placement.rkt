@@ -25,7 +25,8 @@
    lshaped-placement*
    +starter-plmt
    special-placements
-   bad-spec-plmnt))
+   bad-spec-plmnt
+   place-green-circle-at--2-2))
 
 (module+ json
   (provide
@@ -113,6 +114,7 @@
     (list 
      (placement #s(coordinate -1 1) #s(tile diamond green))
      (placement #s(coordinate -3 1) #s(tile star green))))
+  (define place-green-circle-at--2-2 [list (placement #s(coordinate -2 2) #s(tile circle orange))])
 
   (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
 

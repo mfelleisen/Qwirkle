@@ -15,7 +15,11 @@
             tile?)])
 
  #; {Tile Tile -> Boolean}
- tile< 
+ tile<
+
+ #; {[Listof Tile] -> Boolean}
+ all-shapes?
+ all-colors? 
  
  #; {Tile -> Image}
  render-tile
@@ -157,6 +161,33 @@
   (check-true (tile< (tile '8star 'red) (tile 'square 'red)))
   (check-true (tile< (tile '8star 'red) (tile '8star 'green)))
   (check-false (tile< (tile '8star 'red) (tile '8star 'red))))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Q BONUS
+
+#; {[Listof Tile] -> Boolean}
+(define SHAPES# (length ALL-SHAPES))
+(define (all-shapes? lot)
+  (define shapes (map tile-shape lot))
+  (= (set-count (apply set shapes)) SHAPES#))
+
+(module+ test
+  (define s-all (map (λ (s) {tile (first s) 'red}) ALL-SHAPES))
+  (check-true  (all-shapes? s-all) "just all of them")
+  (check-false (all-shapes? (rest s-all)) "missing one")
+  (check-false (all-shapes? (cons (tile (caadr ALL-SHAPES) 'red) (rest s-all))) "with duplicate"))
+
+#; {[Listof Tile] -> Boolean}
+(define COLORS# (length ALL-COLORS))
+(define (all-colors? lot)
+  (define colors (map tile-color lot))
+  (= (set-count (apply set colors)) COLORS#))
+
+(module+ test
+  (define c-all (map (λ (c) {tile 'square c}) ALL-COLORS))
+  (check-true  (all-colors? c-all) "just all of them")
+  (check-false (all-colors? (rest c-all)) "missing one")
+  (check-false (all-colors? (cons (tile 'square (second ALL-COLORS)) (rest c-all))) "with duplicate"))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render-all-shapes [t values])
