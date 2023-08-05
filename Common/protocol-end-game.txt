@@ -1,0 +1,15 @@
+
+referee                        player (p_1) . . . player (p_n)
+  |                                |                 |
+  |                                |                 |
+  |     win(Boolean)               |                 | 
+  | -----------------------------> |                 | % true means "winner"
+  |                                |                 | % false means "loser" 
+  .                                .                 . 
+  .                                .                 . 
+  .                                .                 .
+  .                                .                 .
+  |     win(Boolean)               |                 |
+  | -----------------------------------------------> | % both winners and 
+  |                                |                 | % losers are informed 
+  |                                |                 |

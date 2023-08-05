@@ -1,0 +1,53 @@
+
+referee                         player (p_1) . . . player (p_n)
+  |                                |                 |
+  |   takeTurn(PublicState)        |                 | % player receives:
+  | -----------------------------> |                 | % - current visible state            
+
+  ACTION 1:
+  |     PASS                       |                 | 
+  | <============================  |                 | % pass on this turn 
+  |                                |                 | 
+
+
+  ACTION 2:
+  |     REPLACE                    |                 | 
+  | <============================  |                 | % pass on this turn 
+  |                                |                 | 
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % completes turn
+  .  |                             .                 . % otherwise: 
+  .<-+                             .                 . % kick player out 
+
+
+  ACTION 3:
+  |     EXTENSION                  |                 | % an extension consists of a 
+  | <============================  |                 | - non-empty sequence of 
+  |                                |                 | - tile-coordinate pairs
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 .
+
+
+  IF: the player asks for REPLACE or EXTENSIONS, the referee completes the turn: 
+
+  |                                |                 |
+  |     newTiles(setOfTiles)       |                 | % the player is handed
+  | -----------------------------> |                 | % a new set of tiles 
+
+
+  REPEAT: 
+  |   takeTurn(state)              |                 |
+  | -----------------------------------------------> |
+  |     response                   |                 |
+  | <=============================================== | 
+  |                                |                 |
+  .                                .                 .
+  .                                .                 . % repeat until the referee 
+  .                                .                 . % determines that the game is over
+  .                                .                 .
