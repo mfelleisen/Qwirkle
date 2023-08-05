@@ -118,11 +118,11 @@ for a turn as follows:
 
 @item{A player receives one point per tile placed.}
 
-@item{A player receives one point per tile within a row or column that
- at least one of its newly placed tiles extends.}
+@item{A player receives one point per tile in a contiguous sequence of a row
+ or column that at least one of its newly placed tiles @emph{extends}.}
 
-@item{A player receives six bonus points for completing a Q, which is a sequence
- of tiles that contains all shapes or all colors.}
+@item{A player receives six bonus points for @emph{completing} a Q, which is a
+ contiguous sequence of tiles that contains all shapes or all colors.}
 
 @item{A player also receives six bonus points for placing all tiles in its
  possession.} 
