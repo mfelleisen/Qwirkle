@@ -318,7 +318,7 @@
 (define (add-cell cr m) (cons (reverse cr) m))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {type Segment = [Listof Placemen]}
+#; {type Segment = [Listof Placemen] :: of length > 1}
 
 #; {[Integer Integer -> Coordinate] [Coordinate -> Coordinate] -> (Map Line -> [Listof Segment])}
 ;; the contiguous segements on this map along a row or column along the given line 
@@ -330,10 +330,12 @@
             ([i (in-range min (+ max 1))])
     (define spot (hash-ref gmap focus #false))
     (define next (add1 focus))
-    (if spot (values (cons (placement focus spot) crrnt) segment* next) (values '[] (seg+ crrnt segment*) next))))
+    (if spot
+        (values (cons (placement focus spot) crrnt) segment*              next)
+        (values '[]                                 (seg+ crrnt segment*) next))))
 
 #; {Segment [Listof Segment] -> [Listof Segment]}
-(define (seg+ cr m) (if (empty? cr) m (cons (reverse cr) m)))
+(define (seg+ cr m) (if (or (empty? cr) (empty? (rest cr))) m (cons (reverse cr) m)))
 
 #; {Map Line -> [Listof Segment]}
 (define all-row-segments    (all-segments (λ (x y) [coordinate x y]) add1-column))

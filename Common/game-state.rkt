@@ -306,42 +306,35 @@
   (+ (length placements)                             ;; task 1 
      finishing-bonus                                 ;; task 2 
      (score-same-line-segments gmap line placements) ;; task 3 
-     (score-orthoginal-lines gmap line coord)))      ;; task 4 
+     (score-orthoginal-lines gmap line placements))) ;; task 4 
 
 #; {Map Line [Listof Coordinate] -> Natural}
 ;; lengths for all segments of the placement line that contain a new placement, plus bonus 
 (define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
-  (let sum-of-overlaps ([segment* segment*])
-    (cond
-      [(empty? segment*) 0]
-      [(= (length (first segment*)) 1) (sum-of-overlaps (rest segment*))]
-      [else
-       (define 1segment (first segment*))
-       (define count (contains-1-placement 1segment placements))
-       (+ (q-bonus (map placement-tile 1segment) count) (sum-of-overlaps (rest segment*)))])))
+  (for/sum ([1segment segment*])
+    (define the-tiles (map placement-tile 1segment))
+    (q-bonus the-tiles (contains-1-placement 1segment placements))))
 
 #;{Segment [Listof Placement] -> Natural}
 ;; lengt of segment if it contain one placement; 0 otherwise 
 (define (contains-1-placement 1segment placements)
-  (define count
-    (for/first ([s 1segment] #:when (member s placements))
-      (length 1segment)))
+  (define count (for/first ([p 1segment] #:when (member p placements)) (length 1segment)))
   (if (false? count) 0 count))
 
-#; {Map [Listof Coord] -> Natural}
+#; {Map [Listof Placements] -> Natural}
 ;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus
-(define (score-orthoginal-lines gmap line coord)
-  (define score (if (row? line) walk-column-orthogonally walk-row-orthogonally))
+(define (score-orthoginal-lines gmap line placements)
+  (define coord (map placement-coordinate placements))
+  (define walk (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([co coord])
-    (define continuous-run (score gmap co))
+    (define continuous-run (walk gmap co))
     (q-bonus continuous-run (length continuous-run))))
 
 #; {[Listof Tile] Natural -> Natural}
 (define (q-bonus line count)
   (if (or (all-colors? line) (all-shapes? line)) (+ Q-BONUS count) count))
 
-;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
   (define score1  10)
   (define score2   5)
