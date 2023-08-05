@@ -91,17 +91,21 @@ When granted a turn, a player may take one of the following three actions:
   A placement of tiles must satisfy these conditions:
   @; ------------------------------------------------------------------
   @itemlist[
-    @item{every tile placed must share a side with at least one placed tile;}
 
-    @item{every tile placed must match the color or shape of any
-    directly adjacent tiles along a line;}
+    @item{every tile placed must share a side with at least one tile on the map
+    that it extends;}
+
+    @item{every tile placed must match the colors of its immediate neighbors (if
+    any) along a line (row, column) or it must match the shapes along a line;}
+    
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
     ]
-  The referee hands the player as many tiles as it placed, randomly drawn from
-  its collection or all remaining tiles if the player placed more than the
-  referee owns.}
+  @; --------------------------------------------------------------------------
+  The referee hands the player as many tiles as it placed, drawn from its
+  randomly arranged collection or all remaining tiles if the player placed more
+  than the referee has left.}
   
 ]
 @; -----------------------------------------------------------------------------
