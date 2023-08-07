@@ -1,34 +1,31 @@
 #lang racket
 
-;; a data representation of the referee's knowledge and the player's knowledge about the game
+;; a data representation of the generic game-state knowledge
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
- #; {type [GameState X Y] = [state Map [Listof [SoPlayer X]] Y]}
- ;;      where [Listof X] specifies the order of turns that players take from here on out 
- #; {type [RefState Y]    = [GameState [SoPlayer Y]] [Listof Tile]}
- ;;      what the referee knows about the game 
- #; {type PubKnowledge    = [GameState (cons [SoPlayer (U String Symbol)] Natural) Natural]}
- ;;      what a player may know about the game: its own state (named) and the score of others
+ #; {type [GameState X Y Z] = [state Map [Cons [SoPlayer X] [Listof Z]] Y]}
+ ;; where [SoPlayer X] is the active player 
+ ;; where [Listof _] specifies the order of turns that players take from here on out
+ 
  state?
- state-map
- state-players
- state-tiles
-
- #; {type [SoPlayer Y]    = [sop Natural [Listof Tile] Y]}
- ;;      where Y is typically an external player or just a symbolic name 
- sop-tiles
- sop-score 
-
+ 
+ #; {[X Y Z] [Y -> Image] -> [GameState X Y Z] -> Image}
+ render-ref-state/g
+ 
  (contract-out
-  [create-ref-state
-   (->* (map? [listof [list/c [listof tile?] any/c]]) (#:tiles0 (listof tile?)) state?)]
-  
-  [ref-state-to-info-state
-   (-> state? state?)]
+  [create-state        (-> map? sop? [listof any/c] any/c state?)]
+  [transform-state     (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
+
+  [state-map++         (-> state? map? state?)]
+  [state-score++       (-> state? natural? state?)]
+  [state-replace-tiles (-> state? [listof tile?] (values (listof tile?) state?))]
+
+  ;; this is ref-state specific 
+  [state-rotate        (-> state? state?)]
   
   [legal
-   #; {(U PubKnowledge [RefState Y]) [Listof Placement] -> (U Map? False)}
+   ;; is the series of placements legale in this state; if so computer the new map 
    (-> state? (listof placement?) (or/c #false map?))]
   
   [score
@@ -37,70 +34,44 @@
    ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
    ;; the ref must consult the state and determine whether the active player has placed all tiles
    ;; --> introduce score+ function that determines by itself whether this is true??? 
-   (->* (map? (listof placement?)) (#:finishing natural?) natural?)]
-  
-  [complete-turn
-   ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
-   #; {complete-turn s gmap delta old-tiles new-tiles}
-   ;; PROTICOL assume that for some placements
-   #; (legal s placements)
-   ;; yields gmap
-   #; (score gmap placements)
-   ;; yields delta between `(state-map s)` and `gmap`
-   (-> state? map? natural? (listof tile?) state?)]
-
-  [apply-action
-   (-> state? placement? state?)]
-
-  [render-ref-state (-> state? 2:image?)]))
+   (->* (map? (listof placement?)) (#:finishing natural?) natural?)]))
 
 (module+ examples
   (provide
-   ; +starter-tile
-   ; +starter-coor
-   starter-players
-   ref-starter-state
-   info-starter-state
-
-   ref-starter-state-handout
-   info-starter-state-handout
-
    +ref-starter-state
-   info-+ref-starter-state
-   
-   handouts
-   starter-players-handout
-
    +ref-atop-state
-   
    special-state
-   info-special-state
-
    special-state+green-circle-at--2-2
-   
-   bad-state
-   info-bad-state))
+   bad-state))
 
 (module+ json
   (provide
-   #; {type JState  = { MAP : JMap, PLAYERS : [Listof JPlayer], TILES : (U Natural [Listof Tile]) }}
-   #; {type JPlayer = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
-   
-   MAP PLAYERS SCORE TILES
+   MAP PLAYERS TILES
 
-   (contract-out
-    [state->jsexpr (-> state? jsexpr?)]
-    [jsexpr->state (-> jsexpr? (or/c state? #false))]
-    [jsexpr->pk    (-> jsexpr? (or/c state? #false))])))
-  
+   #; {[X Y Z U W]
+       [GameState X Y Z]
+       [[Listof Y] -> [Listof W]]
+       [Z -> U]
+       ->
+       {MAP : JMap, PLAYERS : [Cons JPlayer [Listof W]], TILES : U}} ;; an Object w/ 3 fields 
+   state->jsexpr/g
+
+
+   #; {[X Y Z]
+       [JSexpr -> Option<Z>]
+       [JSexpr -> Option<Cons [SoPlayer X] [Listof Y]>]
+       -> JSexpr
+       -> Option<[GameState X Y Z]>}
+   jsexpr->state/g))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/coordinates)
+(require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
-(require (prefix-in 2: 2htdp/image))
 (require SwDev/Lib/list)
+(require (prefix-in 2: 2htdp/image))
 
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
@@ -108,17 +79,13 @@
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ json
+  (require (submod Qwirkle/Common/state-of-player json))
   (require (submod Qwirkle/Common/map json))
-  (require (submod Qwirkle/Common/placement json))
-  (require (submod Qwirkle/Common/tiles json))
-  (require Qwirkle/Lib/parse-json)
-  (require json))
+  (require Qwirkle/Lib/parse-json))
 
-(module+ test
+(module+ test 
   (require (submod ".."))
   (require (submod ".." examples))
-  (require (submod ".." json))
-  (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
@@ -126,121 +93,96 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (struct state [map players tiles] #:prefab)
-(struct sop [score tiles player] #:prefab)
 
-#; {SoPlayer -> SoPlayer}
-(define (sop-special first)
-  (match-define [sop score tiles payload] first)
-  (cond
-    [(or (symbol? payload) (string? payload)) first]
-    [else (object-name payload)]))
+#; {[X Y Z] Map [SoPlayer X] [Listof Y] Z -> [GameState X Y Z]}
+(define (create-state gmap player-one others tiles)
+  (state gmap (cons player-one others) tiles))
 
-;; ---------------------------------------------------------------------------------------------------
-#; {[Y] Map [Listof [List [Listof Tile] Y]] -> [RefState Y]}
-(define (create-ref-state gmap payload #:tiles0 (tiles0 '[]))
-  (state gmap (map (λ (p) (apply sop 0 p)) payload) tiles0))
+#; {[X Y Z U V W]
+    [[SoPlayer X] -> {SoPlayer U}]
+    [Y -> V]
+    [Y -> W]
+    -> 
+    [GameState X Y Z]
+    ->
+    [GameState U V W]}
+(define ((transform-state t-1player t-player* t-tiles) s)
+  (match-define [state gmap (cons first players) tiles] s)
+  (state gmap (cons (t-1player first) (map t-player* players)) (t-tiles tiles)))
 
-#; {[Y] [RefState Y] -> PubKnowledge}
-(define (ref-state-to-info-state rgs)
-  (match-define [state gmap (cons first players) tiles] rgs)
-  (state gmap (cons (sop-special first) (map sop-score players)) (length tiles)))
+#; {[X Y] [GameState X Y] -> [GameState X Y]}
+(define (state-rotate s)
+  (match-define [state map players tiles] s)
+  (state map (list-rotate+ players) tiles))
 
-(module+ examples
-  (define handouts (make-list 6 #s(tile diamond green)))
-  (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
-  (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
-  (define info-starter-state (ref-state-to-info-state ref-starter-state))
-  ;; what `ref-starter-state` evolves into after the tiles have been handed out 
-  (define starter-players-handout [list [list qwirkle-tile* 'player2] [list handouts 'player1]])
-  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout))
-  (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout)))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> [RefState Y]}
-
-(module+ test
-  (check-equal? 
-   (complete-turn ref-starter-state starter-map 0 starter-tile*)
-   ref-starter-state-handout))
-
-(define (complete-turn s new-map delta-score old-tile*)
-  (match-define [state _ (cons first-player others) tiles] s)
-  (define-values [handouts new-tiles] (replace-tiles old-tile* tiles))
-  (define first-player++  (swap-tiles-and-points first-player delta-score old-tile* handouts))
-  (define new-player-order (list-rotate+ (cons first-player++ others)))
-  (state new-map new-player-order new-tiles))
-
-#; {[Listof Tiles] [Listof Tiles] -> (values [Listof Tiles] [Listof Tiles])}
+#; {[X Y] [GameSTate X Y] [Listof Tiles] -> (values [Listof Tile] [GameSTate X Y])}
 ;; produce the list of tiles to be handed to the player and the remainder 
-(define (replace-tiles placed-tiles tiles)
-  (define n (length placed-tiles))
+(define (state-replace-tiles s placed-tile*)
+  (match-define [state map (cons first others) tiles] s)
+  (define n (length placed-tile*))
   (define k (length tiles))
-  (if (< n k)
-      (values (take tiles n) (drop tiles n))
-      (values tiles '[])))
+  (define-values [handouts tiles++]
+    (if (< n k)
+        (values (take tiles n) (drop tiles n))
+        (values tiles          '[])))
+  (define players++ (cons (hand-to first handouts placed-tile*) others))
+  (values handouts (state map players++ tiles++)))
 
-#; {Player N [Listof Tile] [Listof Tile] -> Player}
-(define (swap-tiles-and-points player delta old-tile* new-tile*)
-  (match-define [sop score tiles payload] player)
-  (sop (+ score delta) (append new-tile* (remove* old-tile* tiles)) payload))
+#; {[X Y] [GameSTate X Y] N -> [GameSTate X Y]}
+(define (state-score++ s delta-score)
+  (match-define [state map (cons first players) tiles] s)
+  (state map (cons (sop-score++ first delta-score) players) tiles))
+
+#; {[X Y] [GameSTate X Y] Map -> [GameSTate X Y]}
+(define (state-map++ s new-map)
+  (match-define [state map players tiles] s)
+  (state new-map players tiles))
 
 ;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; states and successor states 
-  (define +ref-starter-state (create-ref-state starter-map (list (list (list +starter-tile) 'p12))))
-  (define info-+ref-starter-state (ref-state-to-info-state +ref-starter-state))
-  (define +ref-atop-state (create-ref-state map0 (list (list (list #s(tile circle red)) 'p12))))
+
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
+(define (create-1player-state map0 active-player-spec)
+  (state map0 (list (apply sop 0 active-player-spec)) '[]))
+
+(module+ examples ;; states and successor states
+  
+  (define +ref-starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
+  
+  (define +ref-atop-state (create-1player-state map0 (list (list #s(tile circle red)) 'p12)))
 
   (define special-tiles (map placement-tile special-placements))
-  (define special-state (create-ref-state special-map (list (list special-tiles 'ps))))
-  (define info-special-state (ref-state-to-info-state special-state))
+  (define special-state (create-1player-state special-map (list special-tiles 'ps)))
   
   (define special-state+green-circle-at--2-2
-    (create-ref-state special-map+green-circle-at--2-2 `[([#s(tile circle orange)] ppp)]))
+    (create-1player-state special-map+green-circle-at--2-2 `[[#s(tile circle orange)] ppp]))
 
   (define bad-map   (legal special-state special-placements))
-  (define bad-state (create-ref-state bad-map (list '((#s(tile square orange)) ps))))
-  (define info-bad-state (ref-state-to-info-state bad-state)))
-
-;; ---------------------------------------------------------------------------------------------------
-;; apply a single placement to a PubKnowledge state w/o updating the score .. should it? 
-
-(module+ test
-  (define info-state-after-first-special-placement
-    #s(state
-       #hash((#s(coordinate -1 1) . #s(tile diamond green))
-             (#s(coordinate -3 0) . #s(tile star red))
-             (#s(coordinate -2 0) . #s(tile 8star red))
-             (#s(coordinate -4 1) . #s(tile clover green))
-             (#s(coordinate  0 0) . #s(tile circle red))
-             (#s(coordinate  0 1) . #s(tile circle green))
-             (#s(coordinate -4 0) . #s(tile clover red))
-             (#s(coordinate -1 0) . #s(tile diamond red)))
-       (#s(sop 0 (#s(tile star green)) ps))
-       0))
-  
-  (check-equal? (apply-action info-special-state (first special-placements))
-                info-state-after-first-special-placement "place first special on info-pk"))
-
-#; {PubKnowledge Placement -> PubKnowledge}
-(define (apply-action pk p)
-  (match-define [state gmap (cons first others) pk-tiles]  pk)
-  (define co (placement-coordinate p))
-  (define ti (placement-tile p))
-  (define new-map (add-tile gmap co ti))
-  (match-define [sop score player-tiles payload] first)
-  (define first++ (sop score (remove ti player-tiles) payload))
-  (state new-map (cons first++ others) pk-tiles))
+  (define bad-state (create-1player-state bad-map '[(#s(tile square orange)) ps])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; legality of placements
 
-#; {[Y] [RefState Y] Placement* -> Option<Map>}
+#; {[X Y Z] [GameState X Y Z] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
 (define (legal gstate placements)
   (define placed-tiles (map placement-tile placements))
   (define coordinate*  (map placement-coordinate placements))
   (and
-   (current-player-owns-tiles (first (state-players gstate)) placed-tiles)
+   (player-owns-tiles (first (state-players gstate)) placed-tiles)
    (or (same-row coordinate*) (same-column coordinate*))
    (all-adjacent-and-fits? (state-map gstate) placements)))
 
@@ -260,32 +202,18 @@
         (return #false))
       (add-tile gmap co ti))))
 
-#; {Player [Listof Tile] -> Boolean}
-(module+ test
-  (define the-starter-player (apply sop 0 (first starter-players)))
-  (check-true (current-player-owns-tiles the-starter-player starter-tile*) "it owns lshaped")
-  (check-true (current-player-owns-tiles (sop 0 (cons +starter-tile tiles1) 'p) tiles1) "owns, 1"))
-(define (current-player-owns-tiles player placed-tiles)
-  (define tiles-owned (sop-tiles player))
-  (for/and ([placed placed-tiles])
-    (begin0
-      (cons? (member placed tiles-owned))
-      (set! tiles-owned (remove placed tiles-owned)))))
-
 (module+ test ;; legal integration tests 
+  (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
+  (check-false (legal bad-state bad-spec-plmnt))
+  (check-true (map? (legal special-state special-placements)))
+
   (check-equal? (legal special-state+green-circle-at--2-2 place-green-circle-at--2-2)
                 special-map+green-circle-at--2-2++)
-  
-  (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
-  (check-false (legal ref-starter-state lshaped-placement*) "b/c p* is lshaped")
-
-  (check-true (map? (legal special-state special-placements)))
-  (check-false (legal bad-state bad-spec-plmnt))
 
   #; {Map [Listof Placement] Option<Map> String -> Void}
   (define (check-legal gmap pp expected msg)
     (define tiles* (map placement-tile pp))
-    (define gstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
+    (define gstate0 (create-1player-state gmap `[,(cons +starter-tile tiles*) ,(~a 'player msg)]))
     (check-equal? (legal gstate0 pp) expected msg))
 
   ;; run all scenarios
@@ -363,92 +291,44 @@
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; render a referee state 
-
-#; {[Y] [RefState Y] -> Image}
-(define (render-ref-state gs)
+(define ((render-ref-state/g render-sop) gs)
   (match-define [state gmap (cons first [list sop ...]) _] gs)
   (define gmap-image (render-map gmap))
   (define sop-images (render-sop* first sop render-sop))
   (2:beside/align 'top gmap-image hblank sop-images))
 
-#; {InforState -> Image}
-(define (render-info-state is)
-  (match-define [state gmap (cons first [list score ...]) _] is)
-  (define gmap-image (render-map gmap))
-  (define score-imgs (render-sop* first score (λ (s) (2:text (~a s) 20 'black))))
-  (2:beside/align 'top gmap-image hblank score-imgs))
-
-#; {[Y] SoPlayer Y [Y ->Image] -> Image}
-(define (render-sop* one l-sop render-one)
-  (define sop-images (cons (render-sop one) (map render-one l-sop)))
-  (for/fold ([r (first sop-images)]) ([s (rest sop-images)])
-    (2:above/align 'left r vblank s)))
-
-#; {[Y] {SoPlayer Y} -> Image}
-(define (render-sop 1sop)
-  (match-define [sop score tiles player] 1sop)
-  (define tiles-image (map render-tile tiles))
-  (define score-image (2:text (number->string score) 20 'black))
-  (define player-image (2:text (~a player) 20 'black))
-  (apply 2:beside/align 'top player-image hblank score-image hblank tiles-image))
-
 (define hblank (2:rectangle 10 1 'solid 'white))
-(define vblank (2:rectangle 1 10 'solid 'white))
-(module+ test
-  'infor-starter-state
-  (render-info-state info-starter-state)
-  'ref-starte-state
-  (render-ref-state ref-starter-state))
 
 ;; ---------------------------------------------------------------------------------------------------
+
 (module+ json
+
   (define MAP 'map)
   (define PLAYERS 'players)
-  (define SCORE 'score)
-  (define TILES 'tile*)
-
-  #; {PubKnowledge -> JState}
-  (define (state->jsexpr rb) ;; should be called state->pk 
-    (match-define [state gmap players tiles] rb)
-    (define jtiles (if (natural? tiles) tiles (map tile->jsexpr tiles)))
-    (hasheq MAP (map->jsexpr gmap) PLAYERS (players->jsexpr players) TILES jtiles))
-
-  #; {[Listof (U SoPlayer Natural)] -> [Listof JPLayer]}
-  (define/contract (players->jsexpr players)
-    (-> (cons/c sop? (listof natural?)) (listof jsexpr?))
-    (map 1player->jsexpr players))
-
-  #; {(U SoPlayer Natural) -> JPlayer}
-  (define (1player->jsexpr 1player)
-    (match 1player
-      [(sop score tiles _) (hasheq SCORE score TILES (map tile->jsexpr tiles))]
-      [(? natural?) 1player]))
   
-  (def/jsexpr-> state
-    #:object {[MAP map (? hash? gmap)]
-              [PLAYERS players (cons first (list n ...))]
-              [TILES tiles (list (? tile? t) ...)]}
-    (state gmap (cons first n) t))
+  #; {[X Y Z U W]
+      [GameState X Y Z]
+      [[Listof Y] -> [Listof W]]
+      [Z -> U]
+      ->
+      {MAP : JMap, PLAYERS : [Cons JPlayer [Listof W]], TILES : U}}
+  (define ((state->jsexpr/g players->jsexpr tiles->jsexpr) s)
+    (match-define [state gmap (cons active players) tiles] s)
+    (define jactive  (1player->jsexpr active))
+    (define jplayers (players->jsexpr players))
+    (hasheq MAP     (map->jsexpr gmap)
+            PLAYERS (cons jactive jplayers)
+            TILES   (tiles->jsexpr tiles)))
 
-  (def/jsexpr-> pk
-    #:object {[MAP map (? hash? gmap)]
-              [PLAYERS players (cons first (list n ...))]
-              [TILES (? natural? t)]}
-    (state gmap (cons first n) t))
-
-  (def/jsexpr-> players
-    #:array [(cons (app jsexpr->1player (? sop? first)) (list (? natural? n) ...)) (cons first n)])
-
-  (def/jsexpr-> 1player
-    #:object {[SCORE (? natural? s)] [TILES tiles (list t ...)]}
-    (sop s t 'player1))
-
-  (def/jsexpr-> tiles #:array [(list (app jsexpr->tile (? tile? t)) ...) t]) 
-  
-  ;; for testing only 
-  (provide jsexpr->1player jsexpr->players jsexpr->tiles))
-  
-(module+ test
-  ; (check-equal? (jsexpr->state (state->jsexpr ref-starter-state)) ref-starter-state)
-  (check-equal? (jsexpr->pk (state->jsexpr info-starter-state)) info-starter-state))
+  #; {[X Y Z]
+      [JSexpr -> Option<Z>]
+      [JSexpr -> Option<Cons [SoPlayer X] [Listof Y]>]
+      -> JSexpr
+      -> Option<[GameState X Y Z]>}
+  (define ((jsexpr->state/g jsexpr->players jsexpr->tiles) j)
+    (def/jsexpr-> state
+      #:object {[MAP     map     (? hash? gmap)]
+                [PLAYERS players (cons (? sop? first) p)]
+                [TILES   tiles   (? identity t)]} ;; not #false 
+      (state gmap (cons first p) t))
+    (jsexpr->state j)))
