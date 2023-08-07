@@ -4,6 +4,9 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
+ (all-from-out Qwirkle/Common/game-state))
+
+(provide
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
  ;; the referee knows the state of every player and the sequence of tiles it is handing out 
 
