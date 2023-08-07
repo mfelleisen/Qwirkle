@@ -33,17 +33,19 @@
    constrained-special))
 
 ;; ---------------------------------------------------------------------------------------------------
-(require Qwirkle/Common/game-state)
-(require Qwirkle/Common/state-of-player)
+(require Qwirkle/Referee/ref-state)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
 
+(module+ examples
+  (require (submod Qwirkle/Referee/ref-state examples)))
+
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
-           
+  (require (submod Qwirkle/Referee/ref-state examples))
   (require (submod Qwirkle/Common/game-state examples))
   (require rackunit))
 
@@ -77,7 +79,7 @@
 (define dag-strategy (make-strategy smallest))
 
 (module+ test
-  (check-equal? (dag-strategy info-special-state) the-special-place)
+  (check-equal? (dag-strategy special-state) the-special-place)
   (check-equal? (dag-strategy info-+starter-state) ref-place)
   (check-equal? (dag-strategy info-starter-state) REPLACEMENT)
   (check-equal? (dag-strategy info-bad-state) PASS))
