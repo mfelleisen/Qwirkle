@@ -34,6 +34,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Common/game-state)
+(require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/placement)
@@ -50,7 +51,7 @@
 #; {-> Strategy}
 (define ((make-strategy smallest) pk)
   (define gmap      (state-map pk))
-  (define my-tiles  (sort (sop-tiles (first (state-players pk))) tile<))
+  (define my-tiles  (sort (state-active-tiles pk) tile<))
   (define remaining (state-tiles pk))
   (define exists?   (is-there-a-placement gmap my-tiles))
   (cond
