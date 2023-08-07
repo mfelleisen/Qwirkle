@@ -11,7 +11,7 @@ echo "start" > errors.txt
 time raco test Lib/*.rkt 2>> errors.txt
 time raco test Common/*.rkt 2>> errors.txt
 time raco test Players/*.rkt 2>> errors.txt
-# time raco test Referee/referee.rkt 2>> errors.txt
+time raco test Referee/referee.rkt 2>> errors.txt
 # time raco test Remote/*.rkt 2>> errors.txt
 # time raco test Client/*.rkt 2>> errors.txt
 # time raco test Server/*.rkt 2>> errors.txt
