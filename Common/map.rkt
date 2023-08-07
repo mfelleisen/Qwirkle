@@ -26,8 +26,10 @@
  
  (contract-out
   [start-map  (-> tile? map?)]
-  [add-tile   (->i ([b map?] [c coordinate?] [t tile?]) #:pre (b c) (adjacent? b c) (r map?))]
   [render-map (-> map? 2:image?)]
+  [add-tile
+   (->i ([b map?] [p placement?]) #:pre/name (b p) "neighbor?" (adjacent? b (placement-coordinate p))
+        (r map?))]
   
   [find-candidates
    ;; where can the given tile extend this map 
@@ -109,52 +111,54 @@
 
 #; {Map Coordinate Tile -> Map}
 ;; pre: c must be adjacent to some other tile meaning the two share a tile 
-(define (add-tile b c t)
-  (hash-set b c t))
+(define (add-tile b p)
+  (define co (placement-coordinate p))
+  (define ti (placement-tile p))
+  (hash-set b co ti))
 
 (module+ examples
   (define special-map
     (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
-           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
-           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
-           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
+           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
+           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
+           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
            ;; hooks 
-           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
-           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))])
+           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
+           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))])
       s))
 
   (define special-map+green-circle-at--2-2
     (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
-           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
-           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
-           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
+           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
+           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
+           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
            ;; hooks 
-           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
-           [s (add-tile s #s(coordinate -4 2) #s(tile clover purple))]
-           [s (add-tile s #s(coordinate -3 2) #s(tile circle purple))]
-           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))]
-           [s (add-tile s #s(coordinate  0 2) #s(tile circle yellow))]
-           [s (add-tile s #s(coordinate +1 2) #s(tile circle purple))]
-           [s (add-tile s #s(coordinate -1 2) #s(tile circle blue))])
+           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
+           [s (add-tile s #s(placement #s(coordinate -4 2) #s(tile clover purple)))]
+           [s (add-tile s #s(placement #s(coordinate -3 2) #s(tile circle purple)))]
+           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))]
+           [s (add-tile s #s(placement #s(coordinate  0 2) #s(tile circle yellow)))]
+           [s (add-tile s #s(placement #s(coordinate +1 2) #s(tile circle purple)))]
+           [s (add-tile s #s(placement #s(coordinate -1 2) #s(tile circle blue)))])
       s))
 
   (define special-map+green-circle-at--2-2++
     (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(coordinate -1 0) #s(tile diamond red))]
-           [s (add-tile s #s(coordinate -2 0) #s(tile 8star red))]
-           [s (add-tile s #s(coordinate -3 0) #s(tile star red))]
-           [s (add-tile s #s(coordinate -4 0) #s(tile clover red))]
+           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
+           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
+           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
+           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
            ;; hooks 
-           [s (add-tile s #s(coordinate -4 1) #s(tile clover green))]
-           [s (add-tile s #s(coordinate -4 2) #s(tile clover purple))]
-           [s (add-tile s #s(coordinate -3 2) #s(tile circle purple))]
-           [s (add-tile s #s(coordinate -2 2) #s(tile circle orange))]
-           [s (add-tile s #s(coordinate -1 2) #s(tile circle blue))]
-           [s (add-tile s #s(coordinate  0 1) #s(tile circle green))]
-           [s (add-tile s #s(coordinate +1 2) #s(tile circle purple))]
-           [s (add-tile s #s(coordinate  0 2) #s(tile circle yellow))])
+           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
+           [s (add-tile s #s(placement #s(coordinate -4 2) #s(tile clover purple)))]
+           [s (add-tile s #s(placement #s(coordinate -3 2) #s(tile circle purple)))]
+           [s (add-tile s #s(placement #s(coordinate -2 2) #s(tile circle orange)))]
+           [s (add-tile s #s(placement #s(coordinate -1 2) #s(tile circle blue)))]
+           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))]
+           [s (add-tile s #s(placement #s(coordinate +1 2) #s(tile circle purple)))]
+           [s (add-tile s #s(placement #s(coordinate  0 2) #s(tile circle yellow)))])
       s)))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -190,8 +194,8 @@
 (module+ test
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
   (check-equal? (find-candidates start+1-map-unfit starter-tile) start+1-can))
-(define (find-candidates map t)
-  (for*/set ([co (in-set (all-free-neighbors map))] [can (in-value (fits map co t))] #:when can)
+(define (find-candidates gmap t)
+  (for*/set ([co (in-set (all-free-neighbors gmap))] [can (in-value (fits gmap co t))] #:when can)
     can))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -417,13 +421,14 @@
 
   #; {Map [Listof Tile] [Listof Coordinate] -> Map}
   (define (add-tile* starter-map starter-tile* lshaped-coordinates)
-    (for/fold ([s starter-map]) ([t starter-tile*] [co lshaped-coordinates]) (add-tile s co t))))
+    (for/fold ([s starter-map]) ([t starter-tile*] [co lshaped-coordinates])
+      (add-tile s (placement co t)))))
 
 (module+ examples
   (define map0 ;; base scenario 
     (let* ([s (start-map #s(tile clover red))]
-           [s (add-tile s #s(coordinate +1 0) #s(tile diamond red))]
-           [s (add-tile s #s(coordinate +2 0) #s(tile circle red))])
+           [s (add-tile s #s(placement #s(coordinate +1 0) #s(tile diamond red)))]
+           [s (add-tile s #s(placement #s(coordinate +2 0) #s(tile circle red)))])
       s))
 
   ;; maps from the Qwirkle web page 
@@ -448,7 +453,7 @@
          (candidate [coordinate  0 +1] starter-tile #f #f #f)
          (candidate [coordinate +1  0] #f starter-tile #f #f)])
   
-  (define start+1-map-unfit (add-tile starter-map (coordinate 0 -1) (tile '8star 'green)))
+  (define start+1-map-unfit (add-tile starter-map (placement (coordinate 0 -1) (tile '8star 'green))))
   (define start+1-free
     (let* ([s (rest starter-free)]
            [t (list (coordinate 0 -2) (coordinate -1 -1) (coordinate +1 -1))]
