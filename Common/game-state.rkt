@@ -64,7 +64,21 @@
        -> Option<[GameState X Y Z]>}
    jsexpr->state/g))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                  ;                       
+;                                                          
+;    ;;;;   ;;;    ;;;;  ;   ;   ;;;    ;;;;   ;;;    ;;;  
+;    ;;  ; ;;  ;  ;; ;;  ;   ;     ;    ;;  ; ;;  ;  ;   ; 
+;    ;     ;   ;; ;   ;  ;   ;     ;    ;     ;   ;; ;     
+;    ;     ;;;;;; ;   ;  ;   ;     ;    ;     ;;;;;;  ;;;  
+;    ;     ;      ;   ;  ;   ;     ;    ;     ;          ; 
+;    ;     ;      ;; ;;  ;   ;     ;    ;     ;      ;   ; 
+;    ;      ;;;;   ;;;;   ;;;;   ;;;;;  ;      ;;;;   ;;;  
+;                     ;                                    
+;                     ;                                    
+;                     ;                                    
+
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/map)
@@ -91,7 +105,21 @@
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;       ;                                  ;            ;;        
+;       ;           ;                      ;           ;          
+;       ;           ;                      ;           ;          
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;;        
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;          
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;          
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;          
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;          
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;     ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;     ;;   
+;                                                                 
+;                                                                 
+;                                                                 
+
 (struct state [map players tiles] #:prefab)
 
 #; {[X Y Z] Map [SoPlayer X] [Listof Y] Z -> [GameState X Y Z]}
@@ -173,8 +201,20 @@
   (define bad-map   (legal special-state special-placements))
   (define bad-state (create-1player-state bad-map '[(#s(tile square orange)) ps])))
 
-;; ---------------------------------------------------------------------------------------------------
-;; legality of placements
+;                                     
+;                                     
+;   ;;;                         ;;;   
+;     ;                           ;   
+;     ;     ;;;    ;;;;  ;;;;     ;   
+;     ;    ;;  ;  ;;  ;      ;    ;   
+;     ;    ;   ;; ;   ;      ;    ;   
+;     ;    ;;;;;; ;   ;   ;;;;    ;   
+;     ;    ;      ;   ;  ;   ;    ;   
+;     ;    ;      ;; ;;  ;   ;    ;   
+;      ;;   ;;;;   ;;;;   ;;;;     ;; 
+;                     ;               
+;                  ;  ;               
+;                   ;;                
 
 #; {[X Y Z] [GameState X Y Z] Placement* -> Option<Map>}
 ;; are the placements legal according to the rules of Q? If so, produce the new map; otherwise #false
@@ -202,6 +242,7 @@
         (return #false))
       (add-tile gmap co ti))))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; legal integration tests 
   (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal bad-state bad-spec-plmnt))
@@ -223,8 +264,20 @@
         [ii (in-naturals)])
     (check-legal m0 pp m+ (~a "step " ii))))
 
-;; ---------------------------------------------------------------------------------------------------
-;; scoring placements
+;                                     
+;                                     
+;                                     
+;                                     
+;    ;;;    ;;;    ;;;    ;;;;   ;;;  
+;   ;   ;  ;;  ;  ;; ;;   ;;  ; ;;  ; 
+;   ;      ;      ;   ;   ;     ;   ;;
+;    ;;;   ;      ;   ;   ;     ;;;;;;
+;       ;  ;      ;   ;   ;     ;     
+;   ;   ;  ;;     ;; ;;   ;     ;     
+;    ;;;    ;;;;   ;;;    ;      ;;;; 
+;                                     
+;                                     
+;                                     
 
 (define Q-BONUS 6)
 
@@ -264,6 +317,7 @@
 (define (q-bonus line count)
   (if (or (all-colors? line) (all-shapes? line)) (+ Q-BONUS count) count))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
   (define score1  10)
   (define score2   5)
@@ -290,7 +344,21 @@
   (check-equal? (score map10 plmt9) score10 "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                            
+;                            ;               
+;                            ;               
+;                            ;               
+;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;; 
+;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;
+;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;    
+;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;    
+;    ;     ;      ;   ;  ;   ;  ;       ;    
+;    ;     ;      ;   ;  ;; ;;  ;       ;    
+;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;    
+;                                            
+;                                            
+;                                            
+
 (define ((render-ref-state/g render-sop) gs)
   (match-define [state gmap (cons first [list sop ...]) _] gs)
   (define gmap-image (render-map gmap))
@@ -299,9 +367,22 @@
 
 (define hblank (2:rectangle 10 1 'solid 'white))
 
-;; ---------------------------------------------------------------------------------------------------
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
 
-(module+ json
+(module+ json ;; tested via ref-state in Referee/
 
   (define MAP 'map)
   (define PLAYERS 'players)
