@@ -25,23 +25,33 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define-syntax (def/jsexpr-> stx)
   (syntax-parse stx
-    [(_ arr #:array [pat body ...])
-     #:with unparser (format-id stx "jsexpr->~a" #'arr #:source #'arr #:props stx)
-     #'(define unparser
+    [(_ to #:plain pred?)
+     #:with name (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
+     #`(define name
+         (λ (j)
+           (match j
+             [(? pred? x) x]
+             [_ (eprintf "~a value does not satisfy ~a?\n  ~a\n" 'name 'to (jsexpr->string j))
+                #false])))]
+
+    [(_ to #:array [pat body ...])
+     #:with name (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
+     #'(define name
          (λ (j)
            (match j
              [pat body ...]
-             [_ (eprintf "~a object does not match schema\n  ~a\n" 'arr (jsexpr->string j #:indent 2))
+             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string j #:indent 2))
                 #false])))]
-    [(_ obj #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
-     #:with jsexpr-parser  (format-id stx "jsexpr->~a" #'obj #:source #'obj #:props stx)
+    
+    [(_ to #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
+     #:with jsexpr-parser  (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
      #:do [(define plist (syntax->list #'(parse ...)))]
      #:with (jsexpr-> ...) (map (λ (u) (format-id u "jsexpr->~a" u #:source u #:props u)) plist)
      #'(define jsexpr-parser
          (λ (j)
            (match j
              [(hash-table [(? (curry eq? key)) (app jsexpr-> pat)] ...) body ...]
-             [_ (eprintf "~a object does not match schema\n  ~a\n" 'obj (jsexpr->string j #:indent 2))
+             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string j #:indent 2))
                 #false])))]))
 
 (define (jsexpr->id x) x)
