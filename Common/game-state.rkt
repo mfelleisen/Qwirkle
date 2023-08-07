@@ -41,8 +41,7 @@
 
 (module+ examples
   (provide
-   +ref-starter-state
-   +ref-atop-state
+   +starter-state
    special-state
    special-state+green-circle-at--2-2
    bad-state))
@@ -188,9 +187,10 @@
 
 (module+ examples ;; states and successor states
   
-  (define +ref-starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
-  
-  (define +ref-atop-state (create-1player-state map0 (list (list #s(tile circle red)) 'p12)))
+  (define +starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
+
+  (provide +atop-state) ;; local testing only 
+  (define +atop-state (create-1player-state map0 (list (list #s(tile circle red)) 'p12)))
 
   (define special-tiles (map placement-tile special-placements))
   (define special-state (create-1player-state special-map (list special-tiles 'ps)))
@@ -276,7 +276,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; legal integration tests 
-  (check-false (legal +ref-atop-state place-atop-starter) "b/c can't place tile atop another")
+  (check-false (legal +atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal bad-state bad-spec-plmnt))
   (check-true (map? (legal special-state special-placements)))
 

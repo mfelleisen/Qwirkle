@@ -38,7 +38,7 @@
 
    info-starter-state
    info-starter-state-handout
-   info-+ref-starter-state
+   info-+starter-state
    info-special-state
    info-bad-state))
 
@@ -52,15 +52,28 @@
     #; {type JPK = { MAP : JMap, PLAYERS : [Cons JPlayer [Listof N]], TILES : Natural}}
     [pk->jsexpr    (-> state? j:jsexpr?)]
     [jsexpr->pk    (->* (j:jsexpr?) (#:name any/c) (or/c state? #false))])))
-  
-;; ---------------------------------------------------------------------------------------------------
+
+;                                                          
+;                                                          
+;                                  ;                       
+;                                                          
+;    ;;;;   ;;;    ;;;;  ;   ;   ;;;    ;;;;   ;;;    ;;;  
+;    ;;  ; ;;  ;  ;; ;;  ;   ;     ;    ;;  ; ;;  ;  ;   ; 
+;    ;     ;   ;; ;   ;  ;   ;     ;    ;     ;   ;; ;     
+;    ;     ;;;;;; ;   ;  ;   ;     ;    ;     ;;;;;;  ;;;  
+;    ;     ;      ;   ;  ;   ;     ;    ;     ;          ; 
+;    ;     ;      ;; ;;  ;   ;     ;    ;     ;      ;   ; 
+;    ;      ;;;;   ;;;;   ;;;;   ;;;;;  ;      ;;;;   ;;;  
+;                     ;                                    
+;                     ;                                    
+;                     ;                                    
+
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/tiles)
+(require Qwirkle/Common/game-state)
 (require Qwirkle/Common/state-of-player)
 (require SwDev/Lib/list)
 (require (prefix-in 2: 2htdp/image))
-
-(require Qwirkle/Common/game-state)
 
 (module+ examples
   (require (submod Qwirkle/Common/game-state examples))
@@ -83,7 +96,21 @@
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                            
+;                                            
+;                                 ;          
+;                                 ;          
+;    ;;;    ;;;;   ;;;   ;;;;   ;;;;;   ;;;  
+;   ;;  ;   ;;  ; ;;  ;      ;    ;    ;;  ; 
+;   ;       ;     ;   ;;     ;    ;    ;   ;;
+;   ;       ;     ;;;;;;  ;;;;    ;    ;;;;;;
+;   ;       ;     ;      ;   ;    ;    ;     
+;   ;;      ;     ;      ;   ;    ;    ;     
+;    ;;;;   ;      ;;;;   ;;;;    ;;;   ;;;; 
+;                                            
+;                                            
+;                                            
+
 #; {[Y] Map [Listof [List [Listof Tile] Y]] -> [RefState Y]}
 (define (create-ref-state gmap payload #:tiles0 (tiles0 '[]))
   (match-define (cons first others) (map (λ (p) (apply sop 0 p)) payload))
@@ -92,7 +119,52 @@
 #; {[Y] [RefState Y] -> PubKnowledge}
 (define ref-state-to-info-state (transform-state sop-special sop-score length))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
+(module+ examples
+  (provide handouts)
+  (define handouts (make-list 6 #s(tile diamond green)))
+  (provide starter-players)
+  (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
+  (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
+  (define starter-players-handout [list [list '() 'player1] [list qwirkle-tile* 'player2]])
+  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
+
+(module+ examples ;; states and successor states
+  (define info-starter-state (ref-state-to-info-state ref-starter-state))
+  (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout))
+  (define info-+starter-state (ref-state-to-info-state +starter-state))
+  (define info-special-state (ref-state-to-info-state special-state))
+  (define info-bad-state (ref-state-to-info-state bad-state)))
+
+;                                                          
+;                                                          
+;                               ;;;             ;          
+;                                 ;             ;          
+;    ;;;    ;;;  ;;;;;;  ;;;;     ;     ;;;   ;;;;;   ;;;  
+;   ;;  ;  ;; ;; ;  ;  ; ;; ;;    ;    ;;  ;    ;    ;;  ; 
+;   ;      ;   ; ;  ;  ; ;   ;    ;    ;   ;;   ;    ;   ;;
+;   ;      ;   ; ;  ;  ; ;   ;    ;    ;;;;;;   ;    ;;;;;;
+;   ;      ;   ; ;  ;  ; ;   ;    ;    ;        ;    ;     
+;   ;;     ;; ;; ;  ;  ; ;; ;;    ;    ;        ;    ;     
+;    ;;;;   ;;;  ;  ;  ; ;;;;      ;;   ;;;;    ;;;   ;;;; 
+;                        ;                                 
+;                        ;                                 
+;                        ;                                 
+
 #; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> (values [Listof Tile] [RefState Y])}
 
 (define (complete-turn s new-map delta-score tiles-placed)
@@ -113,14 +185,6 @@
   (match-define [cons first others] (state-players s))
   (values handouts (create-state (state-map s) first others tiles++)))
 
-(module+ examples
-  (provide handouts)
-  (define handouts (make-list 6 #s(tile diamond green)))
-  (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
-  (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
-  (define starter-players-handout [list [list '() 'player1] [list qwirkle-tile* 'player2]])
-  (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
-
 (module+ test
   (check-equal?
    (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) s)
@@ -129,21 +193,30 @@
    (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) h)
    handouts))
 
-(module+ examples ;; states and successor states
-  (define info-starter-state (ref-state-to-info-state ref-starter-state))
-  (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout))
-  (define info-+ref-starter-state (ref-state-to-info-state +ref-starter-state))
-  (define info-special-state (ref-state-to-info-state special-state))
-  (define info-bad-state (ref-state-to-info-state bad-state)))
-
 ;; ---------------------------------------------------------------------------------------------------
 #; {[X Y] [GameState X Y] -> [GameState X Y]}
 (define (state-rotate s)
   (match-define [cons first others] (list-rotate+ (state-players s)))
   (create-state (state-map s) first others (state-tiles s)))
 
-;; ---------------------------------------------------------------------------------------------------
-;; render states 
+(module+ test
+  (define rotated (create-ref-state starter-map (list-rotate+ starter-players) #:tiles0 handouts))
+  (check-equal? (state-rotate ref-starter-state) rotated))
+
+;                                            
+;                            ;               
+;                            ;               
+;                            ;               
+;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;; 
+;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;
+;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;    
+;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;    
+;    ;     ;      ;   ;  ;   ;  ;       ;    
+;    ;     ;      ;   ;  ;; ;;  ;       ;    
+;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;    
+;                                            
+;                                            
+;                                            
 
 #; {[Y] [RefState Y] -> Image}
 (define render-ref-state (render-ref-state/g render-sop))
@@ -157,7 +230,21 @@
   'ref-starte-state
   (render-ref-state ref-starter-state))
 
-;; ---------------------------------------------------------------------------------------------------
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
   (define state->jsexpr (state->jsexpr/g players->jsexpr tiles->jsexpr))
   (define pk->jsexpr    (state->jsexpr/g natural->jsexpr natural->jsexpr))
