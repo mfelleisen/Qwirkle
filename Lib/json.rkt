@@ -6,7 +6,8 @@
   jsexpr->boolean boolean->jsexpr
   jsexpr->natural natural->jsexpr
   jsexpr->void    void->jsexpr
-  jsexpr->string  string->jsexpr)
+  jsexpr->string  string->jsexpr
+  jsexpr->symbol  symbol->jsexpr)
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -30,3 +31,6 @@
 (define string->jsexpr values)
 (def/jsexpr-> string #:plain string?)
 
+;; symbols
+(define symbol->jsexpr ~a)
+(define jsexpr->symbol string->symbol)

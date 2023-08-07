@@ -60,17 +60,36 @@
 (module+ json
   (provide
    SHAPE
-   COLOR 
-   (contract-out 
-    [tile->jsexpr (-> tile? jsexpr?)]
-    [jsexpr->tile (-> jsexpr? (or/c tile? #false))])))
+   COLOR
 
-;; ---------------------------------------------------------------------------------------------------
+   jsexpr->tiles
+   tiles->jsexpr 
+
+   (contract-out 
+    [tile->jsexpr (-> tile? j:jsexpr?)]
+    [jsexpr->tile (-> j:jsexpr? (or/c tile? #false))])))
+
+;                                                          
+;                                                          
+;                                  ;                       
+;                                                          
+;    ;;;;   ;;;    ;;;;  ;   ;   ;;;    ;;;;   ;;;    ;;;  
+;    ;;  ; ;;  ;  ;; ;;  ;   ;     ;    ;;  ; ;;  ;  ;   ; 
+;    ;     ;   ;; ;   ;  ;   ;     ;    ;     ;   ;; ;     
+;    ;     ;;;;;; ;   ;  ;   ;     ;    ;     ;;;;;;  ;;;  
+;    ;     ;      ;   ;  ;   ;     ;    ;     ;          ; 
+;    ;     ;      ;; ;;  ;   ;     ;    ;     ;      ;   ; 
+;    ;      ;;;;   ;;;;   ;;;;   ;;;;;  ;      ;;;;   ;;;  
+;                     ;                                    
+;                     ;                                    
+;                     ;                                    
+
 (require 2htdp/image)
 
 (module+ json
+  (require Qwirkle/Lib/json)
   (require Qwirkle/Lib/parse-json)
-  (require json))
+  (require (prefix-in j: json)))
 
 (module+ test
   (require (submod ".."))
@@ -78,38 +97,25 @@
   (require (submod ".." json))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;       ;                                  ;            ;;        
+;       ;           ;                      ;           ;          
+;       ;           ;                      ;           ;          
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;;        
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;          
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;          
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;          
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;          
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;     ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;     ;;   
+;                                                                 
+;                                                                 
+;                                                                 
+
 (struct tile [shape color] #:prefab)
 
 (define-match-expander (tile/m s c) (λ (stx) #'(tile s c)))
 
-(module+ examples
-  (define starter-tile (tile 'star 'red))
-  (define +starter-tile (tile 'circle 'red))
-
-  (define 8-green (tile '8star 'green))
-  (define sq-blue (tile 'square 'blue))
-  (define ci-llow (tile 'circle 'yellow))
-  (define cr-prpl (tile 'clover 'purple))
-  (define di-llow (tile 'diamond 'yellow))
-  (define ci-ange (tile 'circle 'orange))
-
-  (define starter-tile* [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
-  (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
-  
-  (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
-  (define tiles1 (list #s(tile circle blue)))
-  (define tiles2 (list #s(tile clover green) #s(tile diamond green)))
-  (define tiles3 (list #s(tile 8star green) #s(tile circle green)))
-  (define tiles4 (list #s(tile square orange) #s(tile square red)))
-  (define tiles5 (list #s(tile 8star yellow) #s(tile 8star orange)))
-  (define tiles6 (list #s(tile star orange) #s(tile diamond orange)))
-  (define tiles7 (list #s(tile diamond yellow) #s(tile circle yellow)))
-  (define tiles8 (list #s(tile 8star red)))
-  (define tiles9 (list #s(tile star red)   #s(tile star orange) #s(tile star blue)))
-  (define tiles10 (list #s(tile square yellow) #s(tile square blue))))
-  
-;; ---------------------------------------------------------------------------------------------------
 ;; the shapes and colors
 
 (define (4point-star c) (radial-star 4 15 42 'solid c))
@@ -144,7 +150,61 @@
 
 (define (color? x) (cons? (member x ALL-COLORS)))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
+(module+ examples
+  (define starter-tile (tile 'star 'red))
+  (define +starter-tile (tile 'circle 'red))
+
+  (define 8-green (tile '8star 'green))
+  (define sq-blue (tile 'square 'blue))
+  (define ci-llow (tile 'circle 'yellow))
+  (define cr-prpl (tile 'clover 'purple))
+  (define di-llow (tile 'diamond 'yellow))
+  (define ci-ange (tile 'circle 'orange))
+
+  (define starter-tile* [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
+  (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
+  
+  (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
+  (define tiles1 (list #s(tile circle blue)))
+  (define tiles2 (list #s(tile clover green) #s(tile diamond green)))
+  (define tiles3 (list #s(tile 8star green) #s(tile circle green)))
+  (define tiles4 (list #s(tile square orange) #s(tile square red)))
+  (define tiles5 (list #s(tile 8star yellow) #s(tile 8star orange)))
+  (define tiles6 (list #s(tile star orange) #s(tile diamond orange)))
+  (define tiles7 (list #s(tile diamond yellow) #s(tile circle yellow)))
+  (define tiles8 (list #s(tile 8star red)))
+  (define tiles9 (list #s(tile star red)   #s(tile star orange) #s(tile star blue)))
+  (define tiles10 (list #s(tile square yellow) #s(tile square blue))))
+
+;                                     
+;                                     
+;     ;       ;   ;;;                 
+;     ;             ;                 
+;   ;;;;;   ;;;     ;     ;;;        ;
+;     ;       ;     ;    ;;  ;    ;;; 
+;     ;       ;     ;    ;   ;; ;;    
+;     ;       ;     ;    ;;;;;; ;;    
+;     ;       ;     ;    ;        ;;; 
+;     ;       ;     ;    ;           ;
+;     ;;;   ;;;;;    ;;   ;;;;        
+;                                     
+;                                     
+;                                     
 
 ;; 'star '8star 'square 'circle 'clover 'diamond
 ;; with preference given to colors in the following order
@@ -163,8 +223,22 @@
   (check-true (tile< (tile '8star 'red) (tile '8star 'green)))
   (check-false (tile< (tile '8star 'red) (tile '8star 'red))))
 
-;; ---------------------------------------------------------------------------------------------------
-;; Q BONUS
+;                                                                        
+;                                      ;                                 
+;          ;;;    ;;;                  ;                                 
+;            ;      ;                  ;                                 
+;   ;;;;     ;      ;            ;;;   ; ;;   ;;;;   ;;;;    ;;;    ;;;  
+;       ;    ;      ;           ;   ;  ;;  ;      ;  ;; ;;  ;;  ;  ;   ; 
+;       ;    ;      ;           ;      ;   ;      ;  ;   ;  ;   ;; ;     
+;    ;;;;    ;      ;            ;;;   ;   ;   ;;;;  ;   ;  ;;;;;;  ;;;  
+;   ;   ;    ;      ;               ;  ;   ;  ;   ;  ;   ;  ;          ; 
+;   ;   ;    ;      ;           ;   ;  ;   ;  ;   ;  ;; ;;  ;      ;   ; 
+;    ;;;;     ;;     ;;          ;;;   ;   ;   ;;;;  ;;;;    ;;;;   ;;;  
+;                                                    ;                   
+;                                                    ;                   
+;                                                    ;                   
+
+;; in support of Q BONUS
 
 #; {[Listof Tile] -> Boolean}
 (define SHAPES# (length ALL-SHAPES))
@@ -190,7 +264,21 @@
   (check-false (all-colors? (rest c-all)) "missing one")
   (check-false (all-colors? (cons (tile 'square (second ALL-COLORS)) (rest c-all))) "with duplicate"))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                            
+;                            ;               
+;                            ;               
+;                            ;               
+;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;; 
+;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;
+;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;    
+;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;    
+;    ;     ;      ;   ;  ;   ;  ;       ;    
+;    ;     ;      ;   ;  ;; ;;  ;       ;    
+;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;    
+;                                            
+;                                            
+;                                            
+
 (define (render-all-shapes [t values])
   (define all-shapes
     (for/list ([s ALL-SHAPES])
@@ -220,7 +308,21 @@
          [s (rectangle w h 'solid 'white)])
     s))
 
-;; ---------------------------------------------------------------------------------------------------
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
   #; {type JTile  = Hasheq[('Shape, JShape), ('Color, JColor)]}
   #; {type JShape = (U "star" "8star" "square" "circle" "clover" "diamond")}
@@ -232,11 +334,13 @@
   #; {Tile -> JTile}
   (define (tile->jsexpr t)
     (match-define [tile shape color] t)
-    (hasheq SHAPE (~a shape) COLOR (~a color)))
+    (hasheq SHAPE (symbol->jsexpr shape) COLOR (symbol->jsexpr color)))
 
   #; {JSexpr -> Option<Tile>}
   (def/jsexpr-> tile #:object {[SHAPE symbol (? shape? s)] [COLOR symbol (? color? c)]} (tile s c))
-  (define jsexpr->symbol string->symbol))
+  
+  (define (tiles->jsexpr t*) (map tile->jsexpr t*))
+  (def/jsexpr-> tiles #:array [(list (app jsexpr->tile (? tile? t)) ...) t]))
 
 (module+ test
   (check-equal? (jsexpr->tile (tile->jsexpr +starter-tile)) +starter-tile))
