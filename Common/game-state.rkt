@@ -201,6 +201,52 @@
   (define bad-map   (legal special-state special-placements))
   (define bad-state (create-1player-state bad-map '[(#s(tile square orange)) ps])))
 
+;                                                                               
+;                                                                               
+;             ;                 ;;;                           ;                 
+;                                 ;                           ;                 
+;    ;;;    ;;;   ; ;;    ;;;;    ;     ;;;           ;;;   ;;;;;   ;;;   ;;;;  
+;   ;   ;     ;   ;;  ;  ;;  ;    ;    ;;  ;         ;   ;    ;    ;;  ;  ;; ;; 
+;   ;         ;   ;   ;  ;   ;    ;    ;   ;;        ;        ;    ;   ;; ;   ; 
+;    ;;;      ;   ;   ;  ;   ;    ;    ;;;;;;         ;;;     ;    ;;;;;; ;   ; 
+;       ;     ;   ;   ;  ;   ;    ;    ;                 ;    ;    ;      ;   ; 
+;   ;   ;     ;   ;   ;  ;; ;;    ;    ;             ;   ;    ;    ;      ;; ;; 
+;    ;;;    ;;;;; ;   ;   ;;;;     ;;   ;;;;          ;;;     ;;;   ;;;;  ;;;;  
+;                            ;                                            ;     
+;                         ;  ;                                            ;     
+;                          ;;                                             ;     
+
+;; apply a single placement to a PubKnowledge state w/o updating the score .. should it? 
+
+#; {PubKnowledge Placement -> PubKnowledge}
+
+(provide
+ (contract-out
+  [apply-action (-> state? placement? state?)]))
+
+(define (apply-action pk 1placement)
+  (define new-map (add-tile (state-map pk) 1placement))
+  (let* ([pk (state-tiles-- pk (list (placement-tile 1placement)))]
+         [pk (state-map++ pk new-map)])
+    pk))
+
+(module+ test
+  (define state-after-first-special-placement
+    #s(state
+       #hash((#s(coordinate -1 1) . #s(tile diamond green))
+             (#s(coordinate -3 0) . #s(tile star red))
+             (#s(coordinate -2 0) . #s(tile 8star red))
+             (#s(coordinate -4 1) . #s(tile clover green))
+             (#s(coordinate 0 0) . #s(tile circle red))
+             (#s(coordinate 0 1) . #s(tile circle green))
+             (#s(coordinate -4 0) . #s(tile clover red))
+             (#s(coordinate -1 0) . #s(tile diamond red)))
+       (#s(sop 0 (#s(tile star green)) ps))
+       []))
+  
+  (check-equal? (apply-action special-state (first special-placements))
+                state-after-first-special-placement "place first special on info-pk"))
+
 ;                                     
 ;                                     
 ;   ;;;                         ;;;   
@@ -241,38 +287,6 @@
       (unless (and (adjacent? gmap co) (candidate? (fits gmap co ti)))
         (return #false))
       (add-tile gmap p))))
-
-;; ---------------------------------------------------------------------------------------------------
-;; apply a single placement to a PubKnowledge state w/o updating the score .. should it? 
-
-(module+ test
-  (define info-state-after-first-special-placement
-    #s(state
-       #hash((#s(coordinate -1 1) . #s(tile diamond green))
-             (#s(coordinate -3 0) . #s(tile star red))
-             (#s(coordinate -2 0) . #s(tile 8star red))
-             (#s(coordinate -4 1) . #s(tile clover green))
-             (#s(coordinate 0 0) . #s(tile circle red))
-             (#s(coordinate 0 1) . #s(tile circle green))
-             (#s(coordinate -4 0) . #s(tile clover red))
-             (#s(coordinate -1 0) . #s(tile diamond red)))
-       (#s(sop 0 (#s(tile star green)) ps))
-       0))
-
-  #;
-  (check-equal? (apply-action info-special-state (first special-placements))
-                info-state-after-first-special-placement "place first special on info-pk"))
-
-#; {PubKnowledge Placement -> PubKnowledge}
-(define (apply-action pk 1placement)
-  (define new-map (add-tile (state-map pk) 1placement))
-  (let* ([pk (state-tiles-- pk (list (placement-tile 1placement)))]
-         [pk (state-map++ pk new-map)])
-    pk))
-
-;; ---------------------------------------------------------------------------------------------------
-
-
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; legal integration tests 
