@@ -4,7 +4,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
- #; {type [GameState X Y] = [state Map [Listof X] Y]}
+ #; {type [GameState X Y] = [state Map [Listof [SoPlayer X]] Y]}
  ;;      where [Listof X] specifies the order of turns that players take from here on out 
  #; {type [RefState Y]    = [GameState [SoPlayer Y]] [Listof Tile]}
  ;;      what the referee knows about the game 
@@ -86,7 +86,7 @@
    #; {type JState  = { MAP : JMap, PLAYERS : [Listof JPlayer], TILES : (U Natural [Listof Tile]) }}
    #; {type JPlayer = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
    
-   MAP PLAYERS SCORE TILES ; COORDINATE ATILE
+   MAP PLAYERS SCORE TILES
 
    (contract-out
     [state->jsexpr (-> state? jsexpr?)]
