@@ -9,6 +9,9 @@
  ;; where [Listof _] specifies the order of turns that players take from here on out
  
  state?
+ state-map
+ state-players 
+ state-tiles
  
  #; {[X Y Z] [Y -> Image] -> [GameState X Y Z] -> Image}
  render-ref-state/g
@@ -19,11 +22,11 @@
 
   [state-map++         (-> state? map? state?)]
   [state-score++       (-> state? natural? state?)]
-  [state-replace-tiles (-> state? [listof tile?] (values (listof tile?) state?))]
+  [state-tiles--       (-> state? (listof tile?) state?)]
+  [state-active-tiles  (-> state? (listof tile?))]
 
-  ;; this is ref-state specific 
-  [state-rotate        (-> state? state?)]
-  
+  (state-hand-to       (-> state? (listof tile?) (listof tile?) state?))
+ 
   [legal
    ;; is the series of placements legale in this state; if so computer the new map 
    (-> state? (listof placement?) (or/c #false map?))]
@@ -84,7 +87,6 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
-(require SwDev/Lib/list)
 (require (prefix-in 2: 2htdp/image))
 
 (module+ examples
@@ -138,23 +140,10 @@
   (match-define [state gmap (cons first players) tiles] s)
   (state gmap (cons (t-1player first) (map t-player* players)) (t-tiles tiles)))
 
-#; {[X Y] [GameState X Y] -> [GameState X Y]}
-(define (state-rotate s)
-  (match-define [state map players tiles] s)
-  (state map (list-rotate+ players) tiles))
-
-#; {[X Y] [GameSTate X Y] [Listof Tiles] -> (values [Listof Tile] [GameSTate X Y])}
-;; produce the list of tiles to be handed to the player and the remainder 
-(define (state-replace-tiles s placed-tile*)
-  (match-define [state map (cons first others) tiles] s)
-  (define n (length placed-tile*))
-  (define k (length tiles))
-  (define-values [handouts tiles++]
-    (if (< n k)
-        (values (take tiles n) (drop tiles n))
-        (values tiles          '[])))
-  (define players++ (cons (hand-to first handouts placed-tile*) others))
-  (values handouts (state map players++ tiles++)))
+#; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}
+(define (state-tiles-- s placed-tile*)
+  (match-define [state gmap (cons first others) tiles] s)
+  (state gmap (cons (sop-tiles-- first placed-tile*) others) tiles))
 
 #; {[X Y] [GameSTate X Y] N -> [GameSTate X Y]}
 (define (state-score++ s delta-score)
@@ -165,6 +154,17 @@
 (define (state-map++ s new-map)
   (match-define [state map players tiles] s)
   (state new-map players tiles))
+
+#; {[X Y] [GameSTate X Y] Map -> [Listof Tile]}
+(define (state-active-tiles s)
+  (sop-tiles (first (state-players s))))
+
+#; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] [Listof Tiles] -> [GameSTate X Y Z]}
+(define (state-hand-to s handouts placed-tile*)
+  (match-define [state map (cons first others) tiles] s)
+  (state map (cons (hand-to first handouts placed-tile*) others) tiles))
+  
+
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -240,7 +240,39 @@
       (define ti (placement-tile p))
       (unless (and (adjacent? gmap co) (candidate? (fits gmap co ti)))
         (return #false))
-      (add-tile gmap co ti))))
+      (add-tile gmap p))))
+
+;; ---------------------------------------------------------------------------------------------------
+;; apply a single placement to a PubKnowledge state w/o updating the score .. should it? 
+
+(module+ test
+  (define info-state-after-first-special-placement
+    #s(state
+       #hash((#s(coordinate -1 1) . #s(tile diamond green))
+             (#s(coordinate -3 0) . #s(tile star red))
+             (#s(coordinate -2 0) . #s(tile 8star red))
+             (#s(coordinate -4 1) . #s(tile clover green))
+             (#s(coordinate 0 0) . #s(tile circle red))
+             (#s(coordinate 0 1) . #s(tile circle green))
+             (#s(coordinate -4 0) . #s(tile clover red))
+             (#s(coordinate -1 0) . #s(tile diamond red)))
+       (#s(sop 0 (#s(tile star green)) ps))
+       0))
+
+  #;
+  (check-equal? (apply-action info-special-state (first special-placements))
+                info-state-after-first-special-placement "place first special on info-pk"))
+
+#; {PubKnowledge Placement -> PubKnowledge}
+(define (apply-action pk 1placement)
+  (define new-map (add-tile (state-map pk) 1placement))
+  (let* ([pk (state-tiles-- pk (list (placement-tile 1placement)))]
+         [pk (state-map++ pk new-map)])
+    pk))
+
+;; ---------------------------------------------------------------------------------------------------
+
+
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; legal integration tests 
@@ -288,7 +320,7 @@
   (+ (length placements)                             ;; task 1 
      finishing-bonus                                 ;; task 2 
      (score-same-line-segments gmap line placements) ;; task 3 
-     (score-orthoginal-lines gmap line placements))) ;; task 4 
+     (score-orthoginal-lines gmap line placements))) ;; task 4
 
 #; {Map Line [Listof Coordinate] -> Natural}
 ;; lengths for all segments of the placement line that contain a new placement, plus bonus 

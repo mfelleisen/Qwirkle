@@ -22,8 +22,11 @@
    ;; yields gmap
    #; (score gmap placements)
    ;; yields delta-score between `(state-map s)` and `gmap`
-   ;; noew call complete-turn -- hand out the tiles fails, remove last player 
+   ;; noew call complete-turn -- hand out the tiles fails, remove player if this fails
    (-> state? map? natural? (listof tile?) (values (listof tile?) state?))]
+
+  ;; this is ref-state specific 
+  [state-rotate        (-> state? state?)]
   
   [render-ref-state (-> state? 2:image?)]))
 
@@ -54,17 +57,18 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/state-of-player)
+(require SwDev/Lib/list)
 (require (prefix-in 2: 2htdp/image))
 
-(require "state.rkt")
+(require Qwirkle/Common/game-state)
 
 (module+ examples
-  (require (submod Qwirkle/Common/state examples))
+  (require (submod Qwirkle/Common/game-state examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples)))
 
 (module+ json
-  (require (submod Qwirkle/Common/state json))
+  (require (submod Qwirkle/Common/game-state json))
   (require (submod Qwirkle/Common/state-of-player json))
   (require (submod Qwirkle/Common/tiles json))
   (require Qwirkle/Lib/parse-json)
@@ -92,23 +96,38 @@
 #; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> (values [Listof Tile] [RefState Y])}
 
 (define (complete-turn s new-map delta-score tiles-placed)
-  (let*-values ([(handouts s) (state-replace-tiles s tiles-placed)]
+  (let*-values ([(s) (state-tiles-- s tiles-placed)]
                 [(s) (state-score++ s delta-score)]
-                [(s) (state-map++ s new-map)]
-                [(s) (state-rotate s)])
-    (values handouts s)))
+                [(s) (state-map++ s new-map)])
+    (state-handouts s (length tiles-placed))))
+
+#; {[X] [RefState X] [Listof Tiles] -> (values [Listof Tile] [RefState X])}
+;; produce the list of tiles to be handed to the player and the remainder 
+(define (state-handouts s n)
+  (define tile* (state-tiles s))
+  (define k (length tile*))
+  (define-values [handouts tiles++]
+    (if (< n k)
+        (values (take tile* n) (drop tile* n))
+        (values tile*          '[])))
+  (match-define [cons first others] (state-players s))
+  (values handouts (create-state (state-map s) first others tiles++)))
 
 (module+ examples
+  (provide handouts)
   (define handouts (make-list 6 #s(tile diamond green)))
   (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
   (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
-  (define starter-players-handout [list [list qwirkle-tile* 'player2] [list handouts 'player1]])
+  (define starter-players-handout [list [list '() 'player1] [list qwirkle-tile* 'player2]])
   (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 (module+ test
   (check-equal?
    (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) s)
-   ref-starter-state-handout))
+   ref-starter-state-handout)
+  (check-equal?
+   (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) h)
+   handouts))
 
 (module+ examples ;; states and successor states
   (define info-starter-state (ref-state-to-info-state ref-starter-state))
@@ -116,6 +135,12 @@
   (define info-+ref-starter-state (ref-state-to-info-state +ref-starter-state))
   (define info-special-state (ref-state-to-info-state special-state))
   (define info-bad-state (ref-state-to-info-state bad-state)))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[X Y] [GameState X Y] -> [GameState X Y]}
+(define (state-rotate s)
+  (match-define [cons first others] (list-rotate+ (state-players s)))
+  (create-state (state-map s) first others (state-tiles s)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; render states 

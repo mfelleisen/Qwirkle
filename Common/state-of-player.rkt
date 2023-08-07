@@ -8,12 +8,16 @@
  ;; where Y is typically an external player or just a symbolic name
  sop?
  sop-score
+ sop-tiles
  
  (contract-out
   [sop (-> natural? (listof tile?) any/c sop?)])
 
  #; {[Y] [SoPlayer Y] Natural -> [SoPlayer Y]}
  sop-score++
+
+ #; {[Y] [SoPlayer Y] [Listof Tile] -> [SoPlayer Y]}
+ sop-tiles--
 
  #; {[Y] {SoPlayer Y} [Listiof Tile] [Listiof Tile] -> {SoPlayer Y}}
  hand-to
@@ -99,10 +103,16 @@
   (sop (+ score n) tiles payload))
 
 ;; ---------------------------------------------------------------------------------------------------
+#; {[SoPlayer Y] -> {SoPlayer Y}}
+(define (sop-tiles-- p old-tile*)
+  (match-define [sop/m score tiles payload] p)
+  (sop score (remove* old-tile* tiles) payload))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {[Y] {SoPlayer Y} [Listiof Tile] [Listiof Tile] -> {SoPlayer Y}}
 (define (hand-to p new-tile* old-tile*)
-  (match-define [sop/m score tiles payload] p)
-  (sop score (append new-tile* (remove* old-tile* tiles)) payload))
+  (match-define [sop/m score tiles payload] (sop-tiles-- p old-tile*))
+  (sop score (append new-tile* tiles) payload))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[SoPlayer Y] -> [SoPlayer Y]}
