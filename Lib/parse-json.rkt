@@ -63,4 +63,4 @@
 
   (check-equal? (jsexpr->tst (hash 'key '[10] 'key2 'x)) '[[key (10 x)]])
   (check-false (check-message current-error-port #px"aux" (jsexpr->aux 11)))
-  (check-false (check-message current-error-port #px"tst" (jsexpr->tst (hash 'key 11)))))
+  (check-false (check-message current-error-port #px"aux" (jsexpr->tst (hash 'key 11)))))

@@ -18,7 +18,10 @@
       (parameterize ([port os])
         body ...)
       (close-output-port os)
-      (check-true (cons? (regexp-match rgxp (get-output-string os))) mg))))
+      (let* ([out (get-output-string os)]
+             [ok? (cons? (regexp-match rgxp out))])
+        (check-true ok? mg)
+        (unless ok? (eprintf "output string is ~s\n" out))))))
 
 (module+ test
   (check-message current-output-port #px"hello" (printf "hello")))
