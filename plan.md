@@ -1,3 +1,9 @@
+## REWRITES
+
+-- almost all `match-define` blah should become `(struct-copy ..)`
+
+
+
 ## Interactive Player
 
 Allow human player to make decision 
