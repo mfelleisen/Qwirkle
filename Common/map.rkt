@@ -62,6 +62,10 @@
    ;; ASSUME the given list of coordinates have the same row or column coordinate 
    (-> map? [listof coordinate?] (or/c row? column?))]))
 
+(provide
+ (contract-out ;; for cheating players 
+  [all-free-neighbors (-> map? (set/c coordinate?))]))
+
 (module+ examples
   (provide starter-free start+1-map-unfit start+1-free start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
@@ -238,13 +242,10 @@
 
 #; {Map -> [Setof Coordinate]}
 ;; all coordinates of spots that neighbor an existing tile 
-(module+ test
-  (check-equal? (all-free-neighbors starter-map) (apply set starter-free))
-  (check-equal? (all-free-neighbors start+1-map-unfit) start+1-free))
-(define (all-free-neighbors map)
-  (define as-list (hash-map map list))
+(define (all-free-neighbors gmap)
+  (define as-list (hash-map gmap list))
   (for/fold ([r (set)]) ([cell (in-list as-list)])
-    (foldr (λ (n s) (set-add s n)) r (free-neighbors map (first cell)))))
+    (foldr (λ (n s) (set-add s n)) r (free-neighbors gmap (first cell)))))
 
 #; {Map Coordinate -> [Listof Coordinate]}
 ;; the free neighbors of one coordinate 
@@ -259,6 +260,10 @@
 ;; is `(next-neighbor co)` unoccupied? if so, it's returned in a list; otherwise '[]
 (define (1-neighbor map co next-coordinate)
   (if (occupied map (next-coordinate co)) '[] (list (next-coordinate co))))
+
+(module+ test
+  (check-equal? (all-free-neighbors starter-map) (apply set starter-free))
+  (check-equal? (all-free-neighbors start+1-map-unfit) start+1-free))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Map Coordinate -> [Option Tile]}
