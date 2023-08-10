@@ -19,8 +19,8 @@
  #; {[Y] [SoPlayer Y] [Listof Tile] -> [SoPlayer Y]}
  sop-tiles--
 
- #; {[Y] {SoPlayer Y} [Listiof Tile] [Listiof Tile] -> {SoPlayer Y}}
- hand-to
+ #; {[Y] [SoPlayer Y] [Listof Tile] -> [SoPlayer Y]}
+ sop-tiles++
 
  #; {[SoPlayer Y] -> [SoPlayer (U Symbol String)]}
  sop-special
@@ -109,9 +109,9 @@
   (sop score (remove* old-tile* tiles) payload))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Y] {SoPlayer Y} [Listiof Tile] [Listiof Tile] -> {SoPlayer Y}}
-(define (hand-to p new-tile* old-tile*)
-  (match-define [sop/m score tiles payload] (sop-tiles-- p old-tile*))
+#; {[SoPlayer Y] -> {SoPlayer Y}}
+(define (sop-tiles++ p new-tile*)
+  (match-define [sop/m score tiles payload] p)
   (sop score (append new-tile* tiles) payload))
 
 ;; ---------------------------------------------------------------------------------------------------
