@@ -40,6 +40,7 @@
    ref-starter-state-handout
 
    info-starter-state
+   info-all-tiles
    info-starter-state-handout
    info-+starter-state
    info-special-state
@@ -95,6 +96,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (submod Qwirkle/Common/game-state examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
@@ -148,6 +150,7 @@
 
 (module+ examples ;; states and successor states
   (define info-starter-state (ref-state-to-info-state ref-starter-state))
+  (define info-all-tiles (hand-out-tiles info-starter-state ALL-TILE-COLOR-COMBOS))
   (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout))
   (define info-+starter-state (ref-state-to-info-state +starter-state))
   (define info-special-state (ref-state-to-info-state special-state))
@@ -231,7 +234,22 @@
   'infor-starter-state
   (render-info-state info-starter-state)
   'ref-starte-state
-  (render-ref-state ref-starter-state))
+  (render-ref-state ref-starter-state)
+
+  '+starter-state
+  (render-ref-state +starter-state)
+
+  'special-state
+  (render-ref-state special-state)
+  
+  'special-state+green-circle-at--2-2
+  (render-ref-state special-state+green-circle-at--2-2)
+  
+  'bad-state
+  (render-ref-state bad-state)
+
+  'info-all-tiles 
+  (render-info-state info-all-tiles))
 
 ;                              
 ;      ;                       
