@@ -10,16 +10,16 @@
  (contract-out
   [iterate-strategy
    ;; iterate the strategy as far as possible to obtain a sqeuence of placements or PASS/REPALCEMENT
-   (-> (-> state? action?) state? action*?)]
+   (-> (-> info-state/c action?) state? action*?)]
   (dag-strategy
    ;; strategy 1: dumb and greedy
    ;; choose "smallest tile" that has candidates; break tie among candidates via coodinate<
-   (-> state? action?))
+   (-> info-state/c action?))
   (ldasg-strategy
    ;; strategy 2: a bit more sophisticate and still greedy
    ;; choose "smallest tile" that has candidates; pick most-constrained candidates;
    ;; break tie among candidates via coodinate<   
-   (-> state? action?))
+   (-> info-state/c action?))
   ))
 
 ;; Tiles are lexically ordered as follows:
@@ -33,11 +33,12 @@
    constrained-special))
 
 ;; ---------------------------------------------------------------------------------------------------
-(require Qwirkle/Referee/ref-state)
+(require Qwirkle/Common/player-interface)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
+(require Qwirkle/Referee/ref-state)
 
 (module+ examples
   (require (submod Qwirkle/Referee/ref-state examples)))
