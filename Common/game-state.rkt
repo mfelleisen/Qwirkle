@@ -23,10 +23,9 @@
   [state-map++         (-> state? map? state?)]
   [state-score++       (-> state? natural? state?)]
   [state-tiles--       (-> state? (listof tile?) state?)]
+  [hand-out-tiles      (-> state? (listof tile?) state?)]
   [state-active-tiles  (-> state? (listof tile?))]
-
-  (state-hand-to       (-> state? (listof tile?) (listof tile?) state?))
- 
+  
   [legal
    ;; is the series of placements legale in this state; if so computer the new map 
    (-> state? (listof placement?) (or/c #false map?))]
@@ -158,13 +157,6 @@
 (define (state-active-tiles s)
   (sop-tiles (first (state-players s))))
 
-#; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] [Listof Tiles] -> [GameSTate X Y Z]}
-(define (state-hand-to s handouts placed-tile*)
-  (match-define [state map (cons first others) tiles] s)
-  (state map (cons (hand-to first handouts placed-tile*) others) tiles))
-  
-
-
 ;; ---------------------------------------------------------------------------------------------------
 
 ;                                                          
@@ -188,9 +180,11 @@
 (module+ examples ;; states and successor states
   
   (define +starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
-
+  
   (provide +atop-state) ;; local testing only 
   (define +atop-state (create-1player-state map0 (list (list #s(tile circle red)) 'p12)))
+
+  (provide +starter-tile)
 
   (define special-tiles (map placement-tile special-placements))
   (define special-state (create-1player-state special-map (list special-tiles 'ps)))
@@ -390,6 +384,11 @@
   (check-equal? (score map10 plmt9) score10 "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
+#; {State [Listof Tile] -> State}
+(define (hand-out-tiles s new-tiles)
+  (match-define [state gmap (cons first others) tiles] s)
+  (state gmap (cons (sop-tiles++ first new-tiles) others) tiles))
+
 ;                                            
 ;                            ;               
 ;                            ;               
@@ -406,10 +405,14 @@
 ;                                            
 
 (define ((render-ref-state/g render-sop) gs)
-  (match-define [state gmap (cons first [list sop ...]) _] gs)
-  (define gmap-image (render-map gmap))
-  (define sop-images (render-sop* first sop render-sop))
-  (2:beside/align 'top gmap-image hblank sop-images))
+  (match-define [state gmap (cons first [list sop ...]) tiles] gs)
+  (define gmap-image  (render-map gmap))
+  (define sop-images  (render-sop* first sop render-sop))
+  (define tile-text (~a "# of tiles left: " (if (number? tiles) tiles (length tiles))))
+  (2:above/align
+   'left 
+   (2:beside/align 'top gmap-image hblank sop-images)
+   (2:text tile-text 22 'black)))
 
 (define hblank (2:rectangle 10 1 'solid 'white))
 
