@@ -43,9 +43,10 @@
  ;; the very first string is "" to make the table square 
  render-all-shapes)
 
-(provide ;; for homework 
+(provide ;; for homework & cheating players 
  ALL-SHAPES
- ALL-COLORS)
+ ALL-COLORS
+ ALL-TILE-COLOR-COMBOS)
 
 (module+ examples
   (provide
@@ -149,6 +150,10 @@
 (define ALL-COLORS '(red green blue yellow orange purple))
 
 (define (color? x) (cons? (member x ALL-COLORS)))
+
+(define ALL-TILE-COLOR-COMBOS
+  (for*/list ([s ALL-SHAPES] [c ALL-COLORS])
+    (tile (first s) c)))
 
 ;                                                          
 ;                                                          
