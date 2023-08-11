@@ -13,9 +13,36 @@
  (contract-out
   [create-ref-state
    (->* (map? [listof [list/c [listof tile?] any/c]]) (#:tiles0 (listof tile?)) state?)]
+
+  [set-ref-state-players
+   ;; sets the external players in order 
+   (->i ([s state?] [lop (listof player/c)])
+        #:pre/name (s lop) "same number of player reps and player obj"
+        (= (length (state-players s)) (length lop))
+        (r state?))]
+
+  [state-handouts
+   #; (state-handouts s n) ; produce the tiles to be handed to the actual player and a revised state
+   ;; -- if n is #false, use the tiles in possession of the player representation
+   ;; -- otherwise, ; takes away at most n tiles from the current pile
+   (-> state? (or/c #false natural?) (values (listof tile?) state?))]
+
+  [state-take-back
+   #; (state-take-back s lot) ; adds lot to the front of s's tiles 
+   (-> state? (listof tile?) state?)]
+
+  [state-kick
+   (->* (state?) (#:from-active boolean?) (or/c state? #false))]
   
   [ref-state-to-info-state
    (-> state? state?)]
+
+  [fold-players
+   (->i ([f (-> sop? state? (listof sop?) (values state? (listof sop?)))]
+         [s state?]
+         [l (listof sop?)])
+        (#:return (return (-> state? (listof sop?) (values any/c (listof sop?)))))
+        (values [r any/c] [baddies (listof sop?)]))]
   
   [complete-turn
    ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
@@ -76,6 +103,7 @@
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/state-of-player)
+(require Qwirkle/Common/player-interface)
 (require SwDev/Lib/list)
 (require (prefix-in 2: 2htdp/image))
 
@@ -121,6 +149,11 @@
   (match-define (cons first others) (map (λ (p) (apply sop 0 p)) payload))
   (create-state gmap first others tiles0))
 
+#; {[Y] [RefState Y] [Listof SoPlayer] -> [RefState Y]}
+(define (set-ref-state-players state0 players)
+  (match-define [cons first others] (map sop-set-player (state-players state0) players))
+  (create-state (state-map state0) first others (state-tiles state0)))
+
 #; {[Y] [RefState Y] -> PubKnowledge}
 (define ref-state-to-info-state (transform-state sop-special sop-score length))
 
@@ -150,11 +183,37 @@
 
 (module+ examples ;; states and successor states
   (define info-starter-state (ref-state-to-info-state ref-starter-state))
-  (define info-all-tiles (hand-out-tiles info-starter-state ALL-TILE-COLOR-COMBOS))
+  (define info-all-tiles (active-sop-hand info-starter-state ALL-TILE-COLOR-COMBOS))
   (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout))
   (define info-+starter-state (ref-state-to-info-state +starter-state))
   (define info-special-state (ref-state-to-info-state special-state))
   (define info-bad-state (ref-state-to-info-state bad-state)))
+
+;                              
+;      ;;                    ; 
+;     ;           ;;;        ; 
+;     ;             ;        ; 
+;   ;;;;;   ;;;     ;     ;;;; 
+;     ;    ;; ;;    ;    ;; ;; 
+;     ;    ;   ;    ;    ;   ; 
+;     ;    ;   ;    ;    ;   ; 
+;     ;    ;   ;    ;    ;   ; 
+;     ;    ;; ;;    ;    ;; ;; 
+;     ;     ;;;      ;;   ;;;; 
+;                              
+;                              
+;                              
+
+;; run `f` over the current players in the given state
+;; give `f` the state, the list of dropped out players
+;; and it returns the new state and the new list of dropped out players
+;; #:return allows the insertion of additional values into the return values 
+;; fold-players
+
+(define (fold-players f s0 ep-out0 #:return (r values))
+  (define active* (state-players s0))
+  (for/fold ([s s0] [ep-out ep-out0] #:result (r s ep-out)) ([ap active*])
+    (f ap s ep-out)))
 
 ;                                                          
 ;                                                          
@@ -174,22 +233,10 @@
 #; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> (values [Listof Tile] [RefState Y])}
 
 (define (complete-turn s new-map delta-score tiles-placed)
-  (let*-values ([(s) (state-tiles-- s tiles-placed)]
-                [(s) (state-score++ s delta-score)]
+  (let*-values ([(s) (active-sop-tiles-- s tiles-placed)]
+                [(s) (active-sop-score++ s delta-score)]
                 [(s) (state-map++ s new-map)])
     (state-handouts s (length tiles-placed))))
-
-#; {[X] [RefState X] [Listof Tiles] -> (values [Listof Tile] [RefState X])}
-;; produce the list of tiles to be handed to the player and the remainder 
-(define (state-handouts s n)
-  (define tile* (state-tiles s))
-  (define k (length tile*))
-  (define-values [handouts tiles++]
-    (if (< n k)
-        (values (take tile* n) (drop tile* n))
-        (values tile*          '[])))
-  (match-define [cons first others] (state-players s))
-  (values handouts (create-state (state-map s) first others tiles++)))
 
 (module+ test
   (check-equal?
@@ -200,6 +247,45 @@
    handouts))
 
 ;; ---------------------------------------------------------------------------------------------------
+#; {[X] [RefState X] [Option Narural] -> (values [Listof Tile] [RefState X])}
+(define (state-handouts s n)
+  (cond
+    [(false? n)
+     (match-define [cons first others] (state-players s))
+     (values (sop-tiles first) s)]
+    [else 
+     (define tile* (state-tiles s))
+     (define k (length tile*))
+     (define-values [handouts tiles++]
+       (if (< n k)
+           (values (take tile* n) (drop tile* n))
+           (values tile*          '[])))
+     (match-define [cons first others] (state-players s))
+     (values handouts (create-state (state-map s) first others tiles++))]))
+
+#; {[X] [RefState X] [Listof Tile] -> [RefState X]}
+(define (state-take-back s lot)
+  (match-define [cons first others] (state-players s))
+  (create-state (state-map s) first others (append lot (state-tiles s))))
+  
+
+
+
+;                                                                                             
+;   ;                    ;                                                              ;     
+;   ;         ;          ;               ;;;                          ;     ;           ;     
+;   ;                    ;              ;                                   ;           ;     
+;   ;  ;    ;;;    ;;;   ;  ;           ;             ;;;  ;     ;  ;;;   ;;;;;   ;;;   ; ;;  
+;   ;  ;      ;   ;;  ;  ;  ;           ;;           ;   ; ;     ;    ;     ;    ;;  ;  ;;  ; 
+;   ; ;       ;   ;      ; ;            ;;           ;      ; ; ;     ;     ;    ;      ;   ; 
+;   ;;;       ;   ;      ;;;           ;  ; ;         ;;;   ; ; ;     ;     ;    ;      ;   ; 
+;   ; ;       ;   ;      ; ;           ;  ;;;            ;  ;; ;;     ;     ;    ;      ;   ; 
+;   ;  ;      ;   ;;     ;  ;          ;;  ;         ;   ;  ;; ;;     ;     ;    ;;     ;   ; 
+;   ;   ;   ;;;;;  ;;;;  ;   ;          ;;; ;         ;;;    ; ;    ;;;;;   ;;;   ;;;;  ;   ; 
+;                                                                                             
+;                                                                                             
+;                                                                                             
+
 #; {[X Y] [GameState X Y] -> [GameState X Y]}
 (define (state-rotate s)
   (match-define [cons first others] (list-rotate+ (state-players s)))
@@ -208,6 +294,22 @@
 (module+ test
   (define rotated (create-ref-state starter-map (list-rotate+ starter-players) #:tiles0 handouts))
   (check-equal? (state-rotate ref-starter-state) rotated))
+
+;; ---------------------------------------------------------------------------------------------------
+
+#; {State -> [Optiona State]}
+(define (state-kick s #:from-active (fa #false))
+  (match-define [cons one others] (state-players s))
+  (cond
+    [(empty? others) #false]
+    [else
+     (define tiles++ (append (if fa (sop-tiles one) '[]) (state-tiles s)))
+     (create-state (state-map s) (first others) (rest others) tiles++)]))
+
+(module+ test
+  (define kicked (create-ref-state starter-map (rest starter-players) #:tiles0 handouts))
+  (check-equal? (state-kick ref-starter-state) kicked))
+
 
 ;                                            
 ;                            ;               
