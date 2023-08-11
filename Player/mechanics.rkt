@@ -6,7 +6,7 @@
 ;; a player factory is a functiion from name and strategy to a player object
 ;; a factory table is a [list [list String Factoru] ...] for many similar players 
 
-(define player-factory (-> string? any/c (instanceof/c player/c)))
+(define player-factory (-> string? any/c (instanceof/c player%/c)))
 (define factory-table  (listof (list/c string? player-factory)))
 
 (provide
@@ -15,7 +15,7 @@
   [create-player
    ;; create a player object from a name and a strategy
    ;; it uses the player factory, if provided 
-   (->* (string? (-> state? action?)) (#:bad player-factory) (instanceof/c player/c))]
+   (->* (string? (-> state? action?)) (#:bad player-factory) player/c)]
   
   [retrieve-factory
    ;; look up a player factor by name in the table 
