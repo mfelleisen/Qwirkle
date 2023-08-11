@@ -54,7 +54,7 @@
 #; {-> Strategy}
 (define ((make-strategy smallest) pk)
   (define gmap      (state-map pk))
-  (define my-tiles  (sort (state-active-tiles pk) tile<))
+  (define my-tiles  (sort (active-sop-tiles pk) tile<))
   (define remaining (state-tiles pk))
   (define exists?   (is-there-a-placement gmap my-tiles))
   (cond

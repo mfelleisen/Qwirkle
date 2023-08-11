@@ -9,6 +9,8 @@
  sop?
  sop-score
  sop-tiles
+ sop-player
+ sop-set-player
  
  (contract-out
   [sop (-> natural? (listof tile?) any/c sop?)])
@@ -96,6 +98,11 @@
     (syntax-parse stx
       [(sop/m score tiles payload) #'(sop score tiles payload)])))
 
+#; {[SoPlayer Y] Z -> {SoPlayer Z}}
+(define [sop-set-player s p]
+  (match-define [sop/m n t _] s)
+  (sop n t p))
+
 ;; ---------------------------------------------------------------------------------------------------
 #; {[SoPlayer Y] -> {SoPlayer Y}}
 (define (sop-score++ first n)
@@ -121,7 +128,7 @@
   (define name
     (cond
       [(or (symbol? payload) (string? payload)) payload]
-      [else (object-name payload)]))
+      [else (send payload name)]))
   (sop score tiles name))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -161,7 +168,7 @@
 
 #; {[Y] {SoPlayer Y} -> Image}
 (define (render-sop 1sop)
-  (match-define [sop/m score tiles player] 1sop)
+  (match-define [sop/m score tiles player] (sop-special 1sop))
   (define tiles-image (map render-tile tiles))
   (define score-image (2:text (number->string score) 20 'black))
   (define player-image (2:text (~a player) 20 'black))

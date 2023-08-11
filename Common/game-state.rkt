@@ -21,10 +21,11 @@
   [transform-state     (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
 
   [state-map++         (-> state? map? state?)]
-  [state-score++       (-> state? natural? state?)]
-  [state-tiles--       (-> state? (listof tile?) state?)]
-  [hand-out-tiles      (-> state? (listof tile?) state?)]
-  [state-active-tiles  (-> state? (listof tile?))]
+  
+  [active-sop-score++  (-> state? natural? state?)]
+  [active-sop-tiles--  (-> state? (listof tile?) state?)]
+  [active-sop-hand     (-> state? (listof tile?) state?)]
+  [active-sop-tiles    (-> state? (listof tile?))]
   
   [legal
    ;; is the series of placements legale in this state; if so computer the new map 
@@ -139,12 +140,12 @@
   (state gmap (cons (t-1player first) (map t-player* players)) (t-tiles tiles)))
 
 #; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}
-(define (state-tiles-- s placed-tile*)
+(define (active-sop-tiles-- s placed-tile*)
   (match-define [state gmap (cons first others) tiles] s)
   (state gmap (cons (sop-tiles-- first placed-tile*) others) tiles))
 
 #; {[X Y] [GameSTate X Y] N -> [GameSTate X Y]}
-(define (state-score++ s delta-score)
+(define (active-sop-score++ s delta-score)
   (match-define [state map (cons first players) tiles] s)
   (state map (cons (sop-score++ first delta-score) players) tiles))
 
@@ -154,7 +155,7 @@
   (state new-map players tiles))
 
 #; {[X Y] [GameSTate X Y] Map -> [Listof Tile]}
-(define (state-active-tiles s)
+(define (active-sop-tiles s)
   (sop-tiles (first (state-players s))))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -220,7 +221,7 @@
 
 (define (apply-action pk 1placement)
   (define new-map (add-tile (state-map pk) 1placement))
-  (let* ([pk (state-tiles-- pk (list (placement-tile 1placement)))]
+  (let* ([pk (active-sop-tiles-- pk (list (placement-tile 1placement)))]
          [pk (state-map++ pk new-map)])
     pk))
 
@@ -385,7 +386,7 @@
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
 #; {State [Listof Tile] -> State}
-(define (hand-out-tiles s new-tiles)
+(define (active-sop-hand s new-tiles)
   (match-define [state gmap (cons first others) tiles] s)
   (state gmap (cons (sop-tiles++ first new-tiles) others) tiles))
 
