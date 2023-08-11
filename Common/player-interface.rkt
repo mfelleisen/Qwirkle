@@ -5,6 +5,7 @@
 
 (provide
  #; {type Player}
+ player%/c
  player/c
 
  ;; the only states a player may consume 
@@ -18,10 +19,12 @@
 
 (define info-state/c (and/c state? (λ (s) (natural? (state-tiles s)))))
 
-(define player/c
+(define player%/c
   (class/c
    [name      (->m string?)]
    [setup     (->m info-state/c (listof tile?) void?)]
    [take-turn (->m info-state/c action*?)]
    [new-tiles (->m (listof tile?) void?)]
    [win       (->m boolean? void?)]))
+
+(define player/c [instanceof/c player%/c])
