@@ -17,15 +17,16 @@
  render-ref-state/g
  
  (contract-out
-  [create-state        (-> map? sop? [listof any/c] any/c state?)]
-  [transform-state     (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
+  [create-state         (-> map? sop? [listof any/c] any/c state?)]
+  [transform-state      (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
 
-  [state-map++         (-> state? map? state?)]
+  [state-map++          (-> state? map? state?)]
   
-  [active-sop-score++  (-> state? natural? state?)]
-  [active-sop-tiles--  (-> state? (listof tile?) state?)]
-  [active-sop-hand     (-> state? (listof tile?) state?)]
-  [active-sop-tiles    (-> state? (listof tile?))]
+  [active-sop-score++   (-> state? natural? state?)]
+  [active-sop-tiles--   (-> state? (listof tile?) state?)]
+  [active-sop-finished? (-> state? (listof tile?) boolean?)]
+  [active-sop-hand      (-> state? (listof tile?) state?)]
+  [active-sop-tiles     (-> state? (listof tile?))]
   
   [legal
    ;; is the series of placements legale in this state; if so computer the new map 
@@ -44,7 +45,10 @@
    +starter-state
    special-state
    special-state+green-circle-at--2-2
-   bad-state))
+   bad-state
+   
+   state*
+   state++*))
 
 (module+ json
   (provide
@@ -91,7 +95,9 @@
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/placement examples))
-  (require (submod Qwirkle/Common/tiles examples)))
+  (require (submod Qwirkle/Common/tiles examples))
+  (require (for-syntax syntax/parse))
+  (require (for-syntax racket/syntax)))
 
 (module+ json
   (require (submod Qwirkle/Common/state-of-player json))
@@ -144,6 +150,11 @@
   (match-define [state gmap (cons first others) tiles] s)
   (state gmap (cons (sop-tiles-- first placed-tile*) others) tiles))
 
+#; {[X] [RefState X] [Listof Tile] -> [RefState X]}
+(define (active-sop-finished? s placed)
+  (define active (sop-tiles (first (state-players s))))
+  (or (empty? active) (= (length placed) (length active))))
+  
 #; {[X Y] [GameSTate X Y] N -> [GameSTate X Y]}
 (define (active-sop-score++ s delta-score)
   (match-define [state map (cons first players) tiles] s)
@@ -175,10 +186,9 @@
 ;                               ;                          
 ;                               ;                          
 
-(define (create-1player-state map0 active-player-spec)
-  (state map0 (list (apply sop 0 active-player-spec)) '[]))
-
 (module+ examples ;; states and successor states
+  (define (create-1player-state map0 active-player-spec #:score (score 0))
+    (state map0 (list (apply sop score active-player-spec)) '[]))
   
   (define +starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
   
@@ -195,6 +205,55 @@
 
   (define bad-map   (legal special-state special-placements))
   (define bad-state (create-1player-state bad-map '[(#s(tile square orange)) ps])))
+
+(module+ examples ;; of basic states 
+  #; {[X Y Z] Map Placement -> [GameState X Y Z]}
+  (define (create-state-ready-for-placement gmap pp #:score (score 0))
+    (define tiles* (map placement-tile pp))
+    (create-1player-state gmap `[,(cons +starter-tile tiles*) ,(~a 'player1)] #:score score))
+
+  (define-syntax (def/state stx)
+    (syntax-parse stx
+      [(_ n)
+       #:with name (format-id stx "state~a" (syntax-e #'n))
+       #:with nam+ (format-id stx "state~a++" (syntax-e #'n))
+       #:with gmap (format-id stx "map~a" (syntax-e #'n))
+       #:with map+ (format-id stx "map~a" (+ (syntax-e #'n) 1))
+       #:with scor (format-id stx "score~a" (+ (syntax-e #'n) 1))
+       #:with plmt (format-id stx "plmt~a" (syntax-e #'n))
+       #'(begin
+           (provide name nam+)
+           (define name (create-state-ready-for-placement gmap plmt))
+           (set! state* (append state* (list name)))
+           (define nam+ (create-state-ready-for-placement map+ '[] #:score scor))
+           (set! state++* (append state++* (list nam+))))]))
+  
+  (define state* '[])
+  (define state++* '[])
+
+  (define score1  10)
+  (define score2   5)
+  (define score3   8)
+  (define score4   9)
+  (define score5   8)
+  (define score6   5)
+  (define score7   5)
+  (define score8  12)
+  (define score9  10)
+  (define score10 21)
+  (define score11 11)
+
+  (def/state 0)
+  (def/state 1)
+  (def/state 2)
+  (def/state 3)
+  (def/state 4)
+  (def/state 5)
+  (def/state 6)
+  (def/state 7)
+  (def/state 8)
+  (def/state 9)
+  (def/state 10))
 
 ;                                                                               
 ;                                                                               
@@ -291,19 +350,13 @@
 
   (check-equal? (legal special-state+green-circle-at--2-2 place-green-circle-at--2-2)
                 special-map+green-circle-at--2-2++)
-
-  #; {Map [Listof Placement] Option<Map> String -> Void}
-  (define (check-legal gmap pp expected msg)
-    (define tiles* (map placement-tile pp))
-    (define gstate0 (create-1player-state gmap `[,(cons +starter-tile tiles*) ,(~a 'player msg)]))
-    (check-equal? (legal gstate0 pp) expected msg))
-
+  
   ;; run all scenarios
-  (for ([m0 (list map0 map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)]
-        [m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
+  (for ([s0 (list state0 state1 state2 state3 state4 state5 state6 state7 state8 state9 state10)]
+        [m+ (list map1   map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
         [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
         [ii (in-naturals)])
-    (check-legal m0 pp m+ (~a "step " ii))))
+    (check-equal? (legal s0 pp) m+)))
 
 ;                                     
 ;                                     
@@ -381,7 +434,6 @@
   ;; not a run of like-tiles or colors and not a Q !! 
   (check-equal? (score special-map+green-circle-at--2-2++ place-green-circle-at--2-2) 7 "not run")
   
-
   (check-equal? (score map10 plmt9) score10 "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
@@ -405,17 +457,18 @@
 ;                                            
 ;                                            
 
-(define ((render-ref-state/g render-sop) gs)
+(define ((render-ref-state/g render-sop render-tiles) gs)
   (match-define [state gmap (cons first [list sop ...]) tiles] gs)
   (define gmap-image  (render-map gmap))
   (define sop-images  (render-sop* first sop render-sop))
-  (define tile-text (~a "# of tiles left: " (if (number? tiles) tiles (length tiles))))
   (2:above/align
    'left 
    (2:beside/align 'top gmap-image hblank sop-images)
-   (2:text tile-text 22 'black)))
+   vblank
+   (2:beside (2:text "tiles left: " 22 'black) (render-tiles tiles))))
 
 (define hblank (2:rectangle 10 1 'solid 'white))
+(define vblank (2:rectangle 1 10 'solid 'white))
 
 ;                              
 ;      ;                       

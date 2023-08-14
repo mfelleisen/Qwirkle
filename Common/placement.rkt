@@ -22,6 +22,7 @@
 
 (module+ examples
   (provide
+   plmt*
    place-atop-starter
    lshaped-placement*
    +starter-plmt
@@ -51,7 +52,9 @@
 
 (module+ examples
   (require (submod Qwirkle/Common/coordinates examples))
-  (require (submod Qwirkle/Common/tiles examples)))
+  (require (submod Qwirkle/Common/tiles examples))
+  (require (for-syntax syntax/parse))
+  (require (for-syntax racket/syntax)))
 
 (module+ json
   (require (submod Qwirkle/Common/coordinates json))
@@ -81,11 +84,22 @@
 (define (action*? x)
   (or (and (list? x) (andmap placement? x)) (equal? x REPLACEMENT) (equal? x PASS)))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
 (module+ examples
-  (require (for-syntax syntax/parse))
-  (require (for-syntax racket/syntax))
-  
   (define-syntax (def/placements stx)
     (syntax-parse stx
       [(_ n)
@@ -94,8 +108,12 @@
        #:with tiles (format-id stx "tiles~a" (syntax-e #'n))
        #'(begin
            (provide name)
-           (define name (map placement coord tiles)))]))
+           (define oops (map placement coord tiles))
+           (set! plmt* (append plmt* (list oops)))
+           (define name oops))]))
 
+  (define plmt* '[])
+  
   (def/placements 0)
   (def/placements 1)
   (def/placements 2)

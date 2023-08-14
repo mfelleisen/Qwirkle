@@ -26,7 +26,7 @@
    ;; -- if n is #false, use the tiles in possession of the player representation
    ;; -- otherwise, ; takes away at most n tiles from the current pile
    (-> state? (or/c #false natural?) (values (listof tile?) state?))]
-
+  
   [state-take-back
    #; (state-take-back s lot) ; adds lot to the front of s's tiles 
    (-> state? (listof tile?) state?)]
@@ -44,17 +44,6 @@
         (#:return (return (-> state? (listof sop?) (values any/c (listof sop?)))))
         (values [r any/c] [baddies (listof sop?)]))]
   
-  [complete-turn
-   ;; a possibly new map, points, the placed tiles, the tiles handed out yield a new game state
-   #; {complete-turn s gmap delta old-tiles new-tiles}
-   ;; PROTICOL assume that for some placements
-   #; (legal s placements)
-   ;; yields gmap
-   #; (score gmap placements)
-   ;; yields delta-score between `(state-map s)` and `gmap`
-   ;; noew call complete-turn -- hand out the tiles fails, remove player if this fails
-   (-> state? map? natural? (listof tile?) (values (listof tile?) state?))]
-
   ;; this is ref-state specific 
   [state-rotate        (-> state? state?)]
   
@@ -126,6 +115,7 @@
   (require (submod ".." json))
   (require (submod Qwirkle/Common/game-state examples))
   (require (submod Qwirkle/Common/map examples))
+  (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
@@ -230,23 +220,85 @@
 ;                        ;                                 
 ;                        ;                                 
 
-#; {[Y] [RefStatet Y] Map Natural [Listof Tile] [Listof Tile] -> (values [Listof Tile] [RefState Y])}
+(provide
+ ;; STNTAX
+ #; (legal-placement state successor-state tiles-placed)
+ ;; checks whether the action is a set of placements and whether they are legal
+ ;; if so, it produces the successor state, which removes the placed tiles from the active player
+ ;; and binds them to `tiles-placed`
+ legal-placement
 
-(define (complete-turn s new-map delta-score tiles-placed)
-  (let*-values ([(s) (active-sop-tiles-- s tiles-placed)]
-                [(s) (active-sop-score++ s delta-score)]
-                [(s) (state-map++ s new-map)])
-    (state-handouts s (length tiles-placed))))
+ ;; SYNYAX
+ #; (legal-re-placement s s+ tiles-to-replaced)
+ ;; checks whether the action is a REPLACEMENT request and whether it is leal
+ ;; if so, it takes all tiles from the active player in `s` (to `s+`
+ ;; and binds them to `tiles-to-replaced`
+ legal-re-placement)
 
-(module+ test
-  (check-equal?
-   (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) s)
-   ref-starter-state-handout)
-  (check-equal?
-   (let-values ([(h s) (complete-turn ref-starter-state starter-map 0 starter-tile*)]) h)
-   handouts))
+(define-match-expander legal-re-placement
+  (λ (stx)
+    (syntax-case stx ()
+      [(_ s s+ n)
+       #'(and (? (curry equal? REPLACEMENT))
+              (app (legal-replace s) (? state? s+))
+              (app (λ (x) (sop-tiles (first (state-players s)))) [list (? tile? n) (... ...)]))])))
 
 ;; ---------------------------------------------------------------------------------------------------
+#; {State -> REPLACEMENT -> [Option State]}
+(define [(legal-replace s) _]
+  (define active (first (state-players s)))
+  (define tiles  (sop-tiles active))
+  (and (>= (length (state-tiles s)) (length tiles))
+       (active-sop-tiles-- s tiles)))
+
+;; ---------------------------------------------------------------------------------------------------
+(define-match-expander legal-placement 
+  (λ (stx)
+    (syntax-case stx ()
+      [(_ s s+ n)
+       #'(and (list (? placement?) (... ...))
+              (app (λ (x) (complete-placements s x)) (? state? s+))
+              (app (λ (x) (sop-tiles (first (state-players s)))) [list (? tile? n) (... ...)]))])))
+
+#; {[Y] [RefState Y] [Listof Placememnt] -> [Option [RefState Y]]}
+(define (complete-placements s placements)
+  (define gmap (legal s placements))
+  (cond
+    [(false? gmap) #false]
+    [else 
+     (define tiles-placed (map placement-tile placements))
+     (define finished?    (active-sop-finished? s tiles-placed))
+     (define delta-score  (score gmap placements #:finishing (if finished? FINISH-BONUS 0)))
+     (let*-values ([(s) (active-sop-tiles-- s tiles-placed)]
+                   [(s) (active-sop-score++ s delta-score)]
+                   [(s) (state-map++ s gmap)])
+       s)]))
+
+(define FINISH-BONUS 6)
+
+(module+ test
+  (check-false (complete-placements ref-starter-state +starter-plmt))
+
+  ;; check all scenarios 
+  (for ([ss state*] [s+ state++*] [pp plmt*] [ii (in-naturals)])
+    (check-equal? (complete-placements ss pp) s+ (~a "step" ii))))
+
+
+;                                                          
+;   ;                        ;                             
+;   ;                        ;                  ;          
+;   ;                        ;                  ;          
+;   ; ;;   ;;;;   ; ;;    ;;;;   ;;;   ;   ;  ;;;;;   ;;;  
+;   ;;  ;      ;  ;;  ;  ;; ;;  ;; ;;  ;   ;    ;    ;   ; 
+;   ;   ;      ;  ;   ;  ;   ;  ;   ;  ;   ;    ;    ;     
+;   ;   ;   ;;;;  ;   ;  ;   ;  ;   ;  ;   ;    ;     ;;;  
+;   ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;    ;        ; 
+;   ;   ;  ;   ;  ;   ;  ;; ;;  ;; ;;  ;   ;    ;    ;   ; 
+;   ;   ;   ;;;;  ;   ;   ;;;;   ;;;    ;;;;    ;;;   ;;;  
+;                                                          
+;                                                          
+;                                                          
+
 #; {[X] [RefState X] [Option Narural] -> (values [Listof Tile] [RefState X])}
 (define (state-handouts s n)
   (cond
@@ -263,13 +315,11 @@
      (match-define [cons first others] (state-players s))
      (values handouts (create-state (state-map s) first others tiles++))]))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {[X] [RefState X] [Listof Tile] -> [RefState X]}
 (define (state-take-back s lot)
   (match-define [cons first others] (state-players s))
   (create-state (state-map s) first others (append lot (state-tiles s))))
-  
-
-
 
 ;                                                                                             
 ;   ;                    ;                                                              ;     
@@ -327,10 +377,20 @@
 ;                                            
 
 #; {[Y] [RefState Y] -> Image}
-(define render-ref-state (render-ref-state/g render-sop))
+(define render-ref-state
+  (render-ref-state/g
+   render-sop
+   (λ (tiles)
+     ;; MAGIC ##### 
+     (define n (min (length tiles) 6))
+     (cond
+       [(zero? n) 2:empty-image]
+       [(= n 1)   (render-tile (first tiles))]
+       [else (apply 2:beside (map render-tile (take tiles n)))]))))
 
 #; {PubKnowledge -> Image}
-(define render-info-state (render-ref-state/g (λ (s) (2:text (~a s) 20 'black))))
+(define render-info-state
+  (render-ref-state/g (λ (s) (2:text (~a s) 20 'black)) (λ (t) (2:text (~a t) 20 'black))))
 
 (module+ test
   'infor-starter-state
