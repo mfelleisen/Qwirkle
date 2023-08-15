@@ -86,7 +86,7 @@ When granted a turn, a player may take one of the following three actions:
   of tiles, to be handed out in the future as needed.}
 
   @item{@emph{place} at least one tile or several tiles, which are then added to
-  the map in sequential order.   
+  the map in sequential order.
 
   A placement of tiles must satisfy these conditions:
   @; ------------------------------------------------------------------
@@ -145,10 +145,12 @@ The game ends if one of the following condition holds:
 
  @item{at the end of a round if all remaining players pass or replace their tiles;}
 
- @item{at the end of a turn if a player has placed all tiles in its
- possession; or}
+ @item{at the end of a turn if a player has placed all tiles in its possession; or}
 
  @item{there are no players left after a turn.}
 
 ]
 @; -----------------------------------------------------------------------------
+Once a player has requested the placement of tiles, the current round of turns
+cannot end the game even if this player drops out (for whatever reason) and even
+if all other players pass or request exchanges. 
