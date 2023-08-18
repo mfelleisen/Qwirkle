@@ -48,18 +48,11 @@
 ;                     ;                                    
 ;                     ;                                    
 
-;; should not use this: 
-(require Qwirkle/Common/game-state)
-
-
-(require Qwirkle/Common/map)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/player-interface)
-(require Qwirkle/Player/strategies)
 (require Qwirkle/Referee/ref-state)
 (require SwDev/Contracts/unique)
 (require SwDev/Lib/hash-contract)
-
 ;; -----------------------------------------------------------------------------
 (require Qwirkle/Lib/xsend)
 
@@ -77,8 +70,7 @@
   (eprintf "~a dropped out on ~a: ~v [time limit ~v]\n" n m f-msg per-turn))
 ;; -----------------------------------------------------------------------------
 
-(module+ examples
-  (require (prefix-in mech: Qwirkle/Player/mechanics)))
+(module+ examples)
 
 (module+ test
   (define cep current-error-port)
@@ -90,7 +82,7 @@
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require Qwirkle/Player/mechanics)
-  (require Qwirkle/Common/coordinates)
+  (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
   (require SwDev/Testing/check-values)
   (require rackunit)
@@ -644,3 +636,4 @@
     (xsend+ p win msg
             [[failed (values survived (cons p out))]
              [_      (values (cons p survived) out)]])))
+
