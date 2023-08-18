@@ -74,6 +74,7 @@
   (require (submod Qwirkle/Referee/ref-state examples))
   (require Qwirkle/Referee/ref-state)
   (require Qwirkle/Lib/check-message)
+  (define cep current-error-port)
   (require racket/sandbox)
   (require rackunit))
 
@@ -450,7 +451,7 @@
   (check-equal? (send player-normal setup info-starter-state starter-tiles) (void))
   (check-equal? (send player-normal take-turn info-starter-state) REPLACEMENT)
   (check-equal? (send player-normal new-tiles starter-tiles) [void])
-  (check-equal? (check-message current-error-port #px"won" (send player-normal win #true)) [void])
+  (check-equal? (check-message "normal" cep #px"won" (send player-normal win #true)) [void])
 
   (define player-ldasg  (create-player "BobF" ldasg-strategy))
   (define state0- (ref-state-to-info-state state0))
@@ -465,7 +466,7 @@
   (define new-exn-setup    (retrieve-factory "setup" factory-table-7))
   (define exn-setup-player (create-player "bad" dag-strategy #:bad new-exn-setup))
   
-  (check-equal? (check-message current-error-port #px"bad won" (send exn-setup-player win #t)) (void))
+  (check-equal? (check-message "div" cep #px"bad won" (send exn-setup-player win #t)) (void))
   (check-exn #px"division"
              (λ ()
                (send exn-setup-player setup info-starter-state starter-tiles)))
@@ -478,7 +479,7 @@
   (define exn-win-player (create-player "bad" dag-strategy #:bad new-exn-win))
   (check-exn #px"division"
              (λ ()
-               (check-message current-error-port #px"bad won"  (send exn-win-player win #false)))))
+               (check-message "div2" cep #px"bad won"  (send exn-win-player win #false)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; a player that goes into an infinite loop on setup (1st call) 

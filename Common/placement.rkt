@@ -66,6 +66,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require Qwirkle/Lib/check-message)
   (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -192,6 +193,5 @@
   (check-equal? (jsexpr->action* (action*->jsexpr PASS)) PASS)
   (check-equal? (jsexpr->action* (action*->jsexpr REPLACEMENT)) REPLACEMENT)
   (check-equal? (jsexpr->action* (action*->jsexpr plmt0)) plmt0)
-  (check-false (jsexpr->action* 1))
-
+  (check-false (check-message "1" current-error-port #px"schema" (jsexpr->action* 1)))
   (check-equal? (jsexpr->placements (placements->jsexpr plmt0)) plmt0))
