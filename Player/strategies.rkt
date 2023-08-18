@@ -38,7 +38,7 @@
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
-(require Qwirkle/Referee/ref-state)
+(require Qwirkle/Common/game-state)
 
 (module+ examples
   (require (submod Qwirkle/Referee/ref-state examples)))
@@ -80,7 +80,7 @@
 (define dag-strategy (make-strategy smallest))
 
 (module+ test
-  (check-equal? (dag-strategy special-state) the-special-place)
+  (check-equal? (dag-strategy info-special-state) the-special-place)
   (check-equal? (dag-strategy info-+starter-state) ref-place)
   (check-equal? (dag-strategy info-starter-state) REPLACEMENT)
   (check-equal? (dag-strategy info-bad-state) PASS))
@@ -124,8 +124,12 @@
     (define action (s pk))
     (cond
       [(or (equal? PASS action) (equal? REPLACEMENT action))
-       (if (empty? so-far) action (reverse so-far))]
-      [else (until (cons action so-far) (apply-action pk action))])))
+       (if (empty? so-far) action so-far)]
+      [else
+       (define so-far+ (append so-far (list action)))
+       (if (false? (legal pk0 so-far+))
+           so-far 
+           (until so-far+ (apply-action pk action)))])))
 
 (module+ test
   (define info-special-place*

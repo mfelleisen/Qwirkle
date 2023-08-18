@@ -21,6 +21,10 @@
    ;; look up a player factor by name in the table 
    (-> string? factory-table player-factory)]
 
+  [factory-base
+   ;; plain old creator -- essentially create-player
+   factory-table]
+
   [factory-table-pass
    ;; players that return PASS for take-turn (always or once): useful for terminating game 
    factory-table]
@@ -98,7 +102,7 @@
   (check-true (is-a? bsetup player%))
   (check-equal? (object-name bsetup) 'object:setup%))
 
-(define (create-player n s #:bad (factory (λ (n s) (new player% [my-name n] [strategy s]))))
+(define (create-player n s #:bad (factory (retrieve-factory "good" factory-base)))
   (factory n s))
 
 (define (retrieve-factory name table+)
@@ -106,6 +110,9 @@
   (unless maker
     (error 'retrieve-factory "cannot retrieve ~a in ~v\n" name table+))
   (and maker (second maker)))
+
+(define factory-base
+  `[["good" ,(λ (n s) (new player% [my-name n] [strategy s]))]])
 
 (module+ test (check-exn #px"cannot" (λ () (retrieve-factory "boo" factory-all))))
 
@@ -146,7 +153,8 @@
     (define/public (take-turn s)
       (iterate-strategy strategy s))
 
-    (define/public (new-tiles lot) (void))
+    (define/public (new-tiles lot)
+      (void))
 
     (define/public (win b)
       (eprintf "~a ~a\n" my-name (if b "won" "lost"))
@@ -443,6 +451,10 @@
   (check-equal? (send player-normal take-turn info-starter-state) REPLACEMENT)
   (check-equal? (send player-normal new-tiles starter-tiles) [void])
   (check-equal? (check-message current-error-port #px"won" (send player-normal win #true)) [void])
+
+  (define player-ldasg  (create-player "BobF" ldasg-strategy))
+  (define state0- (ref-state-to-info-state state0))
+  (check-true (map? (legal state0- (send player-ldasg take-turn state0-))))
 
   (define new-pass (retrieve-factory "pass-player" factory-table-pass))
   (define player-pass (create-player "P" dag-strategy #:bad new-pass))

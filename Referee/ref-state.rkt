@@ -4,6 +4,14 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
+ ;; from Qwirkle/Common/game-state
+ state?
+ active-sop-score++   
+ active-sop-tiles--   
+ active-sop-finished? 
+ active-sop-hand      
+ active-sop-tiles
+ #;
  (all-from-out Qwirkle/Common/game-state))
 
 (provide
@@ -12,7 +20,10 @@
 
  (contract-out
   [create-ref-state
-   (->* (map? [listof [list/c [listof tile?] any/c]]) (#:tiles0 (listof tile?)) state?)]
+   (->i ([gmap map?] [player-specs [listof [list/c [listof tile?] any/c]]])
+        (#:tiles0 (tiles (listof tile?)))
+        #:pre/name (player-specs) "distinct names" (distinct? (map second player-specs))
+        (r state?))]
 
   [set-ref-state-players
    ;; sets the external players in order 
@@ -32,22 +43,31 @@
    (-> state? (listof tile?) state?)]
 
   [state-kick
+   #; (state-kick s)       ; kick active player out 
+   #; (state-kick s #true) ; move tiles from active player back to pile 
    (->* (state?) (#:from-active boolean?) (or/c state? #false))]
   
   [ref-state-to-info-state
    (-> state? state?)]
 
+  [determine-winners
+   ;; determine winners and losers in the current state, if any 
+   (-> (or/c #false state?) (list/c (listof sop?) (listof sop?)))]
+
   [fold-players
-   (->i ([f (-> sop? state? (listof sop?) (values state? (listof sop?)))]
+   (->i ([f (-> sop? state? (listof sop?) (values (or/c #false state?) (listof sop?)))]
          [s state?]
          [l (listof sop?)])
-        (#:return (return (-> state? (listof sop?) (values any/c (listof sop?)))))
-        (values [r any/c] [baddies (listof sop?)]))]
+        (#:return (return (-> state? (listof sop?) (listof any/c))))
+        ;; inexpressible contract: return whatever `f` or `return` return
+        ;; and that can differ from call to call 
+        (r (listof any/c)))]
   
   ;; this is ref-state specific 
   [state-rotate        (-> state? state?)]
   
-  [render-ref-state (-> state? 2:image?)]))
+  [render-ref-state (-> state? 2:image?)]
+  [render-info-state (-> state? 2:image?)]))
 
 (module+ examples
   (provide
@@ -94,9 +114,11 @@
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/player-interface)
 (require SwDev/Lib/list)
+(require SwDev/Contracts/unique)
 (require (prefix-in 2: 2htdp/image))
 
 (module+ examples
+  (require (submod ".."))
   (require (submod Qwirkle/Common/game-state examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples)))
@@ -179,6 +201,10 @@
   (define info-special-state (ref-state-to-info-state special-state))
   (define info-bad-state (ref-state-to-info-state bad-state)))
 
+(module+ examples
+  (provide state1-with) 
+  (define state1-with (create-ref-state map0 `[(,tiles1 player1) ([,(tile 'square 'green)] extra)])))
+
 ;                              
 ;      ;;                    ; 
 ;     ;           ;;;        ; 
@@ -200,9 +226,9 @@
 ;; #:return allows the insertion of additional values into the return values 
 ;; fold-players
 
-(define (fold-players f s0 ep-out0 #:return (r values))
+(define (fold-players f s0 ep-out0 #:return (r list))
   (define active* (state-players s0))
-  (for/fold ([s s0] [ep-out ep-out0] #:result (r s ep-out)) ([ap active*])
+  (for/fold ([s s0] [ep-out ep-out0] #:result (r s ep-out)) ([ap active*] #:when s)
     (f ap s ep-out)))
 
 ;                                                          
@@ -360,6 +386,32 @@
   (define kicked (create-ref-state starter-map (rest starter-players) #:tiles0 handouts))
   (check-equal? (state-kick ref-starter-state) kicked))
 
+
+;                                                   
+;                                                   
+;             ;                                     
+;                                                   
+;  ;     ;  ;;;   ; ;;   ; ;;    ;;;    ;;;;   ;;;  
+;  ;     ;    ;   ;;  ;  ;;  ;  ;;  ;   ;;  ; ;   ; 
+;   ; ; ;     ;   ;   ;  ;   ;  ;   ;;  ;     ;     
+;   ; ; ;     ;   ;   ;  ;   ;  ;;;;;;  ;      ;;;  
+;   ;; ;;     ;   ;   ;  ;   ;  ;       ;         ; 
+;   ;; ;;     ;   ;   ;  ;   ;  ;       ;     ;   ; 
+;    ; ;    ;;;;; ;   ;  ;   ;   ;;;;   ;      ;;;  
+;                                                   
+;                                                   
+;                                                   
+
+#; {[Option [RefState Player]] -> [List [Listof SoPlayer] [Listof SoPlayer]]}
+(define (determine-winners s+)
+  (cond
+    [(false? s+) '[[] []]]
+    [else 
+     (define players (state-players s+))
+     (define highest (sop-score (argmax sop-score players)))
+     (list 
+      (filter (λ (p) (= (sop-score p) highest)) players)
+      (filter (λ (p) (not (= (sop-score p) highest))) players))]))
 
 ;                                            
 ;                            ;               

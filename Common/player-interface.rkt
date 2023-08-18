@@ -17,7 +17,8 @@
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/tiles)
 
-(define info-state/c (and/c state? (λ (s) (natural? (state-tiles s)))))
+(define info-state/c
+  (and/c state? (flat-named-contract "PubKnowledge" (λ (s) (natural? (state-tiles s))))))
 
 (define player%/c
   (class/c

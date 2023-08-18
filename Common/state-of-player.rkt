@@ -29,6 +29,9 @@
 
  #; {Player [Listof Tile] -> Boolean}
  player-owns-tiles
+
+ #; {[Listof SoPlayer] -> [Listof String]}
+ extract-names 
  
  #; {[X Y] [SoPlayer X] Y [Y ->Image] {{ [Y] [SoPlayer Y] -> Image }} -> Image}
  render-sop*
@@ -144,6 +147,10 @@
   (define the-starter-player (apply sop 0 [list starter-tile* 'player1]))
   (check-true (player-owns-tiles the-starter-player starter-tile*) "it owns lshaped")
   (check-true (player-owns-tiles (sop 0 (cons +starter-tile tiles1) 'p) tiles1) "owns, 1"))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (extract-names lo-sop)
+  (map (λ (p) (send (sop-player p) name)) lo-sop))
 
 ;                                            
 ;                            ;               

@@ -187,8 +187,8 @@
 ;                               ;                          
 
 (module+ examples ;; states and successor states
-  (define (create-1player-state map0 active-player-spec #:score (score 0))
-    (state map0 (list (apply sop score active-player-spec)) '[]))
+  (define (create-1player-state map0 active-player-spec #:score (score 0) #:more-sops (more-sops '()))
+    (state map0 (cons (apply sop score active-player-spec) more-sops) '[]))
   
   (define +starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
   
@@ -208,9 +208,12 @@
 
 (module+ examples ;; of basic states 
   #; {[X Y Z] Map Placement -> [GameState X Y Z]}
-  (define (create-state-ready-for-placement gmap pp #:score (score 0))
+  (define (create-state-ready-for-placement gmap pp #:score (score 0) #:more-sops (more '()))
     (define tiles* (map placement-tile pp))
-    (create-1player-state gmap `[,(cons +starter-tile tiles*) ,(~a 'player1)] #:score score))
+    (define extra  #s(tile clover green)) ;; to make placement not final.
+    (set!   extra  #s(tile circle red))   ;; for debugging strategy
+    (define spec `[,(append tiles* (list extra)) ,(~a 'player1)])
+    (create-1player-state gmap spec #:score score #:more-sops more))
 
   (define-syntax (def/state stx)
     (syntax-parse stx
@@ -242,9 +245,9 @@
   (define score9  10)
   (define score10 21)
   (define score11 11)
-
-  (def/state 0)
-  (def/state 1)
+  
+  (def/state 0) 
+  (def/state 1) 
   (def/state 2)
   (def/state 3)
   (def/state 4)

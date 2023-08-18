@@ -25,6 +25,7 @@
 
  #; {Coordinate Coordinate -> Boolean}
  top-down-left-to-right-order<
+ right-to-left-bottom-up-order<
 
  #; {Coordinate -> Coordinate}
  left-of
@@ -96,6 +97,14 @@
     [(< rc rd) #true]
     [(> rc rd) #false]
     [(= rc rd) (< cc cd)]))
+
+(define (right-to-left-bottom-up-order< c d)
+  (match-define [coordinate rc cc] c)
+  (match-define [coordinate rd cd] d)
+  (cond
+    [(> cc cd) #true]
+    [(< cc cd) #false]
+    [(= cc cd) (> rc rd)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Placement -> M] -> Placement* -> Option<Integer>}
