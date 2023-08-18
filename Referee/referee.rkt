@@ -273,8 +273,6 @@
 
 ;; TODO:
 ;; DEFAULT RESULT 
-;; -- no state-players
-
 ;; -- match/struct* and struct-copy 
 
 
@@ -388,8 +386,7 @@
              (let* ([L (~a "test for " title)]
                     (A (create-player (~a "A-" title) dag-strategy #:bad F))
                     [_ (send A setup (ref-state-to-info-state T) '())]
-                    [S (set-ref-state-players T [cons A C])]
-                    [players (state-players S)])
+                    [S (set-ref-state-players T [cons A C])])
                (set-with void)
                (define-values [W O] (check-message title cep #px"dropped" (rounds S '[])))
                (define awinners (map (λ (x) (send (sop-player x) name)) (first W)))
@@ -474,7 +471,7 @@
                (check-equal? end end W)
                (if ok (check-true (state? S++) W) (check-false S++ W))
                (if dr
-                   (check-equal? out `[,(first (state-players S))] (~a "A drop out" W))
+                   (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
                    (check-equal? out '[] (~a "no:" W)))
                (set-with #false))))])))
 
@@ -575,14 +572,16 @@
                   (P (create-player (~a "A-> " W) dag-strategy #:bad F))
                   [_ (send P setup (ref-state-to-info-state T) '())]
                   [S (set-ref-state-players T [cons P C])]
-                  [A (first (state-players S))])
+                  [A (active-player S)])
              (set-with void)
              (define-values (~? [S++ end out] [S++ out])
                (if dr (check-message W cep #px"dropped out" (run A S '[])) [run A S '[]]))
              (~? (check-true end W) (void))
              (if ok (check-true (state? S++) W) (check-false S++ W))
              (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
-             (if dr (check-equal? out `[,A] (~a "A drop out" W)) (check-equal? out '[] (~a "no:" W)))
+             (if dr
+                 (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
+                 (check-equal? out '[] (~a "no:" W)))
              (set-with #false)
              (set-box! passed #true #;"restore old value")))])))
 

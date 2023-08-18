@@ -21,7 +21,8 @@
   [transform-state      (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
 
   [state-map++          (-> state? map? state?)]
-  
+
+  [active-player        (-> state? sop?)]
   [active-sop-score++   (-> state? natural? state?)]
   [active-sop-tiles--   (-> state? (listof tile?) state?)]
   [active-sop-finished? (->* (state?) [(listof tile?)] boolean?)]
@@ -144,6 +145,9 @@
   (match-define [state gmap (cons first players) tiles] s)
   (state gmap (cons (t-1player first) (map t-player* players)) (t-tiles tiles)))
 
+(define (active-player s)
+  (first (state-players s)))
+  
 #; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}
 (define (active-sop-tiles-- s placed-tile*)
   (match-define [state gmap (cons first others) tiles] s)

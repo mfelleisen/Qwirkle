@@ -6,6 +6,7 @@
 (provide
  ;; from Qwirkle/Common/game-state
  state?
+ active-player 
  active-sop-finished? 
  active-sop-hand)
 
@@ -43,6 +44,19 @@
         #:pre/name (lop) "distinct external names" (distinct? (map (λ (p) (send p name)) lop))
         (r state?))]
 
+  [ref-state-to-info-state
+   ;; turn the referee state into a public knowledge state 
+   (-> state? state?)]
+
+  [fold-players
+   (->i ([f (-> sop? state? (listof sop?) (values (or/c #false state?) (listof sop?)))]
+         [s state?]
+         [l (listof sop?)])
+        (#:return (return (-> state? (listof sop?) (listof any/c))))
+        ;; inexpressible contract: return whatever `f` or `return` return
+        ;; and that can differ from call to call 
+        (r (listof any/c)))]
+
   [state-handouts
    #; (state-handouts s n) ; produce the tiles to be handed to the actual player and a revised state
    ;; -- if n is #false, use the tiles in possession of the player representation
@@ -54,25 +68,15 @@
    #; (state-kick s #true) ; move tiles from active player back to pile 
    (->* (state?) (#:from-active boolean?) (or/c state? #false))]
   
-  [ref-state-to-info-state
-   (-> state? state?)]
-
   [determine-winners
    ;; determine winners and losers in the current state, if any 
    (-> (or/c #false state?) (list/c (listof sop?) (listof sop?)))]
+  
+  [state-rotate
+   ;; make the first player the last one 
+   (-> state? state?)]
 
-  [fold-players
-   (->i ([f (-> sop? state? (listof sop?) (values (or/c #false state?) (listof sop?)))]
-         [s state?]
-         [l (listof sop?)])
-        (#:return (return (-> state? (listof sop?) (listof any/c))))
-        ;; inexpressible contract: return whatever `f` or `return` return
-        ;; and that can differ from call to call 
-        (r (listof any/c)))]
-  
-  ;; this is ref-state specific 
-  [state-rotate        (-> state? state?)]
-  
+  ;; rendering: 
   [render-ref-state (-> state? 2:image?)]
   [render-info-state (-> state? 2:image?)]))
 
