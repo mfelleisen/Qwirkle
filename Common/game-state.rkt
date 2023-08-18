@@ -24,7 +24,7 @@
   
   [active-sop-score++   (-> state? natural? state?)]
   [active-sop-tiles--   (-> state? (listof tile?) state?)]
-  [active-sop-finished? (-> state? (listof tile?) boolean?)]
+  [active-sop-finished? (->* (state?) [(listof tile?)] boolean?)]
   [active-sop-hand      (-> state? (listof tile?) state?)]
   [active-sop-tiles     (-> state? (listof tile?))]
   
@@ -109,7 +109,6 @@
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/map examples))
-  (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
 ;                                                                 
@@ -151,7 +150,7 @@
   (state gmap (cons (sop-tiles-- first placed-tile*) others) tiles))
 
 #; {[X] [RefState X] [Listof Tile] -> [RefState X]}
-(define (active-sop-finished? s placed)
+(define (active-sop-finished? s [placed '[]])
   (define active (sop-tiles (first (state-players s))))
   (or (empty? active) (= (length placed) (length active))))
   
