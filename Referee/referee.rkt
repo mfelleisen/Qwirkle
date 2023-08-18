@@ -117,6 +117,7 @@
 (define per-turn 4.0)  ;; time limit per turn
 (define (set-per x) (set! per-turn x)) ;; for the testing submod 
 (define quiet    [make-parameter #false])
+(define (set-with x) (set! with-obs x))
 (define with-obs #false)
 (define obs-show 1)
 
@@ -169,7 +170,7 @@
 ;; ASSUME the given state is not finished (at least one player, no winner)
 (define (referee/state s0 #:with-obs (wo #false))
   [time-out-limit per-turn]
-  (dynamic-wind (setup-observer s0 wo) (referee/state-proper s0) (unset-observer wo)))
+  (dynamic-wind (setup-observer wo) (referee/state-proper s0) (unset-observer wo)))
 
 #; {State -> Result}
 (define [(referee/state-proper s0)]
@@ -183,15 +184,14 @@
 
 #; {State (U False Observer) -> Void}
 ;; turn with-obs into a function that consumes a state
-(define [(setup-observer s0 wo)]
-  (define is (or with-obs wo))
-  (set! with-obs (if is (is s0) void)))
+(define [(setup-observer wo)]
+  (set-with (or wo void)))
 
 #; {(U False Observer) -> Void}
 (define [(unset-observer wo)]
-  (when wo (sleep obs-show))
   (with-obs #false)
-  (set! with-obs #false))
+  (when wo (sleep obs-show))
+  (set-with #false))
 
 (module+ test
   #; {TC is pne of:
@@ -220,8 +220,8 @@
              (check-equal? (check-message msg cep #px"dropped" (run S)) (list win out) msg))
            ;; --- to cover the default #:with-obs clause 
            (let* ([config (λ (s) (~? (create-config s #:observe O #:per-turn 1.1) (create-config s)))]
-                  (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
                   [C (dict-set (config state) QUIET Q)]
+                  (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
                   [run (λ () (referee/config C (cons P (~? (list B) '[]))))])
              (check-equal?
               (if Q [run] (check-message msg cep #px"dropped" [run])) `(,win ,out) msg)))])))
@@ -254,22 +254,25 @@
 
   ;; a primitive textual observer 
   (define seq* '[])
+  (define FLUSH (gensym 'flush))
   (define (textual-observer s)
     (cond
-      [(false? s) seq*]
-      [else (set! seq* (cons s seq*))
-            textual-observer]))
+      [(false? s) (reverse seq*)]
+      [(eq? FLUSH s) (set! seq* '[])]
+      [else
+       (set! seq* (cons s seq*))
+       textual-observer]))
 
   (ref-test-case "receiving new tiles fails, cover observer"
                  "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
                  ['[] '["A"]]
                  #:with-obs textual-observer)
-  (check-equal? (length (textual-observer #false)) 1))
+  (check-equal? (length (textual-observer #false)) 1)
+  (textual-observer FLUSH))
     
 
 ;; TODO:
 ;; DEFAULT RESULT 
-;; -- state-kick and state-take-back seem to have overlapping functionality : CHECK
 ;; -- no state-players
 
 ;; -- match/struct* and struct-copy 
@@ -360,6 +363,7 @@
 (define (rounds s0 out0)
   (let rounds ([s s0] [out out0])
     (define-values (s+ game-over? out+) (one-round s out))
+    (with-obs s+) ;; at the end of a round 
     (cond
       [game-over? (values (determine-winners s+) out+)]
       [else       (rounds s+ out+)])))
@@ -386,11 +390,13 @@
                     [_ (send A setup (ref-state-to-info-state T) '())]
                     [S (set-ref-state-players T [cons A C])]
                     [players (state-players S)])
+               (set-with void)
                (define-values [W O] (check-message title cep #px"dropped" (rounds S '[])))
                (define awinners (map (λ (x) (send (sop-player x) name)) (first W)))
                (define alosers (map sop-player (second W)))
                (check-equal? `[,awinners ,alosers] `[,winners ,losers] (~a "winners " L))
-               (check-equal? (map sop-player O) out (~a "drop outs " L)))))])))
+               (check-equal? (map sop-player O) out (~a "drop outs " L))
+               (set-with #false))))])))
 
 (module+ test
   (*-rounds-test-case "receiving new tiles fails; game goes on with one more player"
@@ -448,7 +454,6 @@
   ;; runs one round with the one manufacture player, plus one optional extra,
   ;; to yield the next state (S++), the end-of-game statis (end), and the drop-`out`s 
   (define-syntax (1-round-test-case stx)
-    
     (syntax-parse stx
       [(test-case title:string name:string factory:id state:expr
                   [(~optional (~seq #:end? en #;symbol) #:defaults ([en #'#true]))
@@ -463,13 +468,15 @@
                     (P (create-player (~a "A-" title) dag-strategy #:bad F))
                     [_ (send P setup (ref-state-to-info-state T) '())]
                     [S (set-ref-state-players T [cons P C])])
+               (set-with void)
                (define-values [S++ end out]
                  (if dr (check-message W cep #px"dropped out" (one-round S '[])) [one-round S '[]]))
                (check-equal? end end W)
                (if ok (check-true (state? S++) W) (check-false S++ W))
                (if dr
                    (check-equal? out `[,(first (state-players S))] (~a "A drop out" W))
-                   (check-equal? out '[] (~a "no:" W))))))])))
+                   (check-equal? out '[] (~a "no:" W)))
+               (set-with #false))))])))
 
 (module+ test
   (1-round-test-case "receiving new tiles fails"
@@ -509,6 +516,7 @@
 
 #; {StopGame [Box Boolean] -> SoPlayer State [Listof SoPlayer] -> OneTurn}
 (define ((one-turn ap-ends-game all-passed) ap s out)
+  (with-obs s)
   (xsend+ ap take-turn (ref-state-to-info-state s)
           [[failed
             (values (state-kick s) (cons ap out))] 
@@ -517,13 +525,13 @@
            [(legal-placement s s+ tiles-placed)
             (player-not-passed! all-passed)
             (cond
-              [(active-sop-finished? s+ '[]) (ap-ends-game s+ #true out)]
-              [else (define-values [handouts s++] (state-handouts s+ (length tiles-placed)))
-                    (hand-tiles-now ap s++ handouts out ap-ends-game)])]
+              [(active-sop-finished? s+) (ap-ends-game s+ #true out)]
+              [else
+               (define-values [handouts s++] (state-handouts s+ (length tiles-placed)))
+               (hand-tiles-now ap s++ handouts out ap-ends-game)])]
            [(legal-re-placement s s+ ap-s-tiles)
             (define-values [handouts s++] (state-handouts s+ (length ap-s-tiles)))
-            (define-values [s+++ out++] (hand-tiles-now ap s++ handouts out ap-ends-game))
-            (values (state-take-back s+++ ap-s-tiles) out++)]
+            (hand-tiles-now ap s++ handouts out ap-ends-game)]
            [_illegal-request_
             (report 'take-turn ap "illegal placement or re-placement request")
             (values (state-kick s) (cons ap out))]]))
@@ -532,7 +540,7 @@
 (define (hand-tiles-now ap s+ handouts out ap-ends-game)
   (xsend+ ap new-tiles handouts
           [[failed
-            (define s++ (state-kick (state-take-back s+ handouts)))
+            (define s++ (state-kick s+))
             (if s++ (values s++ (cons ap out)) (ap-ends-game #false #true (cons ap out)))]
            [_ (values (state-rotate (active-sop-hand s+ handouts)) out)]]))
 
@@ -568,12 +576,14 @@
                   [_ (send P setup (ref-state-to-info-state T) '())]
                   [S (set-ref-state-players T [cons P C])]
                   [A (first (state-players S))])
+             (set-with void)
              (define-values (~? [S++ end out] [S++ out])
                (if dr (check-message W cep #px"dropped out" (run A S '[])) [run A S '[]]))
              (~? (check-true end W) (void))
              (if ok (check-true (state? S++) W) (check-false S++ W))
              (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
-             (if dr (check-equal? out `[,A] (~a "A drop out" W)) (check-equal? out '[] (~a "no:" W))) 
+             (if dr (check-equal? out `[,A] (~a "A drop out" W)) (check-equal? out '[] (~a "no:" W)))
+             (set-with #false)
              (set-box! passed #true #;"restore old value")))])))
 
 (module+ test
@@ -635,297 +645,3 @@
     (xsend+ p win msg
             [[failed (values survived (cons p out))]
              [_      (values (cons p survived) out)]])))
-
-;                                                          
-;                                                          
-;                                      ;;;                 
-;                                        ;                 
-;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
-;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
-;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
-;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
-;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
-;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
-;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
-;                               ;                          
-;                               ;                          
-;                               ;                          
-
-#;
-(module+ examples
-  (provide
-   #; {[Listof (cons SoPlayer Coordinate)]
-       [Listof (cons SoPlayer Coordinate)] ->
-       {List [Listof [Instanceof Player]] [Listof [Instanceof Player]]}}
-   onT
-
-   #; {State
-       ->
-       {List [Listof IPlayer] [Listof [List Color Coordinate Coordinate Coordinate]] Board Tile Undo}}
-   ; state->pieces
-
-   #; {Board [Listof Player] -> State}
-   xstate
-   
-   ;; player lists 
-   Euclid** Riemann** Riemann*2 1e-r** 1r-e** b1e-r** 11e-r**
-
-   ;; bad players 
-   Bsetup Btt Bwin Bwin2
-   1setup 1tt 1win 1win2
-   2setup 3tt
-
-   ;; cheating players
-   Z cheaters
-
-   ;; winning players
-   Radam Eadam Ecarl Rbob Ebob Rcarl Adam-R Adam-E Oli Eve Fae pass-ω pass-1)
-
-  ;; ------------------------------------------------------------------------------------------------
-  (define (onT w* outs)
-    (list 
-     (map (λ (A) (sop-player ('target-switch (car A) ))) w*)
-     (map (compose sop-player car) outs)))
-
-  ;; players 
-  (define (mk-plr name target color home current post-gen-strat #:factory (f #false))
-    (define ep ((or f mech:create-player) name post-gen-strat))
-    (define ip ('create-player '_ target home color #:ep ep))
-    (cons ip current))
-
-  (define Z
-    (let ([the-place (coordinate 9 9)])
-      (mk-plr "undo" the-place "ABCDEF" the-place the-place dag-strategy
-              #:factory (mech:retrieve-factory "undo" mech:factory-table-10))))
-  
-  (define cheaters
-    (let ()
-      ;; assume 11 x 12 baord-0
-      (define lonames
-        ;;  Name in Factory                  Target             Home              Current
-        ;; ----------------------------------------------------------------------------------------
-        `[["unreachable"     ,[coordinate 1 1] ,[coordinate 1 1] ,[coordinate 1 1]]
-          ["undo"            ,[coordinate 1 1] ,[coordinate 3 1] ,[coordinate 1 1]]
-          ["coordinate"      ,[coordinate 1 1] ,[coordinate 5 1] ,[coordinate 1 1]]
-          ["row"             ,[coordinate 1 1] ,[coordinate 7 1] ,[coordinate 1 1]]
-          ["column"          ,[coordinate 1 1] ,[coordinate 9 1] ,[coordinate 1 1]]
-          ["move"            ,[coordinate 1 1] ,[coordinate 1 9] ,[coordinate 1 1]]])
-
-      (for/list ([name+coordinates lonames] [c '[A B C D E F G]])
-        (define name (first name+coordinates))
-        [define fact (mech:retrieve-factory name mech:factory-table-10)]
-        (match-define [list target home current] (rest name+coordinates))
-        [mk-plr name target (~a c "FFFCC") home current dag-strategy #:factory fact])))
-
-  #; {String String Sirng FactoryTable -> (values Bsetup Bwin Bwin2 Btt)}
-  (define (mk-Bs setup tt win factory-table)
-    (define Bsetup
-      [mk-plr "ZENAs" (coordinate 5 5) "FFFFCC" (coordinate 5 1) (coordinate 1 3) 
-              #:factory (mech:retrieve-factory setup factory-table)])
-
-    (define Bwin
-      [mk-plr "XIAw" (coordinate 5 3) "AAFFCC" (coordinate 3 3) (coordinate 3 3) 
-              #:factory (mech:retrieve-factory win factory-table)])
-
-    (define Bwin2
-      (let ([fact (mech:retrieve-factory win factory-table)])
-        (map (λ (x t h c) [mk-plr (~a "Win" x) t (~a x "FFFCC") h c #:factory fact])
-             '("A" "B" "C")
-             [list [coordinate 3 3] [coordinate 1 3] [coordinate 5 1]]
-             [list [coordinate 1 1] [coordinate 3 5] [coordinate 3 1]]
-             [list [coordinate 0 1] [coordinate 0 2] [coordinate 0 3]])))
-  
-    (define Btt
-      [mk-plr "YALAtt" (coordinate 5 5) "FFFFCC" (coordinate 5 1) (coordinate 1 3) 
-              #:factory (mech:retrieve-factory tt factory-table)])
-
-    (values Bsetup Bwin Bwin2 Btt))
-
-  (define-values (Bsetup Bwin Bwin2 Btt) (mk-Bs "setUp" "takeTurn" "win" mech:factory-table-7))
-  (define-values (1setup 1win 1win2 1tt) (mk-Bs "setUp-1" "takeTurn-1" "win-1" mech:factory-table-8))
-  (define-values (2setup 2win 2win2 3tt) (mk-Bs "setUp-2" "takeTurn-3" "win-2" mech:factory-table-8))
-
-  (define Eve (mk-plr "eve" (coordinate 1 1) "orange" (coordinate 9 9) [coordinate 9 9]))
-  (define Fae (mk-plr "fae" (coordinate 9 9) "blue"   (coordinate 1 1) [coordinate 1 1]))
-
-  (define Oli (mk-plr "oli" (coordinate 3 1) "orange" (coordinate 3 1) [coordinate 3 2]))
-  
-  (define Eadam (mk-plr "eadam" (coordinate 3 3) "blue"  (coordinate 1 1) (coordinate 0 1)))
-  (define Ebob  (mk-plr "ebob"  (coordinate 1 3) "red"   (coordinate 3 5) (coordinate 0 2)))
-  (define Ecarl (mk-plr "ecarl" (coordinate 5 1) "green" (coordinate 5 3) (coordinate 0 3)))
-  
-  (define Radam (mk-plr "radam" (coordinate 3 3) "pink"   (coordinate 1 1) (coordinate 0 1)))
-  (define Rbob  (mk-plr "rbob"  (coordinate 1 3) "purple" (coordinate 3 5) (coordinate 0 2)))
-  (define Rcarl (mk-plr "rcarl" (coordinate 5 1) "yellow" (coordinate 5 3) (coordinate 0 3)))
-  (define Rdale (mk-plr "rdale" (coordinate 5 1) "FFFFFC"  (coordinate 5 5) (coordinate 0 3)))
-  (define Remil (mk-plr "remil" (coordinate 5 1) "black"  (coordinate 3 3) (coordinate 0 3)))
-
-  (define Adam-R (mk-plr "Radam" (coordinate 5 1) "black"  (coordinate 1 1) (coordinate 3 3)))
-  (define Adam-E (mk-plr "Edam"  (coordinate 5 3) "white"  (coordinate 3 3) (coordinate 3 3)))
-
-  (define pass-ω
-    (mk-plr "Rpass" (coordinate 3 5) "FFAABB" (coordinate 3 5) (coordinate 3 5) 
-            #:factory (λ _ (new 'mech:pass-player% [my-name "Rpass"]))))
-  (define pass-1
-    (mk-plr "Epass" (coordinate 3 5) "BBFFAA" (coordinate 5 3) (coordinate 3 5) 
-            #:factory (λ _ (new 'mech:pass-once-player% [my-name "Epass"]))))
-  
-  ;; player lists 
-  (define Euclid**  (list Eadam Ebob Ecarl))
-  (define Riemann** (list Radam Rbob Rcarl))
-  (define Riemann*2 (list Remil Rdale Rcarl))
-  (define 1e-r**    (list* Adam-E Adam-R (rest Riemann**)))
-  (define b1e-r**   (list* Bwin Adam-R (rest Bwin2)))
-  (define 11e-r**   (list* 1win Adam-R (rest 1win2)))
-  (define 1r-e**    (list* Adam-E Adam-R (rest Euclid**)))
-  
-  ;; states 
-  (define [xstate rb players (goals '())]
-    ('cstate players #f #:goals goals)))
-
-;                                     
-;                                     
-;     ;                    ;          
-;     ;                    ;          
-;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;; ;        ;    ;     
-;     ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;          ;    ;        ; 
-;     ;    ;      ;   ;    ;    ;   ; 
-;     ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                     
-;                                     
-;
-
-#;
-(module+ test
-  (define (cnr x) (sop-player (car x)))
-  (define (cnr-name x) (send x name)))
-
-; this is only needed for illustrating how Milestone #7 could be enforced and tested
-#;
-(module+ test
-  (check-true ('distinct-homes [xstate 'padded-1 Riemann**]))
-  (check-false (distinct-homes [xstate 'padded-1 (append Riemann** Euclid**)])))
-
-#; 
-(module+ test ;; very basic tests
-  '------basic-----
-  (define [olis p (q Oli)] (cons q (append p Euclid**)))
-  (check-equal? (referee/state (xstate padded-oli [olis '[]])) [onT `(,Oli) '[]] "Oli plain")
-  '-------
-  (define allout-r `([] (,(sop-player (car Bsetup)))))
-  (check-equal? (referee/state (xstate padded-oli [list Bsetup])) allout-r "--")
-
-  (check-equal? (referee/state [xstate padded-2 Riemann**]) (onT `[,Rcarl] '[]) "Riemann 2")
-  (check-equal? (referee/state [xstate padded-3 1e-r**]) (onT `[,Adam-E] '[]) "*padded 3w"))
-
-#; 
-(module+ test ;; ForStudents/ :: baddies tests
-  (check-equal? (referee/state (xstate padded-oli [olis `[,Bsetup]]))
-                `[[,(cnr Oli)] [,(cnr Bsetup)]])
-  (check-equal? (referee/state (xstate padded-oli [olis `[,1setup]]))
-                `[[,(cnr Oli)] [,(cnr 1setup)]])
-  (check-equal? (referee/state (xstate padded-oli [olis `[,2setup]]))
-                `[[,(cnr Oli)] [,(cnr 2setup)]] "for 8 students")
-  (check-equal? (referee/state (xstate padded-oli [olis '[] Btt])) (onT `[,Ebob] `[, Btt]))
-  (check-equal? (referee/state (xstate padded-oli [olis '[] 1tt])) (onT `[,Ebob] `[, 1tt]))
-  (check-equal? (referee/state (xstate padded-oli [olis '[] 3tt])) (onT `[,Ecarl] `[,3tt])
-                "for 8 Tests"))
-
-#;
-(module+ test
-  ;; one player passes once, the other player always; both are at the same distance and should win
-  (define p1-palways (list pass-ω pass-1))
-  (define p1-state   (xstate padded-oli p1-palways))
-  
-  (for ([p (map cnr p1-palways)])
-    (check-equal? (send p take-turn p1-state) PASS (~a (cnr-name p) " passes")))
-  (check-equal? (score-game p1-state) `[,(map car p1-palways) []] "both pass, score!")
-  (check-equal? (referee/state p1-state) `[,(map cnr p1-palways) []] "pass-pass")
-  
-  (define pass-r `[(,(cnr Adam-R)) []])
-  (define p1-play (list Adam-R pass-ω))
-  (define palways-state (xstate padded-oli p1-play))
-  (check-equal? (referee/state palways-state) pass-r "one always passes; sits on home=goal=current"))
-
-#;
-(module+ test ;; Tests/ :: runs out of rounds but no tie yet
-  ;; This test takes about an hour: 
-  ;; 3069.521u 20.850s 52:13.97 98.5%	0+0k 0+0io 15pf+0w
-  ;; after caching, all 23 tests passed in
-  ;; 105.837u 1.837s 1:50.90 97.0%	0+0k 0+0io 12pf+0w
-  'stress
-  [set-per 5.0] ;; needed for the first few drracket interactuons 
-  (define state-0 (cstate board-0 [tile-ew] [list Eve Fae] #false))
-  (check-equal? (referee/state state-0) (reverse (onT '[] `[,Eve])) "Eve vs Fae")
-
-  'stress-2
-  (define state-0c (cstate board-0 [tile-ew] [list Eve Fae Z] #false))
-  (check-equal? (referee/state state-0c) (reverse (onT `[,Z] `[,Eve])) "Eve vs Fae"))
-
-#; 
-(module+ test ;; Tests/ ;; plain tests
-  (check-equal? (referee/state (xstate padded-oli (cons Oli Riemann**))) [onT `(,Oli) '[]] "")
-  (check-equal? (referee/state [xstate padded-2 Euclid**]) (onT `[,Eadam] '[]) "*Euclid 2")
-  (check-equal? (referee/state [xstate padded-1 1e-r**]) (onT `[,Adam-E] '()) "*21")
-  (check-equal? (referee/state [xstate padded-3 1r-e**]) (onT `[,Adam-E] '[]) "*pad3"))
-
-#; 
-(module+ test ;; Tests/ :: baddies tests for 7
-  (define (result Bwin Bwin2 (at-end '()))
-    (let* ([result (onT (if Bwin `[,Bwin] '[]) (reverse (rest Bwin2)))]
-           [result (append (first result) (second result))]
-           [result (list '[] (append result at-end))])
-      (referee-results->names result)))
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 b1e-r**]))
-                (result Bwin Bwin2)
-                "2 lose")
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 11e-r**]))
-                (result 1win 1win2)
-                "2 lose")
-
-  ;; something goes wrong about their state or ordering if I don't check names 
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 (cons 3tt b1e-r**)]))
-                (result #false Bwin2 (list (cnr Bwin)))
-                "for 8 b")
-  
-  (check-equal? (referee/state (xstate padded-oli [list Bwin])) [reverse (onT `[,Bwin] '())])
-  (check-equal? (referee/state (xstate padded-oli [list 1win])) [reverse (onT `[,1win] '())]))
-
-#; 
-(module+ test
-  'cheaters 
-  (for ([c cheaters])
-    (define x (send (sop-player (car c)) name))
-    (define s (cstate board-0 [tile-ew] [list Eve c] #false))
-    (check-equal? (referee/state s) (reverse (onT `[,c] `[,Eve])) x))) 
-
-#;
-(module+ test
-  'extra-goals 
-  (define +goals (list (coordinate 3 3)))
-  (define ++goals (list (coordinate 3 3) (coordinate 5 1)))
-  (define +++goals (list (coordinate 3 3) (coordinate 5 1) (coordinate 1 5)))
-
-  ;; the first two use the always-passing player, which is no good for external testing 
-  (check-equal? (referee/state (xstate padded-oli (list pass-ω Adam-R) +goals)) pass-r "same+")
-  (check-equal? (referee/state (xstate padded-oli (list pass-ω Adam-R) ++goals)) pass-r "same+")
-
-  ;; there have a single winner 
-  (check-equal? (referee/state [xstate padded-2 Euclid** ++goals]) (onT `[,Eadam] '[]) "E++")
-  (check-equal? (referee/state [xstate padded-1 1e-r** +++goals]) (onT `[,Adam-E] '()) "21+")
-  (check-equal? (referee/state [xstate padded-3 1r-e** +++goals]) (onT `[,Adam-E] '[]) "*pad3")
-
-  ;; bad winners reman bad winners in the presence of multiple goals
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 (cons 3tt b1e-r**) +goals]))
-                (result #false Bwin2 (list (cnr Bwin)))
-                "for 8 b")
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 b1e-r** +goals]))
-                (result Bwin Bwin2)
-                "2 lose")
-  (check-equal? (referee-results->names (referee/state [xstate padded-1 11e-r** +goals]))
-                (result 1win 1win2)
-                "2 lose"))
-

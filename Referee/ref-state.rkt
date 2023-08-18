@@ -6,13 +6,23 @@
 (provide
  ;; from Qwirkle/Common/game-state
  state?
- active-sop-score++   
- active-sop-tiles--   
  active-sop-finished? 
- active-sop-hand      
- active-sop-tiles
- #;
- (all-from-out Qwirkle/Common/game-state))
+ active-sop-hand)
+
+(provide
+ ;; STNTAX
+ #; (legal-placement state successor-state tiles-placed)
+ ;; checks whether the action is a set of placements and whether they are legal
+ ;; if so, it produces the successor state with the new map and byremoving the placed tiles from AP
+ ;; and binds them to `tiles-placed` (for symmetry with `legal-re-placement`; the # would suffice)
+ legal-placement
+
+ ;; SYNYAX
+ #; (legal-re-placement s s+ tiles-to-replaced)
+ ;; checks whether the action is a REPLACEMENT request and whether it is leal
+ ;; if so, it takes all tiles from the active player in `s` (to `s+`
+ ;; and binds them to `tiles-to-replaced`
+ legal-re-placement)
 
 (provide
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
@@ -22,7 +32,7 @@
   [create-ref-state
    (->i ([gmap map?] [player-specs [listof [list/c [listof tile?] any/c]]])
         (#:tiles0 (tiles (listof tile?)))
-        #:pre/name (player-specs) "distinct names" (distinct? (map second player-specs))
+        #:pre/name (player-specs) "distinct internal names" (distinct? (map second player-specs))
         (r state?))]
 
   [set-ref-state-players
@@ -30,6 +40,7 @@
    (->i ([s state?] [lop (listof player/c)])
         #:pre/name (s lop) "same number of player reps and player obj"
         (= (length (state-players s)) (length lop))
+        #:pre/name (lop) "distinct external names" (distinct? (map (λ (p) (send p name)) lop))
         (r state?))]
 
   [state-handouts
@@ -38,10 +49,6 @@
    ;; -- otherwise, ; takes away at most n tiles from the current pile
    (-> state? (or/c #false natural?) (values (listof tile?) state?))]
   
-  [state-take-back
-   #; (state-take-back s lot) ; adds lot to the front of s's tiles 
-   (-> state? (listof tile?) state?)]
-
   [state-kick
    #; (state-kick s)       ; kick active player out 
    #; (state-kick s #true) ; move tiles from active player back to pile 
@@ -246,21 +253,6 @@
 ;                        ;                                 
 ;                        ;                                 
 
-(provide
- ;; STNTAX
- #; (legal-placement state successor-state tiles-placed)
- ;; checks whether the action is a set of placements and whether they are legal
- ;; if so, it produces the successor state, which removes the placed tiles from the active player
- ;; and binds them to `tiles-placed`
- legal-placement
-
- ;; SYNYAX
- #; (legal-re-placement s s+ tiles-to-replaced)
- ;; checks whether the action is a REPLACEMENT request and whether it is leal
- ;; if so, it takes all tiles from the active player in `s` (to `s+`
- ;; and binds them to `tiles-to-replaced`
- legal-re-placement)
-
 (define-match-expander legal-re-placement
   (λ (stx)
     (syntax-case stx ()
@@ -271,11 +263,12 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {State -> REPLACEMENT -> [Option State]}
+;; after ensuring that a swap is legal, it takes away all tiles from the active player 
 (define [(legal-replace s) _]
   (define active (first (state-players s)))
   (define tiles  (sop-tiles active))
   (and (>= (length (state-tiles s)) (length tiles))
-       (active-sop-tiles-- s tiles)))
+       (state-take-back (active-sop-tiles-- s tiles) tiles)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define-match-expander legal-placement 
@@ -341,12 +334,6 @@
      (match-define [cons first others] (state-players s))
      (values handouts (create-state (state-map s) first others tiles++))]))
 
-;; ---------------------------------------------------------------------------------------------------
-#; {[X] [RefState X] [Listof Tile] -> [RefState X]}
-(define (state-take-back s lot)
-  (match-define [cons first others] (state-players s))
-  (create-state (state-map s) first others (append lot (state-tiles s))))
-
 ;                                                                                             
 ;   ;                    ;                                                              ;     
 ;   ;         ;          ;               ;;;                          ;     ;           ;     
@@ -379,8 +366,13 @@
   (cond
     [(empty? others) #false]
     [else
-     (define tiles++ (append (if fa (sop-tiles one) '[]) (state-tiles s)))
-     (create-state (state-map s) (first others) (rest others) tiles++)]))
+     (define s-without-one (create-state (state-map s) (first others) (rest others) (state-tiles s)))
+     (state-take-back s-without-one (if fa (sop-tiles one) '[]))]))
+
+#; {[X] [RefState X] [Listof Tile] -> [RefState X]}
+(define (state-take-back s lot)
+  (match-define [cons first others] (state-players s))
+  (create-state (state-map s) first others (append (state-tiles s) lot)))
 
 (module+ test
   (define kicked (create-ref-state starter-map (rest starter-players) #:tiles0 handouts))
@@ -409,9 +401,17 @@
     [else 
      (define players (state-players s+))
      (define highest (sop-score (argmax sop-score players)))
-     (list 
-      (filter (λ (p) (= (sop-score p) highest)) players)
-      (filter (λ (p) (not (= (sop-score p) highest))) players))]))
+     (define winners (filter (λ (p) (= (sop-score p) highest)) players))
+     (list
+      winners
+      (remove* winners players))]))
+
+(module+ test
+
+   (let* ([specs [list (list tiles1 "A")  (list tiles1 "B")]]
+          [state (create-ref-state map0 specs #:tiles0 tiles0)])
+     (match-define [list winners losers] (determine-winners state))
+     (check-equal? `[,(map sop-player winners) ,(map sop-player losers)] `[["A" "B"] []])))
 
 ;                                            
 ;                            ;               
