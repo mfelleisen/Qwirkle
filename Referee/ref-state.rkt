@@ -11,6 +11,11 @@
  active-sop-hand)
 
 (provide
+ ;; SYNTAX 
+ legal-pass
+ #; (legal-pass)
+ ;; check whether the requested action is a plain PASS 
+ 
  ;; STNTAX
  #; (legal-placement state successor-state tiles-placed)
  ;; checks whether the action is a set of placements and whether they are legal
@@ -256,6 +261,8 @@
 ;                        ;                                 
 ;                        ;                                 
 ;                        ;                                 
+
+(define-match-expander legal-pass (λ (stx) (syntax-case stx () [(_) #'(? (curry equal? PASS))])))
 
 (define-match-expander legal-re-placement
   (λ (stx)

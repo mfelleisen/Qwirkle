@@ -508,9 +508,9 @@
 (define ((one-turn ap-ends-game all-passed) ap s out)
   (with-obs s)
   (xsend+ ap take-turn (ref-state-to-info-state s)
-          [[failed
+          [[failed ;; communication 
             (values (state-kick s) (cons ap out))] 
-           [(? (curry equal? PASS))
+           [(legal-pass)
             (values (state-rotate s) out)]
            [(legal-placement s s+ tiles-placed)
             (player-not-passed! all-passed)
@@ -669,11 +669,7 @@
       (list A B C D))))
 
 (module+ test
-
-  #;
-  (begin-for-syntax 
-    (define-syntax-class lot (static list? "list of tiles")))
-
+  
   (define-syntax (integration-test stx)
     (syntax-parse stx
       [(_ title:string
@@ -708,7 +704,7 @@
    #:expected     [["A"] []])
 
   (integration-test
-   "four normal players"
+   "four normal players, several turns"
    #:player-names ["A" "B" "C" "D"]
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
    #:externals    (take normal-player* 4)
