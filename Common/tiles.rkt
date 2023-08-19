@@ -54,6 +54,9 @@
 
    starter-tile
    starter-tile*
+   1starter-tile*
+   2starter-tile*
+   3starter-tile*
    qwirkle-tile*
 
    tiles0 tiles1 tiles2 tiles3 tiles4 tiles5 tiles6 tiles7 tiles8 tiles9 tiles10))
@@ -181,7 +184,11 @@
   (define di-llow (tile 'diamond 'yellow))
   (define ci-ange (tile 'circle 'orange))
 
-  (define starter-tile* [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
+  (define starter-tile*  [list 8-green sq-blue ci-llow cr-prpl di-llow ci-ange])
+  (define 1starter-tile* [list sq-blue sq-blue ci-llow cr-prpl di-llow ci-ange])
+  (define 2starter-tile* [list 8-green sq-blue cr-prpl cr-prpl di-llow ci-ange])
+  (define 3starter-tile* [list 8-green sq-blue cr-prpl cr-prpl di-llow di-llow])
+
   (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
   
   (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
