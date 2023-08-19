@@ -653,62 +653,78 @@
 ;                                     
 ;
 
+(module+ examples
+
+  (provide normal-player*)
+
+  (require Qwirkle/Player/mechanics)
+  (require Qwirkle/Player/strategies)
+
+  (define normal-player*
+    (let* ([normal (retrieve-factory "good" factory-base)]
+           [A (create-player "A" dag-strategy #:bad normal)]
+           [B (create-player "B" dag-strategy #:bad normal)]
+           [C (create-player "C" dag-strategy #:bad normal)]
+           [D (create-player "D" dag-strategy #:bad normal)])
+      (list A B C D))))
+
 (module+ test
- 
-  (let* ([title "two normal players, 1 turn"]
-         ;; internal state 
-         [specs [list (list tiles1 "A")  (list tiles1 "B")]]
-         [state (create-ref-state map0 specs #:tiles0 tiles0)]
-         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
-         [config (dict-set config QUIET #false)]
-         ;; external players 
-         [normal (retrieve-factory "good" factory-base)]
-         [A (create-player "A" dag-strategy #:bad normal)]
-         [B (create-player "B" dag-strategy #:bad normal)])
 
-    (check-equal? (dev/null (referee/config config (list A B))) '[["A"] []])
-    (map render-ref-state (textual-observer #false))
-    ;; comment out to see game 
-    (textual-observer FLUSH))
-  
-  (let* ([title "four normal players"]
-         ;; internal state 
-         [specs (map list
-                     (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-                     (list "A"           "B"            "C"            "D"))]
-         [state (create-ref-state (start-map #s(tile clover yellow)) specs #:tiles0 starter-tile*)]
-         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
-         [config (dict-set config QUIET #false)]
-         ;; external players 
-         [normal (retrieve-factory "good" factory-base)]
-         [A (create-player "A" dag-strategy #:bad normal)]
-         [B (create-player "B" dag-strategy #:bad normal)]
-         [C (create-player "C" dag-strategy #:bad normal)]
-         [D (create-player "D" dag-strategy #:bad normal)])
+  #;
+  (begin-for-syntax 
+    (define-syntax-class lot (static list? "list of tiles")))
 
-    (check-equal? (referee/config config (list A B C D)) '[["B"] []])
-    (for-each (compose pretty-print render-ref-state) (textual-observer #false))
-    
-    ;; comment out to see game:
-    #;
-    (textual-observer FLUSH))
+  (define-syntax (integration-test stx)
+    (syntax-parse stx
+      [(_ title:string
+          #:player-names [player-names:str ...]
+          #:player-tiles player-tiles
+          #:externals    externals
+          #:ref-tiles    ref-tiles
+          #:ref-map      map0
+          #:expected     [[winners:str ...] [drop-outs:str ...]]
+          (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#false]))
+          (~optional (~seq #:show show) #:defaults ([show #'#false])))
+       #'(let* ([L       title]
+                #;
+                [_ (eprintf "testing ~a\n" L)]
+                [specs   (map list player-tiles (list player-names ...))]
+                [state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
+                [config  (create-config state #:observe textual-observer #:per-turn 0.01)]
+                [config  (dict-set config QUIET quiet)]
+                [expect  `[,(list winners ...) ,(list drop-outs ...)]])
+           (check-equal? (dev/null (referee/config config externals)) expect L)
+           (when show
+             (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
+           (textual-observer FLUSH))]))
 
-  (let* ([title "one normal player, one drop out: 1 turn"]
-         ;; internal state 
-         [specs [list (list tiles1 "A")  (list tiles1 "B")]]
-         [state (create-ref-state map0 specs #:tiles0 tiles0)]
-         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
-         [config (dict-set config QUIET #false)]
-         ;; external players 
-         [normal (retrieve-factory "good" factory-base)]
-         [A (create-player "A" dag-strategy #:bad normal)]
-         [baddy  (retrieve-factory "setup" factory-table-7)]
-         [B (create-player "B" dag-strategy #:bad baddy)])
+  (integration-test
+   "two normal players, 1 turn"
+   #:player-names ["A" "B"]
+   #:player-tiles `[,tiles1 ,tiles1]
+   #:externals    (take normal-player* 2)
+   #:ref-tiles    tiles0
+   #:ref-map      map0
+   #:expected     [["A"] []])
 
-    (check-equal? (dev/null (referee/config config (list A B))) '[["A"] ["B"]])
-    (map render-ref-state (textual-observer #false))
-    ;; comment out to see game 
-    (textual-observer FLUSH))
+  (integration-test
+   "four normal players"
+   #:player-names ["A" "B" "C" "D"]
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (take normal-player* 4)
+   #:ref-tiles    starter-tile*
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["B"] []])
+
+  (define bad-7 (retrieve-factory "setup" factory-table-7))
+  (integration-test
+   "one normal player, one drop out: 1 turn"
+   #:player-names ["A" "B"]
+   #:player-tiles (list tiles1 tiles1)
+   #:externals    (append (take normal-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])
+   #:ref-tiles    starter-tile*
+   #:ref-map      map0
+   #:expected     [["A"] ["B"]])
 
   
   )
