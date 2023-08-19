@@ -171,7 +171,7 @@
 #; {State -> Result}
 (define [(referee/state-proper s0)]
   (parameterize ([current-error-port (if [quiet] (open-output-string) (current-error-port))])
-    (let*-values ({[s out]          (setup s0)}
+    (let*-values ({[s out]              (setup s0)}
                   {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
                   ([winners0 losers0]   (apply values winners+losers))
                   {[true-winners out]   (inform-about-outcome winners0 #true out)}

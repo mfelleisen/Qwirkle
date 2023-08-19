@@ -142,35 +142,38 @@
     ->
     [GameState U V W]}
 (define ((transform-state t-1player t-player* t-tiles) s)
-  (match-define [state gmap (cons first players) tiles] s)
-  (state gmap (cons (t-1player first) (map t-player* players)) (t-tiles tiles)))
+  (match-define [struct* state ([players (cons one players)] [tiles t])] s)
+  (struct-copy state s [players (cons (t-1player one) (map t-player* players))] [tiles (t-tiles t)]))
 
 (define (active-player s)
   (first (state-players s)))
-  
-#; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}
-(define (active-sop-tiles-- s placed-tile*)
-  (match-define [state gmap (cons first others) tiles] s)
-  (state gmap (cons (sop-tiles-- first placed-tile*) others) tiles))
 
-#; {[X] [RefState X] [Listof Tile] -> [RefState X]}
-(define (active-sop-finished? s [placed '[]])
-  (define active (sop-tiles (first (state-players s))))
-  (or (empty? active) (= (length placed) (length active))))
+#; {[X Y Z] [GameSTate X Y Z] Map -> [Listof Tile]}
+(define (active-sop-tiles s)
+  (sop-tiles (active-player s)))
   
-#; {[X Y] [GameSTate X Y] N -> [GameSTate X Y]}
-(define (active-sop-score++ s delta-score)
-  (match-define [state map (cons first players) tiles] s)
-  (state map (cons (sop-score++ first delta-score) players) tiles))
+#; {[X Y Z] [GameSTate X Y Z] {[Listof Tile]} -> Boolean}
+(define (active-sop-finished? s [placed '[]])
+  (define active (active-sop-tiles s))
+  (or (empty? active) (= (length placed) (length active))))
+
+#; {[X Y Z W] [SoPlayer W -> SoPlayer] -> [GameState X Y Z] W ->  [GameState X Y Z]}
+(define [(active-sop-update f) s x]
+  (match-define [struct* state ([players (cons one others)] )] s)
+  (struct-copy state s [players (cons (f one x) others)]))
+
+#; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}
+(define active-sop-tiles-- (active-sop-update sop-tiles--))
+
+#; {State [Listof Tile] -> State}
+(define active-sop-hand (active-sop-update sop-tiles++))
+
+#; {[X Y Z] [GameSTate X Y Z] N -> [GameSTate X Y Z]}
+(define active-sop-score++ (active-sop-update sop-score++))
 
 #; {[X Y] [GameSTate X Y] Map -> [GameSTate X Y]}
 (define (state-map++ s new-map)
-  (match-define [state map players tiles] s)
-  (state new-map players tiles))
-
-#; {[X Y] [GameSTate X Y] Map -> [Listof Tile]}
-(define (active-sop-tiles s)
-  (sop-tiles (first (state-players s))))
+  (struct-copy state s [map new-map]))
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -328,7 +331,7 @@
   (define placed-tiles (map placement-tile placements))
   (define coordinate*  (map placement-coordinate placements))
   (and
-   (player-owns-tiles (first (state-players gstate)) placed-tiles)
+   (player-owns-tiles (active-player gstate) placed-tiles)
    (or (same-row coordinate*) (same-column coordinate*))
    (all-adjacent-and-fits? (state-map gstate) placements)))
 
@@ -443,11 +446,6 @@
   (check-equal? (score map10 plmt9) score10 "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
-#; {State [Listof Tile] -> State}
-(define (active-sop-hand s new-tiles)
-  (match-define [state gmap (cons first others) tiles] s)
-  (state gmap (cons (sop-tiles++ first new-tiles) others) tiles))
-
 ;                                            
 ;                            ;               
 ;                            ;               
@@ -464,9 +462,9 @@
 ;                                            
 
 (define ((render-ref-state/g render-sop render-tiles) gs)
-  (match-define [state gmap (cons first [list sop ...]) tiles] gs)
+  (match-define [state gmap (cons one [list sop ...]) tiles] gs)
   (define gmap-image  (render-map gmap))
-  (define sop-images  (render-sop* first sop render-sop))
+  (define sop-images  (render-sop* one sop render-sop))
   (2:above/align
    'left 
    (2:beside/align 'top gmap-image hblank sop-images)
@@ -503,8 +501,8 @@
       ->
       {MAP : JMap, PLAYERS : [Cons JPlayer [Listof W]], TILES : U}}
   (define ((state->jsexpr/g players->jsexpr tiles->jsexpr) s)
-    (match-define [state gmap (cons active players) tiles] s)
-    (define jactive  (1player->jsexpr active))
+    (match-define [state gmap (cons one players) tiles] s)
+    (define jactive  (1player->jsexpr one))
     (define jplayers (players->jsexpr players))
     (hasheq MAP     (map->jsexpr gmap)
             PLAYERS (cons jactive jplayers)
