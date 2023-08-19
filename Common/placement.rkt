@@ -46,7 +46,21 @@
     [placements->jsexpr (-> (listof placement?) (listof jsexpr?))]
     [jsexpr->placements (-> (listof jsexpr?) (or/c (listof placement?) #false))])))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                  ;                       
+;                                                          
+;    ;;;;   ;;;    ;;;;  ;   ;   ;;;    ;;;;   ;;;    ;;;  
+;    ;;  ; ;;  ;  ;; ;;  ;   ;     ;    ;;  ; ;;  ;  ;   ; 
+;    ;     ;   ;; ;   ;  ;   ;     ;    ;     ;   ;; ;     
+;    ;     ;;;;;; ;   ;  ;   ;     ;    ;     ;;;;;;  ;;;  
+;    ;     ;      ;   ;  ;   ;     ;    ;     ;          ; 
+;    ;     ;      ;; ;;  ;   ;     ;    ;     ;      ;   ; 
+;    ;      ;;;;   ;;;;   ;;;;   ;;;;;  ;      ;;;;   ;;;  
+;                     ;                                    
+;                     ;                                    
+;                     ;                                    
+
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/tiles)
 
@@ -69,7 +83,21 @@
   (require Qwirkle/Lib/check-message)
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;       ;                                  ;            ;;        
+;       ;           ;                      ;           ;          
+;       ;           ;                      ;           ;          
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;;        
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;          
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;          
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;          
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;          
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;     ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;     ;;   
+;                                                                 
+;                                                                 
+;                                                                 
+
 #; {type Placement* = [Listof Placement]}
 ;; placements in the order in which the tiles are put down 
 #; {type Placement  = [placement Coordinate Tile]}
@@ -138,7 +166,21 @@
 
   (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
 
-;; ---------------------------------------------------------------------------------------------------
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
   (define ATILE '1tile)
   (define COORDINATE 'coordinate)

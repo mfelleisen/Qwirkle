@@ -58,9 +58,22 @@
   (require (submod ".." json))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;       ;                                  ;            ;;        
+;       ;           ;                      ;           ;          
+;       ;           ;                      ;           ;          
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;;        
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;          
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;          
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;          
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;          
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;     ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;     ;;   
+;                                                                 
+;                                                                 
+;                                                                 
+
 (struct coordinate [row column] #:prefab)
-(define origin [coordinate 0 0])
 
 #; {type Coordinate = [coordinate Integer Integer]}
 ;; the first tile denotes the origin of the map
@@ -69,71 +82,22 @@
 ;; -- a negative/positive column coordinate means left/right, respectively 
 ;; Thst is, coordinates are "computer graphics" coordinates.
 
-#; {Coordinate -> Coordinate}
-(define (left-of co)
-  (match-define [coordinate r c] co)
-  (coordinate r (- c 1)))
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
 
-#; {Coordinate -> Coordinate}
-(define (right-of co)
-  (match-define [coordinate r c] co)
-  (coordinate r (+ c 1)))
-
-#; {Coordinate -> Coordinate}
-(define (top-of co)
-  (match-define [coordinate r c] co)
-  (coordinate (- r 1) c))
-
-#; {Coordinate -> Coordinate}
-(define (below-of co)
-  (match-define [coordinate r c] co)
-  (coordinate (+ r 1) c))
-
-#; {Coordinate Coordinate -> Boolean}
-(define (top-down-left-to-right-order< c d)
-  (match-define [coordinate rc cc] c)
-  (match-define [coordinate rd cd] d)
-  (cond
-    [(< rc rd) #true]
-    [(> rc rd) #false]
-    [(= rc rd) (< cc cd)]))
-
-(define (right-to-left-bottom-up-order< c d)
-  (match-define [coordinate rc cc] c)
-  (match-define [coordinate rd cd] d)
-  (cond
-    [(> cc cd) #true]
-    [(< cc cd) #false]
-    [(= cc cd) (> rc rd)]))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {[Placement -> M] -> Placement* -> Option<Integer>}
-(define [(same selector) placements]
-  (define all-selected (map selector placements))
-  (if (apply = all-selected) (first all-selected) #false))
-
-(module+ test
-  (check-true (integer? (same-row coord1)))
-  (check-false (same-column '(#s(coordinate 1 1) #s(coordinate 3 2)))))
-
-(define same-row    (same coordinate-row))
-(define same-column (same coordinate-column))
-
-;; ---------------------------------------------------------------------------------------------------
-
-#; {Coordinate -> Coordinate -> Coordinate}
-(define (coordinate+-1 delta-coordinate)
-  (match-define [coordinate δ-row δ-column] delta-coordinate)
-  (λ (co)
-    (match-define [coordinate row column] co)
-    (coordinate (+ row δ-row) (+ column δ-column))))
-
-(define add1-row (coordinate+-1 (coordinate +1 0)))
-(define sub1-row (coordinate+-1 (coordinate -1 0)))
-(define add1-column (coordinate+-1 (coordinate 0 +1)))
-(define sub1-column (coordinate+-1 (coordinate 0 -1)))
-
-;; ---------------------------------------------------------------------------------------------------
+(define origin [coordinate 0 0])
 
 (module+ examples
   
@@ -189,7 +153,126 @@
           (coordinate +1 +3)
           (coordinate  0 +3)]))
 
+;                              
+;                              
+;                              
+;                              
+;    ;;;   ;;;;    ;;;         
+;   ;; ;;  ;; ;;  ;   ;        
+;   ;   ;  ;   ;  ;            
+;   ;   ;  ;   ;   ;;;         
+;   ;   ;  ;   ;      ;        
+;   ;; ;;  ;; ;;  ;   ;   ;;   
+;    ;;;   ;;;;    ;;;    ;;   
+;          ;                   
+;          ;                   
+;          ;                   
+
+#; {Coordinate -> Coordinate}
+(define (left-of co)
+  (struct-copy coordinate co [column (- (coordinate-column co) 1)]))
+
+#; {Coordinate -> Coordinate}
+(define (right-of co)
+  (struct-copy coordinate co [column (+ (coordinate-column co) 1)]))
+
+#; {Coordinate -> Coordinate}
+(define (top-of co)
+  (struct-copy coordinate co [row (- (coordinate-row co) 1)]))
+
+#; {Coordinate -> Coordinate}
+(define (below-of co)
+  (struct-copy coordinate co [row (+ (coordinate-row co) 1)]))
+
 ;; ---------------------------------------------------------------------------------------------------
+
+#; {Coordinate -> Coordinate -> Coordinate}
+(define (coordinate+-1 delta-coordinate)
+  (match-define [coordinate δ-row δ-column] delta-coordinate)
+  (λ (co)
+    (match-define [coordinate row column] co)
+    (coordinate (+ row δ-row) (+ column δ-column))))
+
+(define add1-row    (coordinate+-1 (coordinate +1 0)))
+(define sub1-row    (coordinate+-1 (coordinate -1 0)))
+(define add1-column (coordinate+-1 (coordinate 0 +1)))
+(define sub1-column (coordinate+-1 (coordinate 0 -1)))
+
+
+;                                                                 
+;                     ;                                           
+;                     ;                   ;                       
+;                     ;                                           
+;    ;;;    ;;;;   ;;;;   ;;;    ;;;;   ;;;   ; ;;    ;;;;   ;;;  
+;   ;; ;;   ;;  ; ;; ;;  ;;  ;   ;;  ;    ;   ;;  ;  ;;  ;  ;   ; 
+;   ;   ;   ;     ;   ;  ;   ;;  ;        ;   ;   ;  ;   ;  ;     
+;   ;   ;   ;     ;   ;  ;;;;;;  ;        ;   ;   ;  ;   ;   ;;;  
+;   ;   ;   ;     ;   ;  ;       ;        ;   ;   ;  ;   ;      ; 
+;   ;; ;;   ;     ;; ;;  ;       ;        ;   ;   ;  ;; ;;  ;   ; 
+;    ;;;    ;      ;;;;   ;;;;   ;      ;;;;; ;   ;   ;;;;   ;;;  
+;                                                        ;        
+;                                                     ;  ;        
+;                                                      ;;         
+
+#; {Coordinate Coordinate -> Boolean}
+(define (top-down-left-to-right-order< c d)
+  (match-define [coordinate rc cc] c)
+  (match-define [coordinate rd cd] d)
+  (cond
+    [(< rc rd) #true]
+    [(> rc rd) #false]
+    [(= rc rd) (< cc cd)]))
+
+(define (right-to-left-bottom-up-order< c d)
+  (match-define [coordinate rc cc] c)
+  (match-define [coordinate rd cd] d)
+  (cond
+    [(> cc cd) #true]
+    [(< cc cd) #false]
+    [(= cc cd) (> rc rd)]))
+
+;                              
+;                              
+;                              
+;                              
+;    ;;;   ;;;;  ;;;;;;   ;;;  
+;   ;   ;      ; ;  ;  ; ;;  ; 
+;   ;          ; ;  ;  ; ;   ;;
+;    ;;;    ;;;; ;  ;  ; ;;;;;;
+;       ;  ;   ; ;  ;  ; ;     
+;   ;   ;  ;   ; ;  ;  ; ;     
+;    ;;;    ;;;; ;  ;  ;  ;;;; 
+;                              
+;                              
+;                              
+
+#; {[Placement -> M] -> Placement* -> Option<Integer>}
+(define [(same selector) placements]
+  (define all-selected (map selector placements))
+  (if (apply = all-selected) (first all-selected) #false))
+
+(module+ test
+  (check-true (integer? (same-row coord1)))
+  (check-false (same-column '(#s(coordinate 1 1) #s(coordinate 3 2)))))
+
+(define same-row    (same coordinate-row))
+(define same-column (same coordinate-column))
+
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
   (define ROW 'row)
   (define COLUMN 'column)

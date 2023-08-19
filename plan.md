@@ -1,7 +1,8 @@
 ## REWRITES
 
 -- almost all `match-define` blah should become `(struct-copy ..)`
-
+-- jsexpr parsing in `placement` should be "normalized" 
+-- bake rounds into state? 
 
 
 ## Interactive Player

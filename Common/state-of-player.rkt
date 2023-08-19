@@ -102,37 +102,34 @@
       [(sop/m score tiles payload) #'(sop score tiles payload)])))
 
 #; {[SoPlayer Y] Z -> {SoPlayer Z}}
-(define [sop-set-player s p]
-  (match-define [sop/m n t _] s)
-  (sop n t p))
+(define [sop-set-player p xp]
+  (struct-copy sop p [player xp]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[SoPlayer Y] -> {SoPlayer Y}}
-(define (sop-score++ first n)
-  (match-define [sop/m score tiles payload] first)
-  (sop (+ score n) tiles payload))
+(define (sop-score++ p n)
+  (struct-copy sop p [score (+ (sop-score p) n)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[SoPlayer Y] -> {SoPlayer Y}}
 (define (sop-tiles-- p old-tile*)
-  (match-define [sop/m score tiles payload] p)
-  (sop score (remove* old-tile* tiles) payload))
+  (struct-copy sop p [tiles (remove* old-tile* (sop-tiles p))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[SoPlayer Y] -> {SoPlayer Y}}
 (define (sop-tiles++ p new-tile*)
-  (match-define [sop/m score tiles payload] p)
-  (sop score (append new-tile* tiles) payload))
+  (struct-copy sop p [tiles (append new-tile* (sop-tiles p))]))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[SoPlayer Y] -> [SoPlayer Y]}
-(define (sop-special first)
-  (match-define [sop/m score tiles payload] first)
+#; {[SoPlayer Y] -> [SoPlayer (U Symbol String)]}
+(define (sop-special p)
+  (define payload (sop-player p))
   (define name
     (cond
       [(or (symbol? payload) (string? payload)) payload]
-      [else (send payload name)]))
-  (sop score tiles name))
+      [(object? payload) (send payload name)]
+      [else (error 'sop-special "proper payload expected, given" payload)]))
+  (struct-copy sop p [player name]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Player [Listof Tile] -> Boolean}

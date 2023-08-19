@@ -265,11 +265,6 @@
                  #:with-obs textual-observer)
   (check-equal? (length (textual-observer #false)) 1)
   (textual-observer FLUSH))
-    
-
-;; TODO:
-;; -- match/struct* and struct-copy 
-
 
 ;                                     
 ;                                     

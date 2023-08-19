@@ -159,7 +159,7 @@
 
 #; {[X Y Z W] [SoPlayer W -> SoPlayer] -> [GameState X Y Z] W ->  [GameState X Y Z]}
 (define [(active-sop-update f) s x]
-  (match-define [struct* state ([players (cons one others)] )] s)
+  (match-define (cons one others) (state-players s))
   (struct-copy state s [players (cons (f one x) others)]))
 
 #; {[X Y Z] [GameSTate X Y Z] [Listof Tiles] -> [GameSTate X Y Z]}

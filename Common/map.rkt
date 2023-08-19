@@ -101,7 +101,20 @@
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;       ;                                  ;            ;;        
+;       ;           ;                      ;           ;          
+;       ;           ;                      ;           ;          
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;;        
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;          
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;          
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;          
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;          
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;     ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;     ;;   
+;                                                                 
+;                                                                 
+;                                                                 
 
 #; {type map = [Hashof Coordinate Tile]}
 
@@ -110,7 +123,6 @@
 (define (start-map tile0)
   (hash origin tile0))
 
-;; ---------------------------------------------------------------------------------------------------
 ;; add a tile that shares a side with an existing one on the map 
 
 #; {Map Coordinate Tile -> Map}
@@ -119,6 +131,35 @@
   (define co (placement-coordinate p))
   (define ti (placement-tile p))
   (hash-set b co ti))
+
+;; ---------------------------------------------------------------------------------------------------
+;; basic adjacency 
+
+#; {Map Coordinate -> Boolean}
+(module+ test
+  (check-true (adjacent? starter-map #s(coordinate 0 -1)))
+  (check-false (adjacent? starter-map origin)))
+(define (adjacent? b c)
+  (and (false? (hash-ref b c #false))
+       (tile? (or (occupied b (left-of c))
+                  (occupied b (top-of c))
+                  (occupied b (right-of c))
+                  (occupied b (below-of c))))))
+
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
 
 (module+ examples
   (define special-map
@@ -165,24 +206,20 @@
            [s (add-tile s #s(placement #s(coordinate  0 2) #s(tile circle yellow)))])
       s)))
 
-;; ---------------------------------------------------------------------------------------------------
-;; basic adjacency 
-
-#; {Map Coordinate -> Boolean}
-(module+ test
-  (check-true (adjacent? starter-map #s(coordinate 0 -1)))
-  (check-false (adjacent? starter-map origin)))
-(define (adjacent? b c)
-  (and (false? (hash-ref b c #false))
-       (tile? (or (occupied b (left-of c))
-                  (occupied b (top-of c))
-                  (occupied b (right-of c))
-                  (occupied b (below-of c))))))
-
-;; ---------------------------------------------------------------------------------------------------
-;; candidates 
-
-#; {Map Tile -> [Listof Candidate]}
+;                                                                        
+;                            ;             ;                             
+;                            ;     ;       ;           ;                 
+;                            ;             ;           ;                 
+;    ;;;   ;;;;   ; ;;    ;;;;   ;;;    ;;;;  ;;;;   ;;;;;   ;;;    ;;;  
+;   ;;  ;      ;  ;;  ;  ;; ;;     ;   ;; ;;      ;    ;    ;;  ;  ;   ; 
+;   ;          ;  ;   ;  ;   ;     ;   ;   ;      ;    ;    ;   ;; ;     
+;   ;       ;;;;  ;   ;  ;   ;     ;   ;   ;   ;;;;    ;    ;;;;;;  ;;;  
+;   ;      ;   ;  ;   ;  ;   ;     ;   ;   ;  ;   ;    ;    ;          ; 
+;   ;;     ;   ;  ;   ;  ;; ;;     ;   ;; ;;  ;   ;    ;    ;      ;   ; 
+;    ;;;;   ;;;;  ;   ;   ;;;;   ;;;;;  ;;;;   ;;;;    ;;;   ;;;;   ;;;  
+;                                                                        
+;                                                                        
+;                                                                        
 
 (struct candidate [place left top right below] #:prefab)
 
@@ -270,8 +307,20 @@
 (define (occupied b co)
   (hash-ref b co #false))
 
-;; ---------------------------------------------------------------------------------------------------
-;; rendering a map
+;                                                                 
+;                            ;                                    
+;                            ;                   ;                
+;                            ;                                    
+;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;;   ;;;   ; ;;    ;;;; 
+;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;    ;   ;;  ;  ;;  ; 
+;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;        ;   ;   ;  ;   ; 
+;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;        ;   ;   ;  ;   ; 
+;    ;     ;      ;   ;  ;   ;  ;       ;        ;   ;   ;  ;   ; 
+;    ;     ;      ;   ;  ;; ;;  ;       ;        ;   ;   ;  ;; ;; 
+;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;      ;;;;; ;   ;   ;;;; 
+;                                                               ; 
+;                                                            ;  ; 
+;                                                             ;;  
 
 #; {Map -> Image}
 (define (render-map b)
@@ -500,7 +549,21 @@
   'map10 (render-map map10)
   'map11 (render-map map11))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                 
+;                            ;                                    
+;                            ;                   ;                
+;                            ;                                    
+;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;;   ;;;   ; ;;    ;;;; 
+;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;    ;   ;;  ;  ;;  ; 
+;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;        ;   ;   ;  ;   ; 
+;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;        ;   ;   ;  ;   ; 
+;    ;     ;      ;   ;  ;   ;  ;       ;        ;   ;   ;  ;   ; 
+;    ;     ;      ;   ;  ;; ;;  ;       ;        ;   ;   ;  ;; ;; 
+;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;      ;;;;; ;   ;   ;;;; 
+;                                                               ; 
+;                                                            ;  ; 
+;                                                             ;;  
+
 (module+ json
 
   #; {type JMap = [List [List Integer Cell ...] ...]}
