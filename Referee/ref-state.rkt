@@ -57,7 +57,7 @@
    (->i ([f (-> sop? state? (listof sop?) (values (or/c #false state?) (listof sop?)))]
          [s state?]
          [l (listof sop?)])
-        (#:return (return (-> state? (listof sop?) (listof any/c))))
+        (#:return (return (-> (or/c #false state?) (listof sop?) (listof any/c))))
         ;; inexpressible contract: return whatever `f` or `return` return
         ;; and that can differ from call to call 
         (r (listof any/c)))]
@@ -75,7 +75,7 @@
   
   [determine-winners
    ;; determine winners and losers in the current state, if any 
-   (-> (or/c #false state?) (list/c (listof sop?) (listof sop?)))]
+   (-> state? (list/c (listof sop?) (listof sop?)))]
   
   [state-rotate
    ;; make the first player the last one 
@@ -405,24 +405,18 @@
 ;                                                   
 ;                                                   
 
-#; {[Option [RefState Player]] -> [List [Listof SoPlayer] [Listof SoPlayer]]}
+#; {[RefState Player] -> [List [Listof SoPlayer] [Listof SoPlayer]]}
 (define (determine-winners s+)
-  (cond
-    [(false? s+) '[[] []]]
-    [else 
-     (define players (state-players s+))
-     (define highest (sop-score (argmax sop-score players)))
-     (define winners (filter (λ (p) (= (sop-score p) highest)) players))
-     (list
-      winners
-      (remove* winners players))]))
+  (define players (state-players s+))
+  (define highest (sop-score (argmax sop-score players)))
+  (define winners (filter (λ (p) (= (sop-score p) highest)) players))
+  (list winners (remove* winners players)))
 
 (module+ test
-
-   (let* ([specs [list (list tiles1 "A")  (list tiles1 "B")]]
-          [state (create-ref-state map0 specs #:tiles0 tiles0)])
-     (match-define [list winners losers] (determine-winners state))
-     (check-equal? `[,(map sop-player winners) ,(map sop-player losers)] `[["A" "B"] []])))
+  (let* ([specs [list (list tiles1 "A")  (list tiles1 "B")]]
+         [state (create-ref-state map0 specs #:tiles0 tiles0)])
+    (match-define [list winners losers] (determine-winners state))
+    (check-equal? `[,(map sop-player winners) ,(map sop-player losers)] `[["A" "B"] []])))
 
 ;                                            
 ;                            ;               

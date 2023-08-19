@@ -153,6 +153,8 @@
 #; {type Result = [List [Listof String] [Listof String]]}
 ;; the first list contains the name of winning players, the second is the list of misbehaving players
 
+(define DEFAULT-RESULT '[[] []]) 
+
 #; {[Listof [Instanceof Player]] [Hashtable options] -> Result}
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
@@ -169,8 +171,8 @@
 #; {State -> Result}
 (define [(referee/state-proper s0)]
   (parameterize ([current-error-port (if [quiet] (open-output-string) (current-error-port))])
-    (let*-values ({[state out]          (setup s0)}
-                  {[winners+losers out] (if (false? state) (values '[[] []] out) (rounds state out))}
+    (let*-values ({[s out]          (setup s0)}
+                  {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
                   ([winners0 losers0]   (apply values winners+losers))
                   {[true-winners out]   (inform-about-outcome winners0 #true out)}
                   {[_true-losers out]   (inform-about-outcome losers0 #false out)})
@@ -266,7 +268,6 @@
     
 
 ;; TODO:
-;; DEFAULT RESULT 
 ;; -- match/struct* and struct-copy 
 
 
@@ -356,7 +357,9 @@
   (let rounds ([s s0] [out out0])
     (define-values (s+ game-over? out+) (one-round s out))
     (cond
-      [game-over? (with-obs s+) (values (determine-winners s+) out+)]
+      [game-over? (with-obs s+)
+                  (define w+l (if (false? s+) DEFAULT-RESULT (determine-winners s+)))
+                  (values w+l out+)]
       [else       (rounds s+ out+)])))
 
 (module+ test
