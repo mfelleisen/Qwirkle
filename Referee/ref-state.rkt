@@ -281,7 +281,7 @@
       [(_ s s+ n)
        #'(and (list (? placement?) (... ...))
               (app (λ (x) (complete-placements s x)) (? state? s+))
-              (app (λ (x) (sop-tiles (first (state-players s)))) [list (? tile? n) (... ...)]))])))
+              (app (λ (x) (map placement-tile x)) [list (? tile? n) (... ...)]))])))
 
 #; {[Y] [RefState Y] [Listof Placememnt] -> [Option [RefState Y]]}
 (define (complete-placements s placements)
