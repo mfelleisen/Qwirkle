@@ -81,10 +81,12 @@
   (require (submod Qwirkle/Referee/ref-state examples))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
+  (require Qwirkle/Common/map)
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
   (require SwDev/Testing/check-values)
+  (require SwDev/Lib/should-be-racket)
   (require rackunit)
   (require (for-syntax syntax/parse)))
 
@@ -353,9 +355,8 @@
 (define (rounds s0 out0)
   (let rounds ([s s0] [out out0])
     (define-values (s+ game-over? out+) (one-round s out))
-    (with-obs s+) ;; at the end of a round 
     (cond
-      [game-over? (values (determine-winners s+) out+)]
+      [game-over? (with-obs s+) (values (determine-winners s+) out+)]
       [else       (rounds s+ out+)])))
 
 (module+ test
@@ -636,4 +637,79 @@
     (xsend+ p win msg
             [[failed (values survived (cons p out))]
              [_      (values (cons p survived) out)]])))
+
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;
+
+(module+ test
+ 
+  (let* ([title "two normal players, 1 turn"]
+         ;; internal state 
+         [specs [list (list tiles1 "A")  (list tiles1 "B")]]
+         [state (create-ref-state map0 specs #:tiles0 tiles0)]
+         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
+         [config (dict-set config QUIET #false)]
+         ;; external players 
+         [normal (retrieve-factory "good" factory-base)]
+         [A (create-player "A" dag-strategy #:bad normal)]
+         [B (create-player "B" dag-strategy #:bad normal)])
+
+    (check-equal? (dev/null (referee/config config (list A B))) '[["A"] []])
+    (map render-ref-state (textual-observer #false))
+    ;; comment out to see game 
+    (textual-observer FLUSH))
+  
+  (let* ([title "four normal players"]
+         ;; internal state 
+         [specs (map list
+                     (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+                     (list "A"           "B"            "C"            "D"))]
+         [state (create-ref-state (start-map #s(tile clover yellow)) specs #:tiles0 starter-tile*)]
+         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
+         [config (dict-set config QUIET #false)]
+         ;; external players 
+         [normal (retrieve-factory "good" factory-base)]
+         [A (create-player "A" dag-strategy #:bad normal)]
+         [B (create-player "B" dag-strategy #:bad normal)]
+         [C (create-player "C" dag-strategy #:bad normal)]
+         [D (create-player "D" dag-strategy #:bad normal)])
+
+    (check-equal? (referee/config config (list A B C D)) '[["B"] []])
+    (for-each (compose pretty-print render-ref-state) (textual-observer #false))
+    
+    ;; comment out to see game:
+    #;
+    (textual-observer FLUSH))
+
+  (let* ([title "one normal player, one drop out: 1 turn"]
+         ;; internal state 
+         [specs [list (list tiles1 "A")  (list tiles1 "B")]]
+         [state (create-ref-state map0 specs #:tiles0 tiles0)]
+         [config (create-config state #:observe textual-observer #:per-turn 0.01)]
+         [config (dict-set config QUIET #false)]
+         ;; external players 
+         [normal (retrieve-factory "good" factory-base)]
+         [A (create-player "A" dag-strategy #:bad normal)]
+         [baddy  (retrieve-factory "setup" factory-table-7)]
+         [B (create-player "B" dag-strategy #:bad baddy)])
+
+    (check-equal? (dev/null (referee/config config (list A B))) '[["A"] ["B"]])
+    (map render-ref-state (textual-observer #false))
+    ;; comment out to see game 
+    (textual-observer FLUSH))
+
+  
+  )
 
