@@ -10,6 +10,9 @@
 (define factory-table  (listof (list/c string? player-factory)))
 
 (provide
+ #;{type Player}
+ player?
+
  (contract-out
   
   [create-player
@@ -126,6 +129,8 @@
   `[["good" ,(λ (n s) (new player% [my-name n] [strategy s]))]])
 
 (module+ test (check-exn #px"cannot" (λ () (retrieve-factory "boo" factory-all))))
+
+(define (player? x) (is-a? x player%))
 
 ;                                                                                          
 ;                                                                                          
