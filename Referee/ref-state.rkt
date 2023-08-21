@@ -498,7 +498,7 @@
 
   (define (jsexpr->state j #:names (names #false))
     (define (j->1 j) ;; kludge for easy testing to get name back 
-      (define name (begin0 (first names) (set! names (rest names))))
+      (define name (if (false? names) "" (begin0 (first names) (set! names (rest names)))))
       (jsexpr->1player j #:name name))
     (def/jsexpr-> players #:array [(list (app j->1 (? sop? x)) ...) x])
     (define jsexpr->state (jsexpr->state/g jsexpr->players jsexpr->tiles))
