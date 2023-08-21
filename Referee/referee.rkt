@@ -500,7 +500,7 @@
                (define-values [S++ end out]
                  (if dr
                      (check-message W cep #px"dropped out" (one-round S '[]))
-                     [one-round S '[]]))
+                     (dev/null [one-round S '[]])))
                (check-equal? end end W)
                (if ok (check-true (state? S++) W) (check-false S++ W))
                (if dr
@@ -611,7 +611,7 @@
              (define-values (~? [S++ end out] [S++ out])
                (if dr
                    (check-message W cep #px"dropped out" (run A S '[]))
-                   [run A S '[]]))
+                   (dev/null [run A S '[]])))
              (~? (check-true end W) (void))
              (if ok (check-true (state? S++) W) (check-false S++ W))
              (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
@@ -827,8 +827,6 @@
 ;                                                                        
 
 (module+ test ;; run all integration tests
-  '---------------------------------------------------------------------------------------------------
-
   (for-each (λ (test) [test]) [all-tests])
 
   (check-equal? (length [all-tests]) 4 "make sure all tests are recordded")
