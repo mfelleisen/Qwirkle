@@ -1,9 +1,12 @@
 #lang racket
 
-;; referee: mediates between external players (local or remote) and the game state, via safe xsend 
+;; referee: mediates between external players (local or remote) and the referee state, via safe xsend 
 ;; ---------------------------------------------------------------------------------------------------
 
-(define results/c [list/c [listof string?] [listof string?]])
+(require (submod (file "../scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/Common/player-interface)
+(require SwDev/Contracts/unique)
+(require SwDev/Lib/hash-contract)
 
 (define STATE0   'initial-state)
 (define QUIET    'quiet)
@@ -12,26 +15,34 @@
 (define SHOW     'observer-shows-for-s)
 (define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN))
 
+#; {Configuration [Listof Player] -> Boolean}
+(define (matching-number config players)
+  (let* ([state0  (dict-ref config STATE0)]
+         [sop#    (and state0 (player-count state0))]
+         [player# (length players)])
+    (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS))))
+
 (provide
- MAX-PLAYERS 
- MIN-PLAYERS
-
- PER-TURN 
-
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
    (->* (state?) (#:observe any/c #:per-turn (and/c real? positive?)) (hash-carrier/c options))]
   
   [referee/config
-   ;; use a configuration of a referee state,
-   ;; plus possibly options to set the time limit per turn 
-   (->i ([c (hash-carrier/c options)] [players (listof player/c)])
+   ;; runs a game from the given configuration, which contains a ref state plus the above options
+   ;; The referee calls player methods via `xsend`, which
+   ;; -- limits the time a method call can last (configured)
+   ;; -- catches exn that the method call raises
+   ;; When `xsend` notices either problem, the referee kicks the player out.
+   ;; 
+   ;; The referee's one-turn methods distinguishes five different results of an `xsend`:
+   ;; (1) failed (as above) (2) PASS (3) LEGAL REPLACEMENT (4) LEGAL PLACEMENTS (5) ILLEGAL Requests
+   ;; It throws out players when (1) or (5) happens. 
+   ;;
+   (->i ([config (hash-carrier/c options)] [players (listof player/c)])
         #:pre/name (players) "distince names" (distinct? (map (λ (p) (send p name)) players))
-        (r results/c))]
-  
-  [referee/state
-   (->* (state?) (#:with-obs any/c) results/c)]))
+        #:pre/name (config players) "matching number of players" (matching-number config players)
+        (r [list/c [listof string?] [listof string?]]))]))
 
 ;                                                          
 ;                                                          
@@ -49,10 +60,8 @@
 ;                     ;                                    
 
 (require Qwirkle/Common/state-of-player)
-(require Qwirkle/Common/player-interface)
 (require Qwirkle/Referee/ref-state)
-(require SwDev/Contracts/unique)
-(require SwDev/Lib/hash-contract)
+
 ;; -----------------------------------------------------------------------------
 (require Qwirkle/Lib/xsend)
 
@@ -105,9 +114,6 @@
 ;                                       ;;;  
 ;                                            
 
-(define MAX-PLAYERS 4)
-(define MIN-PLAYERS 2)
-
 (define per-turn 4.0)  ;; time limit per turn
 (define (set-per x) (set! per-turn x)) ;; for the testing submod 
 (define quiet    [make-parameter #false])
@@ -151,11 +157,12 @@
 ;
 
 #; {type Result = [List [Listof String] [Listof String]]}
-;; the first list contains the name of winning players, the second is the list of misbehaving players
+;; the first list contains the name of winning players, sorted in lexicographic (string<?) order
+;; the second is the list of misbehaving players, in the order in which they dropped out 
 
 (define DEFAULT-RESULT '[[] []]) 
 
-#; {[Listof [Instanceof Player]] [Hashtable options] -> Result}
+#; {Configuration [Listof [Instanceof Player]] -> Result}
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
   (define-values (s o) (install-config c lo-players))
@@ -176,7 +183,8 @@
                   ([winners0 losers0]   (apply values winners+losers))
                   {[true-winners out]   (inform-about-outcome winners0 #true out)}
                   {[_true-losers out]   (inform-about-outcome losers0 #false out)})
-      (list (extract-names true-winners) (extract-names out)))))
+      (list (sort (extract-names true-winners) string<?)
+            (reverse (extract-names out))))))
 
 #; {State (U False Observer) -> Void}
 ;; turn with-obs into a function that consumes a state
@@ -667,10 +675,15 @@
       (list A B C D))))
 
 (module+ test
+
+  ;; test script needs
+  ;; -- MAX-PLAYERS and MIN-PLAYERS
+  ;; -- check numbers on state players and specified players
+  ;; -- 
   
   (define-syntax (integration-test stx)
     (syntax-parse stx
-      [(_ title:string
+      [(_ #:desc description:string
           #:player-names [player-names:str ...]
           #:player-tiles player-tiles
           #:externals    externals
@@ -679,9 +692,7 @@
           #:expected     [[winners:str ...] [drop-outs:str ...]]
           (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#false]))
           (~optional (~seq #:show show) #:defaults ([show #'#false])))
-       #'(let* ([L       title]
-                #;
-                [_ (eprintf "testing ~a\n" L)]
+       #'(let* ([L       description]
                 [specs   (map list player-tiles (list player-names ...))]
                 [state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
                 [config  (create-config state #:observe textual-observer #:per-turn 0.01)]
@@ -693,7 +704,7 @@
            (textual-observer FLUSH))]))
 
   (integration-test
-   "two normal players, 1 turn"
+   #:desc "two normal players, 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles `[,tiles1 ,tiles1]
    #:externals    (take normal-player* 2)
@@ -702,7 +713,7 @@
    #:expected     [["A"] []])
 
   (integration-test
-   "four normal players, several turns"
+   #:desc "four normal players, several turns"
    #:player-names ["A" "B" "C" "D"]
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
    #:externals    (take normal-player* 4)
@@ -712,7 +723,7 @@
 
   (define bad-7 (retrieve-factory "setup" factory-table-7))
   (integration-test
-   "one normal player, one drop out: 1 turn"
+   #:desc "one normal player, one drop out: 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles (list tiles1 tiles1)
    #:externals    (append (take normal-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])

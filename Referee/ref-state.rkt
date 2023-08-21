@@ -62,6 +62,9 @@
         ;; and that can differ from call to call 
         (r (listof any/c)))]
 
+  [player-count
+   (-> state? natural?)]
+
   [state-handouts
    #; (state-handouts s n) ; produce the tiles to be handed to the actual player and a revised state
    ;; -- if n is #false, use the tiles in possession of the player representation
@@ -246,6 +249,10 @@
   (define active* (state-players s0))
   (for/fold ([s s0] [ep-out ep-out0] #:result (r s ep-out)) ([ap active*] #:when s)
     (f ap s ep-out)))
+
+#; {[X Y Z] [GameSTate X Y Z] -> Natural}
+(define (player-count s)
+  (length (state-players s)))
 
 ;                                                          
 ;                                                          

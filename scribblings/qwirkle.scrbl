@@ -9,6 +9,16 @@
 @(define qwirkle-rules "https://en.m.wikipedia.org/wiki/Qwirkle")
 @(define-runtime-path qwirkle.png "qwirkle.png")
 
+@(module spec racket/base
+   [provide MIN-PLAYERS MAX-PLAYERS]
+   
+   [define MIN-PLAYERS 2]
+   [define MAX-PLAYERS 4]
+   )
+
+@(require 'spec)
+
+
 @; -----------------------------------------------------------------------------
 @author{Matthias Felleisen}
 
@@ -30,9 +40,10 @@ To remind you of their inanimate nature, it is best to use ``its'' or
 @; -----------------------------------------------------------------------------
 @bold{Informal Overview}
 
-The Q game is a tile-based game. Players place the tiles on an infinitely large
-``table.'' The square shape of the tiles and the rules of the game induce the
-notions of row and column on the evolving map formation.
+The Q game is a tile-based game for @(~a MIN-PLAYERS) to @(~a MAX-PLAYERS)
+players. These players place the tiles on an infinitely large ``table.'' The
+square shape of the tiles and the rules of the game induce the notions of row
+and column on the evolving map formation.
 
 Players place tiles according to rather basic rules. Every placement yields a
 certain number of points. When a player can use all of its tiles during a single
