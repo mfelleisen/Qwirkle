@@ -26,6 +26,9 @@
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
 (provide
+ ;; config options
+ STATE0 QUIET OBSERVE SHOW PER-TURN
+ 
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
@@ -57,7 +60,7 @@
    FLUSH
 
    plain-main
-   normal-player*))
+   dag-player*))
 
 ;                                                          
 ;                                                          
@@ -97,14 +100,15 @@
 (module+ examples
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
-  (require Qwirkle/Common/map)
-
-  (require (submod Qwirkle/Referee/ref-state json))
   (require (submod Qwirkle/Player/mechanics json))
+  (require (submod Qwirkle/Referee/ref-state json))
   
+  (require Qwirkle/Common/map)
+  (require Qwirkle/Common/tiles)
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
+
   (require SwDev/Lib/should-be-racket)
   (require SwDev/Testing/check-values)
   (require SwDev/Testing/testing)
@@ -494,7 +498,9 @@
                     [S (set-ref-state-players T [cons P C])])
                (set-with void)
                (define-values [S++ end out]
-                 (if dr (check-message W cep #px"dropped out" (one-round S '[])) [one-round S '[]]))
+                 (if dr
+                     (check-message W cep #px"dropped out" (one-round S '[]))
+                     [one-round S '[]]))
                (check-equal? end end W)
                (if ok (check-true (state? S++) W) (check-false S++ W))
                (if dr
@@ -549,7 +555,8 @@
            [(legal-placement s s+ tiles-placed)
             (player-not-passed! all-passed)
             (cond
-              [(active-sop-finished? s+) (ap-ends-game s+ #true out)]
+              [(active-sop-finished? s+ #;"s+'s ap no longer owns the placed tiles") 
+               (ap-ends-game s+ #true out)]
               [else
                (define-values [handouts s++] (state-handouts s+ (length tiles-placed)))
                (hand-tiles-now ap s++ handouts out ap-ends-game)])]
@@ -602,7 +609,9 @@
                   [A (active-player S)])
              (set-with void)
              (define-values (~? [S++ end out] [S++ out])
-               (if dr (check-message W cep #px"dropped out" (run A S '[])) [run A S '[]]))
+               (if dr
+                   (check-message W cep #px"dropped out" (run A S '[]))
+                   [run A S '[]]))
              (~? (check-true end W) (void))
              (if ok (check-true (state? S++) W) (check-false S++ W))
              (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
@@ -672,32 +681,38 @@
             [[failed (values survived (cons p out))]
              [_      (values (cons p survived) out)]])))
 
-;                                     
-;                                     
-;     ;                    ;          
-;     ;                    ;          
-;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;; ;        ;    ;     
-;     ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;          ;    ;        ; 
-;     ;    ;      ;   ;    ;    ;   ; 
-;     ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                     
-;                                     
-;
+;                                                          
+;                                                          
+;                                                ;         
+;                                                          
+;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;; 
+;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ; 
+;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ; 
+;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ; 
+;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;; 
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;  
+;                                                          
+;                                                          
+;                                                          
 
 (module+ examples
   
-  (define normal-player*
+  (define dag-player*
     (let* ([normal (retrieve-factory "good" factory-base)]
            [A (create-player "A" dag-strategy #:bad normal)]
            [B (create-player "B" dag-strategy #:bad normal)]
            [C (create-player "C" dag-strategy #:bad normal)]
            [D (create-player "D" dag-strategy #:bad normal)])
       (list A B C D)))
+
+  (provide for-students)
+
+  (define for-students '[])
+  (define for-tests    '[])
+  (define for-bonus    '[])
   
-  (define all-tests '[])
+  (define [all-tests] (append for-students for-tests for-bonus))
   
   (define-syntax (integration-test stx)
     (syntax-parse stx
@@ -709,7 +724,8 @@
           #:ref-tiles    ref-tiles
           #:ref-map      map0
           #:expected     [[winners:str ...] [drop-outs:str ...]]
-          (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#false]))
+          #:kind         kind:id
+          (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
           (~optional (~seq #:show show) #:defaults ([show #'#false])))
        #'(begin
            [define L       description]
@@ -717,51 +733,70 @@
            [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
            [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
            [define expect  `[,(list winners ...) ,(list drop-outs ...)]]
-           ;; the Racket integration test 
-           (define [name . main*]
-             (if (empty? main*) [name-plain] [name-jsexpr (first main*)]))
+           ;; the Racket integration test
 
+           #; {case-> [-> Void] [(-> Void) -> Void]}
+           (define name
+             (case-lambda
+               [() [name-plain]]
+               [(main expect) [name-jsexpr main expect]]))
+
+           #; {-> Void}
            (define [name-plain]
              (parameterize ([unit-test-mode #false])
-               (check-equal? (dev/null (referee/config config externals)) expect L)
+               (check-equal? (referee/config config externals) expect L)
                (when show
                  (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
                (textual-observer FLUSH)))
 
-           (define jsexpr-inputs
-             [list
-              (state->jsexpr state)
-              (map player->jsexpr externals)])
+           #; {[ -> Void] -> Void}
+           (define [name-jsexpr main expect]
+             (define jsexpr-inputs [list (state->jsexpr state) (map player->jsexpr externals)])
+             (r-check-equal? main jsexpr-inputs `[,expect] L))
 
-           (define [name-jsexpr main]
-             (r-check-equal? main `[,(state->jsexpr state) ,(map player->jsexpr externals)]
-                             `[,expect] "x"))
-
-           (set! all-tests (cons name all-tests)))]))
+           (set! kind (cons name kind)))]))
 
   (define (plain-main . x)
     (write-json `[["A"] []] #:indent 2)
-    (newline))
-  
+    (newline)))
+;; ---------------------------------------------------------------------------------------------------
+
+(module+ examples
   (integration-test
    normal-short
    #:desc "two normal players, 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles `[,tiles1 ,tiles1]
-   #:externals    (take normal-player* 2)
+   #:externals    (take dag-player* 2)
    #:ref-tiles    tiles0
    #:ref-map      map0
-   #:expected     [["A"] []])
+   #:expected     [["A"] []]
+   #:kind         for-students)
 
   (integration-test
    normal-medium
    #:desc "four normal players, several turns"
    #:player-names ["A" "B" "C" "D"]
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (take normal-player* 4)
+   #:externals    (take dag-player* 4)
    #:ref-tiles    starter-tile*
    #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["B"] []])
+   #:expected     [["B"] []]
+   #:kind         for-students)
+
+  (integration-test
+   normal-medium2
+   #:desc "four normal players, several turns"
+   #:player-names ["A" "B" "C" "D"]
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (take dag-player* 4)
+   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["D"] []]
+   #:kind         for-students
+   ; #:quiet #false
+   ; #:show 'yes
+   )
 
   (define bad-7 (retrieve-factory "setup" factory-table-7))
   (integration-test
@@ -769,12 +804,34 @@
    #:desc "one normal player, one drop out: 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles (list tiles1 tiles1)
-   #:externals    (append (take normal-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])
+   #:externals    (append (take dag-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])
    #:ref-tiles    starter-tile*
    #:ref-map      map0
-   #:expected     [["A"] ["B"]])
+   #:expected     [["A"] ["B"]]
+   #:kind         for-students)
   )
 
+;                                                                        
+;                                                                        
+;      ;            ;                    ;                    ;          
+;                   ;                    ;                    ;          
+;    ;;;   ; ;;   ;;;;;                ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;      ;   ;;  ;    ;                    ;    ;;  ;  ;   ;    ;    ;   ; 
+;      ;   ;   ;    ;                    ;    ;   ;; ;        ;    ;     
+;      ;   ;   ;    ;                    ;    ;;;;;;  ;;;     ;     ;;;  
+;      ;   ;   ;    ;                    ;    ;          ;    ;        ; 
+;      ;   ;   ;    ;     ;;             ;    ;      ;   ;    ;    ;   ; 
+;    ;;;;; ;   ;    ;;;   ;;             ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                                                        
+;                                                                        
+;                                                                        
+
 (module+ test ;; run all integration tests
-  (for-each (λ (test) [test]) all-tests)
-  (for-each (λ (test) [test plain-main]) all-tests))
+  '---------------------------------------------------------------------------------------------------
+
+  (for-each (λ (test) [test]) [all-tests])
+
+  (check-equal? (length [all-tests]) 4 "make sure all tests are recordded")
+
+  (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
+  (for-each (λ (test) [test plain-main expected]) for-students))
