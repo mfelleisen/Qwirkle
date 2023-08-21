@@ -214,7 +214,7 @@
 
 (module+ examples ;; states and successor states
   (define info-starter-state (ref-state-to-info-state ref-starter-state))
-  (define info-all-tiles (active-sop-hand info-starter-state ALL-TILE-COLOR-COMBOS))
+  (define info-all-tiles (active-sop-hand info-starter-state ALL-SHAPE-COLOR-COMBOS))
   (define info-starter-state-handout (ref-state-to-info-state ref-starter-state-handout))
   (define info-+starter-state (ref-state-to-info-state +starter-state))
   (define info-special-state (ref-state-to-info-state special-state))

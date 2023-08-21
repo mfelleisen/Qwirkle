@@ -46,7 +46,7 @@
 (provide ;; for homework & cheating players 
  ALL-SHAPES
  ALL-COLORS
- ALL-TILE-COLOR-COMBOS)
+ ALL-SHAPE-COLOR-COMBOS)
 
 (module+ examples
   (provide
@@ -154,7 +154,7 @@
 
 (define (color? x) (cons? (member x ALL-COLORS)))
 
-(define ALL-TILE-COLOR-COMBOS
+(define ALL-SHAPE-COLOR-COMBOS
   (for*/list ([s ALL-SHAPES] [c ALL-COLORS])
     (tile (first s) c)))
 

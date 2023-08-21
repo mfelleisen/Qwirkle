@@ -365,7 +365,7 @@
                     (list (placement (candidate-place candidate) bad-tile))]))))
 
 (define (find-non-existent-tile tiles)
-  (for/first ([t ALL-TILE-COLOR-COMBOS] #:unless (member t tiles)) t))
+  (for/first ([t ALL-SHAPE-COLOR-COMBOS] #:unless (member t tiles)) t))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define not-a-line%
