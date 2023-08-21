@@ -15,12 +15,15 @@
 (define SHOW     'observer-shows-for-s)
 (define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN))
 
+(define unit-test-mode [make-parameter #true])
+
 #; {Configuration [Listof Player] -> Boolean}
 (define (matching-number config players)
   (let* ([state0  (dict-ref config STATE0)]
          [sop#    (and state0 (player-count state0))]
          [player# (length players)])
-    (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS))))
+    (or (unit-test-mode)
+        (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
 (provide
  (contract-out
@@ -43,6 +46,18 @@
         #:pre/name (players) "distince names" (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (config players) "matching number of players" (matching-number config players)
         (r [list/c [listof string?] [listof string?]]))]))
+
+(module+ examples
+  (provide
+   all-tests))
+
+(module+ examples
+  (provide
+   textual-observer
+   FLUSH
+
+   plain-main
+   normal-player*))
 
 ;                                                          
 ;                                                          
@@ -79,7 +94,23 @@
   (eprintf "~a dropped out on ~a: ~v [time limit ~v]\n" n m f-msg per-turn))
 ;; -----------------------------------------------------------------------------
 
-(module+ examples)
+(module+ examples
+  (require (submod Qwirkle/Common/map examples))
+  (require (submod Qwirkle/Common/tiles examples))
+  (require Qwirkle/Common/map)
+
+  (require (submod Qwirkle/Referee/ref-state json))
+  (require (submod Qwirkle/Player/mechanics json))
+  
+  (require Qwirkle/Player/mechanics)
+  (require Qwirkle/Player/strategies)
+  (require Qwirkle/Lib/check-message)
+  (require SwDev/Lib/should-be-racket)
+  (require SwDev/Testing/check-values)
+  (require SwDev/Testing/testing)
+  (require json)
+  (require rackunit)
+  (require (for-syntax syntax/parse)))
 
 (module+ test
   (define cep current-error-port)
@@ -88,9 +119,6 @@
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/game-state examples))
   (require (submod Qwirkle/Referee/ref-state examples))
-  (require (submod Qwirkle/Common/map examples))
-  (require (submod Qwirkle/Common/tiles examples))
-  (require Qwirkle/Common/map)
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
@@ -254,8 +282,7 @@
                  ['["B"] '["A"]]
                  #:extra B (create-player "B" dag-strategy)))
 
-(module+ test 
-
+(module+ examples
   ;; a primitive textual observer 
   (define seq* '[])
   (define FLUSH (gensym 'flush))
@@ -265,8 +292,9 @@
       [(eq? FLUSH s) (set! seq* '[])]
       [else
        (set! seq* (cons s seq*))
-       textual-observer]))
+       textual-observer])))
 
+(module+ test 
   (ref-test-case "receiving new tiles fails, cover observer"
                  "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
                  ['[] '["A"]]
@@ -660,30 +688,21 @@
 ;
 
 (module+ examples
-
-  (provide normal-player*)
-
-  (require Qwirkle/Player/mechanics)
-  (require Qwirkle/Player/strategies)
-
+  
   (define normal-player*
     (let* ([normal (retrieve-factory "good" factory-base)]
            [A (create-player "A" dag-strategy #:bad normal)]
            [B (create-player "B" dag-strategy #:bad normal)]
            [C (create-player "C" dag-strategy #:bad normal)]
            [D (create-player "D" dag-strategy #:bad normal)])
-      (list A B C D))))
-
-(module+ test
-
-  ;; test script needs
-  ;; -- MAX-PLAYERS and MIN-PLAYERS
-  ;; -- check numbers on state players and specified players
-  ;; -- 
+      (list A B C D)))
+  
+  (define all-tests '[])
   
   (define-syntax (integration-test stx)
     (syntax-parse stx
-      [(_ #:desc description:string
+      [(_ name:id
+          #:desc description:string
           #:player-names [player-names:str ...]
           #:player-tiles player-tiles
           #:externals    externals
@@ -692,18 +711,40 @@
           #:expected     [[winners:str ...] [drop-outs:str ...]]
           (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#false]))
           (~optional (~seq #:show show) #:defaults ([show #'#false])))
-       #'(let* ([L       description]
-                [specs   (map list player-tiles (list player-names ...))]
-                [state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
-                [config  (create-config state #:observe textual-observer #:per-turn 0.01)]
-                [config  (dict-set config QUIET quiet)]
-                [expect  `[,(list winners ...) ,(list drop-outs ...)]])
-           (check-equal? (dev/null (referee/config config externals)) expect L)
-           (when show
-             (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
-           (textual-observer FLUSH))]))
+       #'(begin
+           [define L       description]
+           [define specs   (map list player-tiles (list player-names ...))]
+           [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
+           [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
+           [define expect  `[,(list winners ...) ,(list drop-outs ...)]]
+           ;; the Racket integration test 
+           (define [name . main*]
+             (if (empty? main*) [name-plain] [name-jsexpr (first main*)]))
 
+           (define [name-plain]
+             (parameterize ([unit-test-mode #false])
+               (check-equal? (dev/null (referee/config config externals)) expect L)
+               (when show
+                 (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
+               (textual-observer FLUSH)))
+
+           (define jsexpr-inputs
+             [list
+              (state->jsexpr state)
+              (map player->jsexpr externals)])
+
+           (define [name-jsexpr main]
+             (r-check-equal? main `[,(state->jsexpr state) ,(map player->jsexpr externals)]
+                             `[,expect] "x"))
+
+           (set! all-tests (cons name all-tests)))]))
+
+  (define (plain-main . x)
+    (write-json `[["A"] []] #:indent 2)
+    (newline))
+  
   (integration-test
+   normal-short
    #:desc "two normal players, 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles `[,tiles1 ,tiles1]
@@ -713,6 +754,7 @@
    #:expected     [["A"] []])
 
   (integration-test
+   normal-medium
    #:desc "four normal players, several turns"
    #:player-names ["A" "B" "C" "D"]
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
@@ -723,6 +765,7 @@
 
   (define bad-7 (retrieve-factory "setup" factory-table-7))
   (integration-test
+   bad-setup 
    #:desc "one normal player, one drop out: 1 turn"
    #:player-names ["A" "B"]
    #:player-tiles (list tiles1 tiles1)
@@ -730,7 +773,8 @@
    #:ref-tiles    starter-tile*
    #:ref-map      map0
    #:expected     [["A"] ["B"]])
-
-  
   )
 
+(module+ test ;; run all integration tests
+  (for-each (λ (test) [test]) all-tests)
+  (for-each (λ (test) [test plain-main]) all-tests))

@@ -32,7 +32,21 @@
    ref-place
    constrained-special))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                          
+;                                                          
+;                                  ;                       
+;                                                          
+;    ;;;;   ;;;    ;;;;  ;   ;   ;;;    ;;;;   ;;;    ;;;  
+;    ;;  ; ;;  ;  ;; ;;  ;   ;     ;    ;;  ; ;;  ;  ;   ; 
+;    ;     ;   ;; ;   ;  ;   ;     ;    ;     ;   ;; ;     
+;    ;     ;;;;;; ;   ;  ;   ;     ;    ;     ;;;;;;  ;;;  
+;    ;     ;      ;   ;  ;   ;     ;    ;     ;          ; 
+;    ;     ;      ;; ;;  ;   ;     ;    ;     ;      ;   ; 
+;    ;      ;;;;   ;;;;   ;;;;   ;;;;;  ;      ;;;;   ;;;  
+;                     ;                                    
+;                     ;                                    
+;                     ;                                    
+
 (require Qwirkle/Common/player-interface)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/coordinates)
@@ -50,7 +64,21 @@
   (require (submod Qwirkle/Common/game-state examples))
   (require rackunit))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                        
+;                                                                        
+;            ;                    ;                     ;                
+;            ;                    ;                                      
+;    ;;;   ;;;;;   ;;;;  ;;;;   ;;;;;   ;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;   ;    ;     ;;  ;     ;    ;    ;;  ;  ;;  ;     ;   ;;  ;  ;   ; 
+;   ;        ;     ;         ;    ;    ;   ;; ;   ;     ;   ;   ;; ;     
+;    ;;;     ;     ;      ;;;;    ;    ;;;;;; ;   ;     ;   ;;;;;;  ;;;  
+;       ;    ;     ;     ;   ;    ;    ;      ;   ;     ;   ;          ; 
+;   ;   ;    ;     ;     ;   ;    ;    ;      ;; ;;     ;   ;      ;   ; 
+;    ;;;     ;;;   ;      ;;;;    ;;;   ;;;;   ;;;;   ;;;;;  ;;;;   ;;;  
+;                                                 ;                      
+;                                              ;  ;                      
+;                                               ;;                       
+
 #; {-> Strategy}
 (define ((make-strategy smallest) pk)
   (define gmap      (state-map pk))
@@ -116,7 +144,20 @@
   (for*/first ([t (in-list mine)] [cs (in-value (find-candidates gmap t))] #:unless (set-empty? cs))
     (list t cs)))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                   
+;                                                   
+;      ;     ;                           ;          
+;            ;                           ;          
+;    ;;;   ;;;;;   ;;;    ;;;;  ;;;;   ;;;;;   ;;;  
+;      ;     ;    ;;  ;   ;;  ;     ;    ;    ;;  ; 
+;      ;     ;    ;   ;;  ;         ;    ;    ;   ;;
+;      ;     ;    ;;;;;;  ;      ;;;;    ;    ;;;;;;
+;      ;     ;    ;       ;     ;   ;    ;    ;     
+;      ;     ;    ;       ;     ;   ;    ;    ;     
+;    ;;;;;   ;;;   ;;;;   ;      ;;;;    ;;;   ;;;; 
+;                                                   
+;                                                   
+;                                                   
 
 #; {Strategy PubKnowledge -> (U PASS REPLACE [Listof Placement])}
 (define (iterate-strategy s pk0)
@@ -147,3 +188,44 @@
   (check-equal? (iterate-strategy ldasg-strategy info-special-state) info-special-places*dug)
   (check-equal? (iterate-strategy dag-strategy info-special-state) info-special-place*)
   (check-equal? (iterate-strategy dag-strategy info-+starter-state) (list ref-place)))
+
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
+(module+ json
+  (provide DAG LDASG
+           strategy->jsexpr
+           jsexpr->strategy)
+           
+  (require json)
+
+  (define DAG "dag")
+  (define LDASG "ldasg")
+
+  (define (strategy->jsexpr s)
+    (cond
+      [(equal? dag-strategy s) DAG]
+      [(equal? ldasg-strategy s) LDASG]
+      [else (error 'strategy->jsexpr "can't happen ~a" s)]))
+  
+  (define (jsexpr->strategy j)
+    (match j 
+      [(== DAG)   dag-strategy]
+      [(== LDASG) ldasg-strategy]
+      [_
+       (define str (jsexpr->string j #:indent 2))
+       (eprintf "~a object does not match schema\n ~a\n" 'jsexpr->strategy str)
+       #false])))
+      

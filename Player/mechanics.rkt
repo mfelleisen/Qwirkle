@@ -6,7 +6,7 @@
 ;; a player factory is a functiion from name and strategy to a player object
 ;; a factory table is a [list [list String Factoru] ...] for many similar players 
 
-(define player-factory (-> string? any/c (instanceof/c player%/c)))
+(define player-factory (-> string? any/c player/c))
 (define factory-table  (listof (list/c string? player-factory)))
 
 (provide
@@ -43,6 +43,12 @@
 
   [factory-all factory-table]))
 
+(module+ json
+  (provide
+   (contract-out
+    [player->jsexpr (-> player/c jsexpr?)]
+    [jsexpr->player (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))])))
+
 ;                                                          
 ;                                                          
 ;                                  ;                       
@@ -67,6 +73,10 @@
 (require Qwirkle/Player/strategies)
 
 (require (for-syntax syntax/parse))
+
+(module+ json
+  (require (submod ".."))
+  (require json))
 
 (module+ test
   (require (submod ".."))
@@ -134,12 +144,17 @@
 ;                                           ;                        ;;                    
 ;                                                                                          
 
+(require (submod Qwirkle/Player/strategies json))
+
 ;; this player serves as the base (like a common abstract class) for implementing several variants 
 (define player%
   (class object% ; class* object% (equal<%>)
     (init-field [my-name "Adam"] [strategy dag-strategy])
     
     [field [my-tiles '()]]
+
+    (define/public (description)
+      `[,my-name ,(strategy->jsexpr strategy)])
     
     (define/public (name)
       my-name)
@@ -227,10 +242,13 @@
 (define-syntax (class/fail stx)
   (syntax-parse stx
     [(class/fail go-bad-after-this-many-times [(method-that-goes-bad args) body ...])
-     #'(class player%
+     #'(class* player% ()
          (init-field #; [String {Nat}]  badfm) ;; descriptor for use in integration tests
          (inherit-field my-name my-tiles)
          (super-new)
+
+         (define/override (description)
+           (append (super description) badfm))
 
          ;; `reset` is called at the very beginning of the game and only once. 
          ;; If method-that-goes-bad is setup, then new count is 1 because `setup` is running.
@@ -572,3 +590,89 @@
   (define nf-player (create-player "bad" dag-strategy #:bad new-nf))
   (check-true (placement? (first (send nf-player take-turn info-+starter-state))) "coverage")
   (check-pred illegal-in-info-starter-state? (send nf-player take-turn info-starter-state)))
+
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
+(module+ json
+  (define new-exn-setup    (retrieve-factory "setup" factory-table-7))
+  (define exn-setup-player (create-player "bad" dag-strategy #:bad new-exn-setup))
+  
+  (define new-br (retrieve-factory "bad-ask-for-tiles" factory-table-10))
+  (define br-player (create-player "bad" dag-strategy #:bad new-br))
+
+  (define new-setup-1    (retrieve-factory "setup-1" factory-table-8))
+  (define setup-1-player (create-player "bad" dag-strategy #:bad new-setup-1))
+
+  (define (player->jsexpr p) (send p description))
+  (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
+    (match j
+      [(list* (? string? name) (app jsexpr->strategy (? procedure? s)) remainder)
+       (match remainder
+         ['()
+          (create-player name s)]
+         [(list (? string? bad-method))
+          (define f (retrieve-factory bad-method factory-table-7))
+          (create-player name s #:bad (retrieve-factory bad-method factory-table-7))]
+         [(list (? string? bad-method) (? natural? n))
+          (cond
+            [(false? loops)
+             (eprintf "jsexpr->player: bad format: ~a\n" j)
+             #false]
+            [else 
+             (define f (retrieve-factory (~a bad-method "-" n) factory-table-8))
+             (create-player name s #:bad f)])]
+         [_ (err 2 j)])]
+      [_ (err 1 j)]))
+
+  #; {JSexpr N -> False}
+  (define (err n j)
+    (define str (jsexpr->string j #:indent 2))
+    (eprintf "~a object does not match schema [~a] \n ~a\n" 'jsexpr->player n str)
+    #false))
+            
+(module+ test
+  (require (submod ".." json))
+
+  (pretty-print
+   [list
+    ; br-player
+    (player->jsexpr br-player)
+    ])
+
+  (check-false (check-message "" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
+  (check-false (check-message "" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
+  (check-false (check-message "" cep #px"bad format" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
+
+  (check-equal? (let ()
+                  (define j (player->jsexpr player-normal))
+                  (send (jsexpr->player j) setup info-+starter-state '[]))
+                (void)
+                "normal player")
+  
+  (check-exn #px"division"
+             (λ ()
+               (define j (player->jsexpr exn-setup-player))
+               (send (jsexpr->player j) setup info-+starter-state '[]))
+             "exception raising player")
+
+
+  (check-exn #px"out of time"
+             (λ ()
+               (with-deep-time-limit 1
+                 (define j (player->jsexpr setup-1-player))
+                 (define p (jsexpr->player j #:loops 'yes))
+                 (send p setup info-+starter-state '[])))
+             "infinite loop player"))
