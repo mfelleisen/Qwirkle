@@ -52,6 +52,9 @@
 
 (module+ examples
   (provide
+   for-students for-tests for-bonus
+
+   #; {[Listof ->]}
    all-tests))
 
 (module+ examples
@@ -59,8 +62,7 @@
    textual-observer
    FLUSH
 
-   plain-main
-   dag-player*))
+   plain-main))
 
 ;                                                          
 ;                                                          
@@ -98,6 +100,7 @@
 ;; -----------------------------------------------------------------------------
 
 (module+ examples
+  (require (submod ".."))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Player/mechanics json))
@@ -676,7 +679,7 @@
 #; {[Listof SoPlayer] Boolean [Listof SoPlayer] -> (values [Listof SoPlayer] [Listof SoPlayer])}
 ;; iterate over the given list of players and send them `msg`; collect players that fail 
 (define (inform-about-outcome lop msg out0)
-  (for/fold ([survived '()] [out out0] #:result (values (reverse survived) (reverse out))) ([p lop])
+  (for/fold ([survived '()] [out out0] #:result (values survived out)) ([p lop])
     (xsend+ p win msg
             [[failed (values survived (cons p out))]
              [_      (values (cons p survived) out)]])))
@@ -699,15 +702,29 @@
 (module+ examples
   
   (define dag-player*
-    (let* ([normal (retrieve-factory "good" factory-base)]
-           [A (create-player "A" dag-strategy #:bad normal)]
-           [B (create-player "B" dag-strategy #:bad normal)]
-           [C (create-player "C" dag-strategy #:bad normal)]
-           [D (create-player "D" dag-strategy #:bad normal)])
+    (let* ([f (retrieve-factory "good" factory-base)]
+           [A (create-player "A" dag-strategy #:bad f)]
+           [B (create-player "B" dag-strategy #:bad f)]
+           [C (create-player "C" dag-strategy #:bad f)]
+           [D (create-player "D" dag-strategy #:bad f)])
       (list A B C D)))
 
-  (provide for-students)
+  (define ldasg-player*
+    (let* ([f (retrieve-factory "good" factory-base)]
+           [A (create-player "E" ldasg-strategy #:bad f)]
+           [B (create-player "F" ldasg-strategy #:bad f)]
+           [C (create-player "G" ldasg-strategy #:bad f)]
+           [D (create-player "H" ldasg-strategy #:bad f)])
+      (list A B C D)))
 
+  (define exn-players
+    (let* ([A (create-player "X" ldasg-strategy #:bad (retrieve-factory "setup" factory-table-7))]
+           [B (create-player "Y" ldasg-strategy #:bad (retrieve-factory "take-turn" factory-table-7))]
+           [C (create-player "Z" ldasg-strategy #:bad (retrieve-factory "new-tiles" factory-table-7))]
+           [D (create-player "W" ldasg-strategy #:bad (retrieve-factory "win" factory-table-7))])
+      (list A B C D)))
+    
+  
   (define for-students '[])
   (define for-tests    '[])
   (define for-bonus    '[])
@@ -718,7 +735,6 @@
     (syntax-parse stx
       [(_ name:id
           #:desc description:string
-          #:player-names [player-names:str ...]
           #:player-tiles player-tiles
           #:externals    externals
           #:ref-tiles    ref-tiles
@@ -728,8 +744,8 @@
           (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
           (~optional (~seq #:show show) #:defaults ([show #'#false])))
        #'(begin
-           [define L       description]
-           [define specs   (map list player-tiles (list player-names ...))]
+           [define L       (~a 'name " " description)]
+           [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
            [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
            [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
            [define expect  `[,(list winners ...) ,(list drop-outs ...)]]
@@ -763,9 +779,8 @@
 
 (module+ examples
   (integration-test
-   normal-short
-   #:desc "two normal players, 1 turn"
-   #:player-names ["A" "B"]
+   dag-only-short
+   #:desc "two dag players, 1 turn"
    #:player-tiles `[,tiles1 ,tiles1]
    #:externals    (take dag-player* 2)
    #:ref-tiles    tiles0
@@ -774,9 +789,8 @@
    #:kind         for-students)
 
   (integration-test
-   normal-medium
-   #:desc "four normal players, several turns"
-   #:player-names ["A" "B" "C" "D"]
+   dag-only-medium
+   #:desc "four dag players, several turns"
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
    #:externals    (take dag-player* 4)
    #:ref-tiles    starter-tile*
@@ -785,31 +799,85 @@
    #:kind         for-students)
 
   (integration-test
-   normal-medium2
-   #:desc "four normal players, several turns"
-   #:player-names ["A" "B" "C" "D"]
+   dag-only-medium2
+   #:desc "four dag players, many turns"
    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
    #:externals    (take dag-player* 4)
    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
    #:ref-map      (start-map #s(tile clover yellow))
    #:expected     [["D"] []]
-   #:kind         for-students
-   ; #:quiet #false
-   ; #:show 'yes
-   )
+   #:kind         for-students)
 
+  (integration-test
+   mixed-medium2
+   #:desc "two dag players, two ldasg player, many turns"
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
+   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["F"] []]
+   #:kind         for-students)
+
+  (integration-test
+   mixed-medium2-rev-players
+   #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["E" "F"] []]
+   #:kind         for-students)
+
+  (integration-test
+   mixed-medium2-rev-tiles 
+   #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
+   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["B"] []]
+   #:kind         for-students)
+
+  (integration-test
+   mixed-medium2-rev-both
+   #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
+   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+   #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+   #:ref-map      (start-map #s(tile clover yellow))
+   #:expected     [["E"] []]
+   #:kind         for-students)
+  
   (define bad-7 (retrieve-factory "setup" factory-table-7))
   (integration-test
    bad-setup 
-   #:desc "one normal player, one drop out: 1 turn"
-   #:player-names ["A" "B"]
+   #:desc "one dag player, one drop out: 1 turn"
    #:player-tiles (list tiles1 tiles1)
    #:externals    (append (take dag-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])
    #:ref-tiles    starter-tile*
    #:ref-map      map0
    #:expected     [["A"] ["B"]]
    #:kind         for-students)
-  )
+
+  (integration-test
+   bad-all
+   #:desc "all drop out, in the epxected order"
+   #:player-tiles (list 2starter-tile* 3starter-tile* starter-tile* 3starter-tile*)
+   #:externals    exn-players
+   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+   #:ref-map      map0
+   #:expected     [[] ["X" "Y" "Z" "W"]]
+   #:kind         for-students)
+
+  (integration-test
+   bad-all-1
+   #:desc "surprise: one survuves"
+   #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+   #:externals    exn-players
+   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+   #:ref-map      map0
+   #:expected     [["Z"] ["X" "Y" "W"]]
+   #:kind         for-students))
 
 ;                                                                        
 ;                                                                        
@@ -829,7 +897,7 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) 4 "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) 10 "make sure all tests are recordded")
 
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
   (for-each (λ (test) [test plain-main expected]) for-students))
