@@ -748,16 +748,9 @@
           (~optional     (~seq #:show show)   #:defaults ([show #'#false])))
        #'(begin
            (define name
-             (int-tst/proc
-              (~a 'name " " description)
-              player-tiles
-              externals
-              ref-tiles
-              map0
-              [list (list winners ...) (list drop-outs ...)]
-              kind
-              quiet
-              show))
+             (let ([d (~a 'name " " description)]
+                   [e [list (list winners ...) (list drop-outs ...)]])
+               (int-tst/proc d player-tiles externals ref-tiles map0 e kind quiet show)))
            (set! kind (cons name kind)))]))
 
   (define (int-tst/proc description player-tiles externals ref-tiles map0 expect kind quiet show)
