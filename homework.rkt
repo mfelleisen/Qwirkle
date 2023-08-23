@@ -18,7 +18,7 @@
          (provide prov))]))
 
 ;; the specs 
-(req->prov (submod (file "../scribblings/qwirkle.scrbl") spec))
+(req->prov (submod (file "scribblings/qwirkle.scrbl") spec))
 
 ; (req->prov Qwirkle/Common/coordinates)
 (req->prov Qwirkle/Common/tiles)
@@ -27,7 +27,7 @@
 ; (req->prov (prefix-in players: Qwirkle/Common/players))
 ; (req->prov Qwirkle/Common/directions)
 (req->prov Qwirkle/Player/mechanics)
-; (req->prov Qwirkle/Referee/referee)
+(req->prov Qwirkle/Referee/referee)
 
 ; (req->prov Qwirkle/Server/server)
 ; (req->prov Qwirkle/Client/client)
