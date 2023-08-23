@@ -52,7 +52,7 @@
 
 (module+ examples
   (provide
-   for-students for-tests for-bonus
+   for-students-7 for-tests-7 for-bonus-A
 
    #; {[Listof ->]}
    all-tests))
@@ -725,52 +725,70 @@
       (list A B C D)))
     
   
-  (define for-students '[])
-  (define for-tests    '[])
-  (define for-bonus    '[])
+  (define for-students-7 '[])
+  (define for-tests-7    '[])
   
-  (define [all-tests] (append for-students for-tests for-bonus))
+  (define for-bonus-A    '[])
   
-  (define-syntax (integration-test stx)
+  (define [all-tests] (append for-students-7 for-tests-7 for-bonus-A))
+
+  ;; this could be a procedure if (1) the for-*:id were bound to boxed,
+  ;; (2) I add a ` to each `#:expected`argument, & (3) always write (define name (integration-test ..)
+  (define-syntax (define-integration-test stx)
     (syntax-parse stx
       [(_ name:id
-          #:desc description:string
+          #:desc         description:string
           #:player-tiles player-tiles
           #:externals    externals
           #:ref-tiles    ref-tiles
           #:ref-map      map0
           #:expected     [[winners:str ...] [drop-outs:str ...]]
           #:kind         kind:id
-          (~optional (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
-          (~optional (~seq #:show show) #:defaults ([show #'#false])))
+          (~optional     (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
+          (~optional     (~seq #:show show)   #:defaults ([show #'#false])))
        #'(begin
-           [define L       (~a 'name " " description)]
-           [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
-           [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
-           [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
-           [define expect  `[,(list winners ...) ,(list drop-outs ...)]]
-           ;; the Racket integration test
-
-           #; {case-> [-> Void] [(-> Void) -> Void]}
            (define name
-             (case-lambda
-               [() [name-plain]]
-               [(main expect) [name-jsexpr main expect]]))
-
-           #; {-> Void}
-           (define [name-plain]
-             (parameterize ([unit-test-mode #false])
-               (check-equal? (referee/config config externals) expect L)
-               (when show
-                 (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
-               (textual-observer FLUSH)))
-
-           #; {[ -> Void] -> Void}
-           (define [name-jsexpr main expect]
-             (define jsexpr-inputs [list (state->jsexpr state) (map player->jsexpr externals)])
-             (r-check-equal? main jsexpr-inputs `[,expect] L))
-
+             (int-tst/proc
+              (~a 'name " " description)
+              player-tiles
+              externals
+              ref-tiles
+              map0
+              [list (list winners ...) (list drop-outs ...)]
+              kind
+              quiet
+              show))
            (set! kind (cons name kind)))]))
+
+  (define (int-tst/proc description player-tiles externals ref-tiles map0 expect kind quiet show)
+    [define L       description]
+    [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
+    [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
+    [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
+
+    ;; the Racket integration test
+
+    #; {case-> [-> Void] [(-> Void) -> Void]}
+    (define name
+      (case-lambda
+        [() [name-plain]]
+        [(main) (name-jsexpr main)]
+        [(main expect) [name-jsexpr main expect]]))
+
+    #; {-> Void}
+    (define [name-plain]
+      (parameterize ([unit-test-mode #false])
+        (check-equal? (referee/config config externals) expect L)
+        (when show
+          (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
+        (textual-observer FLUSH)))
+
+    #; {[ -> Void] -> Void}
+    (define [name-jsexpr main (expect expect)]
+      (define jsexpr-inputs [list (state->jsexpr state) (map player->jsexpr externals)])
+      (r-check-equal? main jsexpr-inputs `[,expect] L))
+  
+    name)
 
   (define (plain-main . x)
     (write-json `[["A"] []] #:indent 2)
@@ -778,106 +796,97 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (module+ examples
-  (integration-test
-   dag-only-short
-   #:desc "two dag players, 1 turn"
-   #:player-tiles `[,tiles1 ,tiles1]
-   #:externals    (take dag-player* 2)
-   #:ref-tiles    tiles0
-   #:ref-map      map0
-   #:expected     [["A"] []]
-   #:kind         for-students)
+  (define-integration-test dag-only-short
+    #:desc "two dag players, 1 turn"
+    #:player-tiles `[,tiles1 ,tiles1]
+    #:externals    (take dag-player* 2)
+    #:ref-tiles    tiles0
+    #:ref-map      map0
+    #:expected     [["A"] []]
+    #:kind         for-students-7)
 
-  (integration-test
-   dag-only-medium
-   #:desc "four dag players, several turns"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (take dag-player* 4)
-   #:ref-tiles    starter-tile*
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["B"] []]
-   #:kind         for-students)
+  (define-integration-test
+    bad-setup 
+    #:desc "one dag player, one drop out: 1 turn"
+    #:player-tiles (list tiles1 tiles1)
+    #:externals    (append (take dag-player* 1) `[,(first exn-players)])
+    #:ref-tiles    starter-tile*
+    #:ref-map      map0
+    #:expected     [["A"] ["X"]]
+    #:kind         for-students-7)
 
-  (integration-test
-   dag-only-medium2
-   #:desc "four dag players, many turns"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (take dag-player* 4)
-   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["D"] []]
-   #:kind         for-students)
+  (define-integration-test dag-only-medium
+    #:desc "four dag players, several turns"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (take dag-player* 4)
+    #:ref-tiles    starter-tile*
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["B"] []]
+    #:kind         for-students-7)
 
-  (integration-test
-   mixed-medium2
-   #:desc "two dag players, two ldasg player, many turns"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
-   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["F"] []]
-   #:kind         for-students)
+  (define-integration-test
+    mixed-medium2
+    #:desc "two dag players, two ldasg player, many turns"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["F"] []]
+    #:kind         for-tests-7)
 
-  (integration-test
-   mixed-medium2-rev-players
-   #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
-   #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["E" "F"] []]
-   #:kind         for-students)
-
-  (integration-test
-   mixed-medium2-rev-tiles 
-   #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
-   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["B"] []]
-   #:kind         for-students)
-
-  (integration-test
-   mixed-medium2-rev-both
-   #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
-   #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-   #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
-   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-   #:ref-map      (start-map #s(tile clover yellow))
-   #:expected     [["E"] []]
-   #:kind         for-students)
+  (define-integration-test dag-only-medium2
+    #:desc "four dag players, many turns"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (take dag-player* 4)
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["D"] []]
+    #:kind         for-tests-7)
   
-  (define bad-7 (retrieve-factory "setup" factory-table-7))
-  (integration-test
-   bad-setup 
-   #:desc "one dag player, one drop out: 1 turn"
-   #:player-tiles (list tiles1 tiles1)
-   #:externals    (append (take dag-player* 1) `[,(create-player "B" dag-strategy #:bad bad-7)])
-   #:ref-tiles    starter-tile*
-   #:ref-map      map0
-   #:expected     [["A"] ["B"]]
-   #:kind         for-students)
+  (define-integration-test mixed-medium2-rev-players
+    #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["E" "F"] []]
+    #:kind         for-tests-7)
 
-  (integration-test
-   bad-all
-   #:desc "all drop out, in the epxected order"
-   #:player-tiles (list 2starter-tile* 3starter-tile* starter-tile* 3starter-tile*)
-   #:externals    exn-players
-   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-   #:ref-map      map0
-   #:expected     [[] ["X" "Y" "Z" "W"]]
-   #:kind         for-students)
+  (define-integration-test mixed-medium2-rev-tiles 
+    #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["B"] []]
+    #:kind         for-tests-7)
 
-  (integration-test
-   bad-all-1
-   #:desc "surprise: one survuves"
-   #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
-   #:externals    exn-players
-   #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-   #:ref-map      map0
-   #:expected     [["Z"] ["X" "Y" "W"]]
-   #:kind         for-students))
+  (define-integration-test mixed-medium2-rev-both
+    #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["E"] []]
+    #:kind         for-tests-7)
+  
+  (define-integration-test bad-all
+    #:desc "all drop out, in the epxected order"
+    #:player-tiles (list 2starter-tile* 3starter-tile* starter-tile* 3starter-tile*)
+    #:externals    exn-players
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      map0
+    #:expected     [[] ["X" "Y" "Z" "W"]]
+    #:kind         for-tests-7)
+
+  (define-integration-test bad-all-1
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    exn-players
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      map0
+    #:expected     [["Z"] ["X" "Y" "W"]]
+    #:kind         for-tests-7))
 
 ;                                                                        
 ;                                                                        
@@ -900,4 +909,4 @@
   (check-equal? (length [all-tests]) 10 "make sure all tests are recordded")
 
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
-  (for-each (λ (test) [test plain-main expected]) for-students))
+  (for-each (λ (test) [test plain-main expected]) for-students-7))
