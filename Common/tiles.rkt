@@ -46,7 +46,9 @@
 (provide ;; for homework & cheating players 
  ALL-SHAPES
  ALL-COLORS
- ALL-SHAPE-COLOR-COMBOS)
+ ALL-SHAPE-COLOR-COMBOS
+ ALL-TILES
+ ALL-TILES-PERM)
 
 (module+ examples
   (provide
@@ -88,6 +90,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
+(require Qwirkle/Lib/fixed-perm)
 (require 2htdp/image)
 
 (module+ json
@@ -157,6 +160,12 @@
 (define ALL-SHAPE-COLOR-COMBOS
   (for*/list ([s ALL-SHAPES] [c ALL-COLORS])
     (tile (first s) c)))
+
+(define ALL-TILES (apply append (make-list 30 ALL-SHAPE-COLOR-COMBOS)))
+
+(define prgv (vector 0 1 4294967086 4294944442 2 0))
+(define rgen (vector->pseudo-random-generator prgv))
+(define ALL-TILES-PERM (pick-fixed-permutation ALL-TILES))
 
 ;                                                          
 ;                                                          
