@@ -49,8 +49,10 @@
 (module+ json
   (provide
    (contract-out
-    [player->jsexpr (-> player/c jsexpr?)]
-    [jsexpr->player (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))])))
+    [player->jsexpr  (-> player/c jsexpr?)]
+    [jsexpr->player  (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))]
+    [jsexpr->player* (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false (listof player/c)))]
+    [player*->jsexpr (-> (listof player/c jsexpr?))])))
 
 ;                                                          
 ;                                                          
@@ -612,16 +614,16 @@
 ;    ;;                        
 
 (module+ json
-  (define new-exn-setup    (retrieve-factory "setup" factory-table-7))
-  (define exn-setup-player (create-player "bad" dag-strategy #:bad new-exn-setup))
-  
-  (define new-br (retrieve-factory "bad-ask-for-tiles" factory-table-10))
-  (define br-player (create-player "bad" dag-strategy #:bad new-br))
-
-  (define new-setup-1    (retrieve-factory "setup-1" factory-table-8))
-  (define setup-1-player (create-player "bad" dag-strategy #:bad new-setup-1))
+  (define (player*->jsexpr p*) (map player->jsexpr p*))
 
   (define (player->jsexpr p) (send p description))
+
+  (define (jsexpr->player* j #:loops [loops #false] #:cheating [cheaters #false])
+    (match j
+      [(list (app jsexpr->player (? player? p)) ...) p]
+      [_ (eprintf "value does not match JActor schema" (jsexpr->string j #:indent 4))
+         #false]))
+
   (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
       [(list* (? string? name) (app jsexpr->strategy (? procedure? s)) remainder)
@@ -650,13 +652,7 @@
             
 (module+ test
   (require (submod ".." json))
-
-  (pretty-print
-   [list
-    ; br-player
-    (player->jsexpr br-player)
-    ])
-
+  
   (check-false (check-message "" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
   (check-false (check-message "" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
   (check-false (check-message "" cep #px"bad format" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
