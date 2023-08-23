@@ -52,7 +52,7 @@
     [player->jsexpr  (-> player/c jsexpr?)]
     [jsexpr->player  (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))]
     [jsexpr->player* (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false (listof player/c)))]
-    [player*->jsexpr (-> (listof player/c jsexpr?))])))
+    [player*->jsexpr (-> (listof player/c) jsexpr?)])))
 
 ;                                                          
 ;                                                          

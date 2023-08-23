@@ -3,7 +3,7 @@
 ;; referee: mediates between external players (local or remote) and the referee state, via safe xsend 
 ;; ---------------------------------------------------------------------------------------------------
 
-(require (submod (file "../scribblings/qwirkle.scrbl") spec))
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/player-interface)
 (require SwDev/Contracts/unique)
 (require SwDev/Lib/hash-contract)
@@ -111,6 +111,7 @@
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
+  (require Qwirkle/Lib/fixed-perm)
 
   (require SwDev/Lib/should-be-racket)
   (require SwDev/Testing/check-values)
@@ -149,7 +150,7 @@
 ;                                       ;;;  
 ;                                            
 
-(define per-turn 4.0)  ;; time limit per turn
+(define per-turn 0.1)  ;; time limit per turn
 (define (set-per x) (set! per-turn x)) ;; for the testing submod 
 (define quiet    [make-parameter #false])
 (define (set-with x) (set! with-obs x))
@@ -258,7 +259,7 @@
              [quiet #false]
              (check-equal? (check-message msg cep #px"dropped" (run S)) (list win out) msg))
            ;; --- to cover the default #:with-obs clause 
-           (let* ([config (λ (s) (~? (create-config s #:observe O #:per-turn 1.1) (create-config s)))]
+           (let* ([config (λ (s) (~? (create-config s #:observe O #:per-turn 0.1) (create-config s)))]
                   [C (dict-set (config state) QUIET Q)]
                   (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
                   [run (λ () (referee/config C (cons P (~? (list B) '[]))))])
@@ -596,8 +597,7 @@
                   [(~optional (~seq #:end? end:id))
                    (~optional (~seq #:state? ok #;symbol) #:defaults ([ok #'#true]))
                    (~optional (~seq #:passed? ps #;symbol) #:defaults ([ps #'#false]))
-                   (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))
-                   checks ...]
+                   (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))]
                   (~optional (~seq #:extra Bname:id B:expr)))
        #'(let* ([F (retrieve-factory name factory)]
                 [T state]
@@ -629,7 +629,7 @@
                     "good" factory-base ref-starter-state
                     [#:passed? 'yes!]
                     #:extra B (create-player "B" dag-strategy))
-  
+
   (1-turn-test-case "player requests legal placement of tiles: state0; no more passing"
                     "good" factory-base state0 
                     [])
@@ -727,10 +727,14 @@
   
   (define for-students-7 '[])
   (define for-tests-7    '[])
+
+  (define for-students-8 '[])
+  (define for-tests-8    '[])
   
   (define for-bonus-A    '[])
   
-  (define [all-tests] (append for-students-7 for-tests-7 for-bonus-A))
+  (define [all-tests]
+    (append for-students-7 for-tests-7 for-bonus-A for-students-8 for-tests-8))
 
   ;; this could be a procedure if (1) the for-*:id were bound to boxed,
   ;; (2) I add a ` to each `#:expected`argument, & (3) always write (define name (integration-test ..)
@@ -748,13 +752,12 @@
           (~optional     (~seq #:show show)   #:defaults ([show #'#false])))
        #'(begin
            (define name
-             (let ([d (~a 'name " " description)]
-                   [e [list (list winners ...) (list drop-outs ...)]])
-               (int-tst/proc d player-tiles externals ref-tiles map0 e kind quiet show)))
+             (let ([descr  (~a 'name " " description)]
+                   [expect [list (list winners ...) (list drop-outs ...)]])
+               (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show)))
            (set! kind (cons name kind)))]))
 
-  (define (int-tst/proc description player-tiles externals ref-tiles map0 expect kind quiet show)
-    [define L       description]
+  (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show)
     [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
     [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
     [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
@@ -778,7 +781,7 @@
 
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
-      (define jsexpr-inputs [list (state->jsexpr state) (map player->jsexpr externals)])
+      (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
       (r-check-equal? main jsexpr-inputs `[,expect] L))
   
     name)
@@ -788,7 +791,7 @@
     (newline)))
 ;; ---------------------------------------------------------------------------------------------------
 
-(module+ examples
+(module+ examples ;; for milestone 7 
   (define-integration-test dag-only-short
     #:desc "two dag players, 1 turn"
     #:player-tiles `[,tiles1 ,tiles1]
@@ -879,7 +882,64 @@
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
     #:expected     [["Z"] ["X" "Y" "W"]]
+    #:kind         for-tests-7)
+
+  (define-integration-test bad-all-tiles-bad-players
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    exn-players
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["Z"] ["X" "Y" "W"]]
+    #:kind         for-tests-7)
+  
+  (define-integration-test mixed-all-tiles
+    #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    ALL-TILES
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["A"] []]
+    #:kind         for-tests-7)
+
+  
+
+  (define-integration-test mixed-all-tiles-perm
+    #:desc "two dag players, two ldasg player; permuted tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
+    #:ref-tiles    ALL-TILES-PERM
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["B"] []]
     #:kind         for-tests-7))
+
+(module+ examples ;; for milestone 8 
+  (define-integration-test bad-all-tiles-dag-player*
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    dag-player*
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["A"] []]
+    #:kind         for-tests-8)
+
+  (define-integration-test bad-all-tiles-ldasg-player*
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    ldasg-player*
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["E"] []]
+    #:kind         for-tests-8)
+
+  (define-integration-test mixed-all-tiles-rev
+    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["B"] []]
+    #:kind         for-tests-8))
 
 ;                                                                        
 ;                                                                        
@@ -899,7 +959,9 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) 10 "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) 16 "make sure all tests are recordded")
+  (check-equal? (length for-students-7) 3 "7: students get three tests")
+  (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
 
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
   (for-each (λ (test) [test plain-main expected]) for-students-7))
