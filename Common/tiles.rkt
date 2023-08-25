@@ -54,6 +54,8 @@
   (provide
    +starter-tile
 
+   duplicate-tiles
+
    starter-tile
    starter-tile*
    1starter-tile*
@@ -199,6 +201,12 @@
   (define 3starter-tile* [list 8-green sq-blue cr-prpl cr-prpl di-llow di-llow])
 
   (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
+
+  (define duplicate-tiles
+    (let* ([s (take ALL-SHAPE-COLOR-COMBOS SHAPES#)]
+           [s (rest s)]
+           [s (cons (first s) s)])
+      s))
   
   (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
   (define tiles1 (list #s(tile circle blue)))
@@ -284,6 +292,10 @@
   (check-true  (all-colors? c-all) "just all of them")
   (check-false (all-colors? (rest c-all)) "missing one")
   (check-false (all-colors? (cons (tile 'square (second ALL-COLORS)) (rest c-all))) "with duplicate"))
+
+(module+ test 
+  (check-false (all-colors? duplicate-tiles))
+  (check-false (all-shapes? duplicate-tiles)))
 
 ;                                            
 ;                            ;               
