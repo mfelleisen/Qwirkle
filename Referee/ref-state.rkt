@@ -44,7 +44,7 @@
   [set-ref-state-players
    ;; sets the external players in order 
    (->i ([s state?] [lop (listof player/c)])
-        #:pre/name (s lop) "same number of player reps and player obj"
+        #:pre/name (s lop) "same number of player representations and player objects expected"
         (= (length (state-players s)) (length lop))
         #:pre/name (lop) "distinct external names" (distinct? (map (λ (p) (send p name)) lop))
         (r state?))]
@@ -127,6 +127,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/game-state)
@@ -294,31 +295,37 @@
     (syntax-case stx ()
       [(_ s s+ n)
        #'(and (list (? placement?) (... ...))
-              (app (λ (x) (complete-placements s x)) (? state? s+))
+              (app (λ (x) (exec-request s x)) (? state? s+))
               (app (λ (x) (map placement-tile x)) [list (? tile? n) (... ...)]))])))
 
 #; {[Y] [RefState Y] [Listof Placememnt] -> [Option [RefState Y]]}
-(define (complete-placements s placements)
+(define (exec-request s placements)
   (define gmap (legal s placements))
   (cond
     [(false? gmap) #false]
     [else 
      (define tiles-placed (map placement-tile placements))
      (define finished?    (active-sop-finished? s tiles-placed))
-     (define delta-score  (score gmap placements #:finishing (if finished? FINISH-BONUS 0)))
+     (define delta-score  (score gmap placements #:finishing (if finished? [FINISH-BONUS] 0)))
      (let*-values ([(s) (active-sop-tiles-- s tiles-placed)]
                    [(s) (active-sop-score++ s delta-score)]
                    [(s) (state-map++ s gmap)])
        s)]))
 
-(define FINISH-BONUS 6)
-
 (module+ test
-  (check-false (complete-placements ref-starter-state +starter-plmt))
+  (check-false (exec-request ref-starter-state +starter-plmt))
+  (check-true (state? (exec-request special-state+green-circle-at--2-2 place-orange-circle-at--2-2)))
+
+  (define plmt place-orange-circle-at--2-2)
+
+  (define special-state+green-circle-at--2-2++ (exec-request special-state+green-circle-at--2-2 plmt))
+  
+  (check-equal? (sop-score (active-player special-state+green-circle-at--2-2++))
+                (+ (score (legal special-state+green-circle-at--2-2 plmt) plmt) [FINISH-BONUS]))
 
   ;; check all scenarios 
   (for ([ss state*] [s+ state++*] [pp plmt*] [ii (in-naturals)])
-    (check-equal? (complete-placements ss pp) s+ (~a "step" ii))))
+    (check-equal? (exec-request ss pp) s+ (~a "step" ii))))
 
 
 ;                                                          
@@ -445,11 +452,15 @@
   (render-ref-state/g
    render-sop
    (λ (tiles)
-     ;; MAGIC ##### 
-     (define n (min (length tiles) 6))
+     ;; MAGIC #####
+     (define l (length tiles))
+     (define n (min l 6))
      (cond
-       [(zero? n) 2:empty-image]
-       [(= n 1)   (render-tile (first tiles))]
+       [(= n 0) (2:text "NONE" 22 'black)]
+       [(= n 1) (render-tile (first tiles))]
+       [(and (= n 6) (> l 6))
+        (define dots (2:text "..." 22 'black))
+        (apply 2:beside (map render-tile (append (take tiles n) (list dots))))]
        [else (apply 2:beside (map render-tile (take tiles n)))]))))
 
 #; {PubKnowledge -> Image}

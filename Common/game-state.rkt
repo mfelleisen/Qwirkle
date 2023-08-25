@@ -86,6 +86,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/map)
@@ -109,6 +110,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/placement examples))
+  (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Common/map examples))
   (require rackunit))
 
@@ -232,13 +234,19 @@
        #:with plmt (format-id stx "plmt~a" (syntax-e #'n))
        #'(begin
            (provide name nam+)
+           
+           (set! score* (append score* (list scor)))
+           
            (define name (create-state-ready-for-placement gmap plmt))
            (set! state* (append state* (list name)))
+
            (define nam+ (create-state-ready-for-placement map+ '[] #:score scor))
            (set! state++* (append state++* (list nam+))))]))
-  
+
+  (provide score*)
   (define state* '[])
   (define state++* '[])
+  (define score* '[])
 
   (define score1  10)
   (define score2   5)
@@ -249,7 +257,7 @@
   (define score7   5)
   (define score8  12)
   (define score9  10)
-  (define score10 21)
+  (define score10 (+ 15 [Q-BONUS]))
   (define score11 11)
   
   (def/state 0) 
@@ -357,7 +365,7 @@
   (check-false (legal bad-state bad-spec-plmnt))
   (check-true (map? (legal special-state special-placements)))
 
-  (check-equal? (legal special-state+green-circle-at--2-2 place-green-circle-at--2-2)
+  (check-equal? (legal special-state+green-circle-at--2-2 place-orange-circle-at--2-2)
                 special-map+green-circle-at--2-2++)
   
   ;; run all scenarios
@@ -381,8 +389,6 @@
 ;                                     
 ;                                     
 ;                                     
-
-(define Q-BONUS 6)
 
 #; {Map Placements -> Natural}
 (define (score gmap placements #:finishing (finishing-bonus 0))
@@ -418,32 +424,24 @@
 
 #; {[Listof Tile] Natural -> Natural}
 (define (q-bonus line count)
-  (if (or (all-colors? line) (all-shapes? line)) (+ Q-BONUS count) count))
+  (if (or (all-colors? line) (all-shapes? line)) (+ [Q-BONUS] count) count))
+
+(module+ test
+  (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) 0) [Q-BONUS])
+  (check-equal? (q-bonus duplicate-tiles 0) 0))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
-  (define score1  10)
-  (define score2   5)
-  (define score3   8)
-  (define score4   9)
-  (define score5   8)
-  (define score6   5)
-  (define score7   5)
-  (define score8  12)
-  (define score9  10)
-  (define score10 21)
-  (define score11 11)
-  
   (for ([m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
         [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
-        [sc (list score1 score2 score3 score4 score5 score6 score7 score8 score9 score10 score11)]
+        [sc score*]
         [ii (in-naturals)])
     (check-equal? (score m+ pp) sc (~a "scoring map " (+ ii 1))))
 
   ;; not a run of like-tiles or colors and not a Q !! 
-  (check-equal? (score special-map+green-circle-at--2-2++ place-green-circle-at--2-2) 7 "not run")
+  (check-equal? (score special-map+green-circle-at--2-2++ place-orange-circle-at--2-2) 7 "not run")
   
-  (check-equal? (score map10 plmt9) score10 "Q bonus missing")
+  (check-equal? (score map10 plmt9) (list-ref score* 9) "Q bonus missing")
   (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
 
 ;                                            
