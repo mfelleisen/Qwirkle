@@ -15,7 +15,7 @@
 (define SHOW     'observer-shows-for-s)
 (define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN))
 
-(define unit-test-mode [make-parameter #true])
+(define unit-test-mode [make-parameter #false])
 
 #; {Configuration [Listof Player] -> Boolean}
 (define (matching-number config players)
@@ -46,13 +46,17 @@
    ;; It throws out players when (1) or (5) happens. 
    ;;
    (->i ([config (hash-carrier/c options)] [players (listof player/c)])
-        #:pre/name (players) "distince names" (distinct? (map (λ (p) (send p name)) players))
-        #:pre/name (config players) "matching number of players" (matching-number config players)
+        #:pre/name (players) "players must have distince names"
+        (distinct? (map (λ (p) (send p name)) players))
+        #:pre/name (config players) "matching number of players"
+        (matching-number config players)
         (r [list/c [listof string?] [listof string?]]))]))
 
 (module+ examples
   (provide
-   for-students-7 for-tests-7 for-bonus-A
+   for-students-7 for-tests-7
+   for-students-8 for-tests-8
+   for-bonus-A
 
    #; {[Listof ->]}
    all-tests))
@@ -253,18 +257,19 @@
                   (~optional (~seq #:quiet Q:expr) #:defaults ([Q #'#false]))
                   (~optional (~seq #:with-obs O:expr)))
        #'(let ()
-           (let* ([run (λ (x) (~? (referee/state x) (referee/state x #:with-obs O)))]
-                  (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
-                  [S (set-ref-state-players state [cons P (~? (list B) '[])])])
-             [quiet #false]
-             (check-equal? (check-message msg cep #px"dropped" (run S)) (list win out) msg))
-           ;; --- to cover the default #:with-obs clause 
-           (let* ([config (λ (s) (~? (create-config s #:observe O #:per-turn 0.1) (create-config s)))]
-                  [C (dict-set (config state) QUIET Q)]
-                  (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
-                  [run (λ () (referee/config C (cons P (~? (list B) '[]))))])
-             (check-equal?
-              (if Q [run] (check-message msg cep #px"dropped" [run])) `(,win ,out) msg)))])))
+           (parameterize ([unit-test-mode #true])
+             (let* ([run (λ (x) (~? (referee/state x) (referee/state x #:with-obs O)))]
+                    (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
+                    [S (set-ref-state-players state [cons P (~? (list B) '[])])])
+               [quiet #false]
+               (check-equal? (check-message msg cep #px"dropped" (run S)) (list win out) msg))
+             ;; --- to cover the default #:with-obs clause 
+             (let* ([config (λ (s) (~? (create-config s #:observe O) (create-config s)))]
+                    [C (dict-set (config state) QUIET Q)]
+                    (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
+                    [run (λ () (referee/config C (cons P (~? (list B) '[]))))])
+               (check-equal?
+                (if Q [run] (check-message msg cep #px"dropped" [run])) `(,win ,out) msg))))])))
 
 (module+ test
   (ref-test-case "receiving new tiles fails"
@@ -352,19 +357,20 @@
   ;; tests whether setup produces the expected newState and drops players that misbehave  
   (define-syntax (setup-test-case stx)
     (syntax-parse stx
-      [(test-case title:string name:string factory:id state:expr
+      [(test-case title:string n:string factory:id state:expr
                   [new-state dropped-out]
                   (~optional (~seq #:dropped  e:string))
                   (~seq #:extra Bname:id Bplayer:expr))
        #:with S (datum->syntax #'test-case 'S #'test-case #'test-case)
        #:with A (datum->syntax #'test-case 'A #'test-case #'test-case)
-       #'(let* ((A (create-player (~a "A-" title) dag-strategy #:bad (retrieve-factory name factory)))
-                [Bname Bplayer]
-                [S (set-ref-state-players state [list A Bname])])
-           (~?
-            (define-values [S++ out] (check-message title cep (pregexp e) (setup S)))
-            (define-values [S++ out] [setup S]))
-           (check-values (values S++ (map sop-player out)) new-state dropped-out title))])))
+       #'(parameterize ([unit-test-mode #true])
+           (let* ((A (create-player (~a "A-" title) dag-strategy #:bad (retrieve-factory n factory)))
+                  [Bname Bplayer]
+                  [S (set-ref-state-players state [list A Bname])])
+             (~?
+              (define-values [S++ out] (check-message title cep (pregexp e) (setup S)))
+              (define-values [S++ out] [setup S]))
+             (check-values (values S++ (map sop-player out)) new-state dropped-out title)))])))
 
 (module+ test
   (setup-test-case "setup works fine" "good" factory-base ref-starter-state [S '[]]
@@ -414,21 +420,22 @@
                   [[winners losers] out]
                   (~optional (~seq #:extra Bname:id B:expr)))
        #:with A (datum->syntax #'test-case 'A #'test-case #'test-case)
-       #'(let (~? ([Bname B]) ())
-           (let* ([F (retrieve-factory n factory)]
-                  [T state]
-                  [C (~? (list B) '[])])
-             (let* ([L (~a "test for " title)]
-                    (A (create-player (~a "A-" title) dag-strategy #:bad F))
-                    [_ (send A setup (ref-state-to-info-state T) '())]
-                    [S (set-ref-state-players T [cons A C])])
-               (set-with void)
-               (define-values [W O] (check-message title cep #px"dropped" (rounds S '[])))
-               (define awinners (map (λ (x) (send (sop-player x) name)) (first W)))
-               (define alosers (map sop-player (second W)))
-               (check-equal? `[,awinners ,alosers] `[,winners ,losers] (~a "winners " L))
-               (check-equal? (map sop-player O) out (~a "drop outs " L))
-               (set-with #false))))])))
+       #'(parameterize ([unit-test-mode #true])
+           (let (~? ([Bname B]) ())
+             (let* ([F (retrieve-factory n factory)]
+                    [T state]
+                    [C (~? (list B) '[])])
+               (let* ([L (~a "test for " title)]
+                      (A (create-player (~a "A-" title) dag-strategy #:bad F))
+                      [_ (send A setup (ref-state-to-info-state T) '())]
+                      [S (set-ref-state-players T [cons A C])])
+                 (set-with void)
+                 (define-values [W O] (check-message title cep #px"dropped" (rounds S '[])))
+                 (define awinners (map (λ (x) (send (sop-player x) name)) (first W)))
+                 (define alosers (map sop-player (second W)))
+                 (check-equal? `[,awinners ,alosers] `[,winners ,losers] (~a "winners " L))
+                 (check-equal? (map sop-player O) out (~a "drop outs " L))
+                 (set-with #false)))))])))
 
 (module+ test
   (*-rounds-test-case "receiving new tiles fails; game goes on with one more player"
@@ -492,25 +499,26 @@
                    (~optional (~seq #:state? ok #;symbol) #:defaults ([ok #'#true]))
                    (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))]
                   (~optional (~seq #:extra Bname:id B:expr)))
-       #'(let (~? ([Bname B]) ())
-           (let ([F (retrieve-factory name factory)]
-                 [T state]
-                 [C (~? (list Bname) '[])])
-             (let* ([W (~a " test for " title)]
-                    (P (create-player (~a "A-" title) dag-strategy #:bad F))
-                    [_ (send P setup (ref-state-to-info-state T) '())]
-                    [S (set-ref-state-players T [cons P C])])
-               (set-with void)
-               (define-values [S++ end out]
+       #'(parameterize ([unit-test-mode #true])
+           (let (~? ([Bname B]) ())
+             (let ([F (retrieve-factory name factory)]
+                   [T state]
+                   [C (~? (list Bname) '[])])
+               (let* ([W (~a " test for " title)]
+                      (P (create-player (~a "A-" title) dag-strategy #:bad F))
+                      [_ (send P setup (ref-state-to-info-state T) '())]
+                      [S (set-ref-state-players T [cons P C])])
+                 (set-with void)
+                 (define-values [S++ end out]
+                   (if dr
+                       (check-message W cep #px"dropped out" (one-round S '[]))
+                       (dev/null [one-round S '[]])))
+                 (check-equal? end end W)
+                 (if ok (check-true (state? S++) W) (check-false S++ W))
                  (if dr
-                     (check-message W cep #px"dropped out" (one-round S '[]))
-                     (dev/null [one-round S '[]])))
-               (check-equal? end end W)
-               (if ok (check-true (state? S++) W) (check-false S++ W))
-               (if dr
-                   (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
-                   (check-equal? out '[] (~a "no:" W)))
-               (set-with #false))))])))
+                     (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
+                     (check-equal? out '[] (~a "no:" W)))
+                 (set-with #false)))))])))
 
 (module+ test
   (1-round-test-case "receiving new tiles fails"
@@ -599,30 +607,31 @@
                    (~optional (~seq #:passed? ps #;symbol) #:defaults ([ps #'#false]))
                    (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))]
                   (~optional (~seq #:extra Bname:id B:expr)))
-       #'(let* ([F (retrieve-factory name factory)]
-                [T state]
-                [C (~? (list B) '[])]
-                [fake-k (λ (s end? out) (values s end? out))]
-                [passed [box #true]]
-                [run (one-turn #;"fake continuation:" fake-k passed)])
-           (let* ([W title]
-                  (P (create-player (~a "A-> " W) dag-strategy #:bad F))
-                  [_ (send P setup (ref-state-to-info-state T) '())]
-                  [S (set-ref-state-players T [cons P C])]
-                  [A (active-player S)])
-             (set-with void)
-             (define-values (~? [S++ end out] [S++ out])
+       #'(parameterize ([unit-test-mode #true])
+           (let* ([F (retrieve-factory name factory)]
+                  [T state]
+                  [C (~? (list B) '[])]
+                  [fake-k (λ (s end? out) (values s end? out))]
+                  [passed [box #true]]
+                  [run (one-turn #;"fake continuation:" fake-k passed)])
+             (let* ([W title]
+                    (P (create-player (~a "A-> " W) dag-strategy #:bad F))
+                    [_ (send P setup (ref-state-to-info-state T) '())]
+                    [S (set-ref-state-players T [cons P C])]
+                    [A (active-player S)])
+               (set-with void)
+               (define-values (~? [S++ end out] [S++ out])
+                 (if dr
+                     (check-message W cep #px"dropped out" (run A S '[]))
+                     (dev/null [run A S '[]])))
+               (~? (check-true end W) (void))
+               (if ok (check-true (state? S++) W) (check-false S++ W))
+               (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
                (if dr
-                   (check-message W cep #px"dropped out" (run A S '[]))
-                   (dev/null [run A S '[]])))
-             (~? (check-true end W) (void))
-             (if ok (check-true (state? S++) W) (check-false S++ W))
-             (if ps (check-true (unbox passed) W) (check-false (unbox passed) W))
-             (if dr
-                 (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
-                 (check-equal? out '[] (~a "no:" W)))
-             (set-with #false)
-             (set-box! passed #true #;"restore old value")))])))
+                   (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
+                   (check-equal? out '[] (~a "no:" W)))
+               (set-with #false)
+               (set-box! passed #true #;"restore old value"))))])))
 
 (module+ test
   (1-turn-test-case "player passes due to lack of placable tiles: ref-starter-state"
@@ -747,6 +756,8 @@
           #:ref-tiles    ref-tiles
           #:ref-map      map0
           #:expected     [[winners:str ...] [drop-outs:str ...]]
+          (~optional (~seq #:q-bonus qb) #:defaults ([qb #'[Q-BONUS]]))
+          (~optional (~seq #:finish-bonus fb) #:defaults ([fb #'[FINISH-BONUS]]))
           #:kind         kind:id
           (~optional     (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
           (~optional     (~seq #:show show)   #:defaults ([show #'#false])))
@@ -754,10 +765,10 @@
            (define name
              (let ([descr  (~a 'name " " description)]
                    [expect [list (list winners ...) (list drop-outs ...)]])
-               (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show)))
+                 (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
 
-  (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show)
+  (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show QB FB)
     [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
     [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
     [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
@@ -773,7 +784,9 @@
 
     #; {-> Void}
     (define [name-plain]
-      (parameterize ([unit-test-mode #false])
+      (parameterize ([unit-test-mode #false]
+                     [Q-BONUS QB]
+                     [FINISH-BONUS FB])
         (check-equal? (referee/config config externals) expect L)
         (when show
           (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
@@ -782,7 +795,10 @@
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
       (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
-      (r-check-equal? main jsexpr-inputs `[,expect] L))
+      (parameterize ([unit-test-mode #false]
+                     [Q-BONUS QB]
+                     [FINISH-BONUS FB])
+        (r-check-equal? main jsexpr-inputs `[,expect] L)))
   
     name)
 
@@ -846,7 +862,20 @@
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["E" "F"] []]
+    #:q-bonus      6
+    #:finish-bonus 6
     #:kind         for-tests-7)
+
+  (define-integration-test mixed-medium2-rev-players-bonus-delta
+    #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["F"] []]
+    #:q-bonus      8
+    #:finish-bonus 4
+    #:kind         for-tests-8)
 
   (define-integration-test mixed-medium2-rev-tiles 
     #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
@@ -901,8 +930,6 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] []]
     #:kind         for-tests-7)
-
-  
 
   (define-integration-test mixed-all-tiles-perm
     #:desc "two dag players, two ldasg player; permuted tiles and players: does the order matter"
@@ -959,9 +986,10 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) 16 "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) 17 "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
+  (check-equal? (length for-tests-8) 10 "8: we run students' code on ten tests -- expected to fail")
 
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
   (for-each (λ (test) [test plain-main expected]) for-students-7))

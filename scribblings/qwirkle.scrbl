@@ -12,7 +12,7 @@
 @(module spec racket/base
    [provide FINISH-BONUS Q-BONUS MIN-PLAYERS MAX-PLAYERS]
 
-   [define FINISH-BONUS [make-parameter 8]]
+   [define FINISH-BONUS [make-parameter 6]]
    [define Q-BONUS      [make-parameter 6]]
    [define MIN-PLAYERS 2]
    [define MAX-PLAYERS 4]
