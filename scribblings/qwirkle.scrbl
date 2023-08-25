@@ -10,8 +10,10 @@
 @(define-runtime-path qwirkle.png "qwirkle.png")
 
 @(module spec racket/base
-   [provide MIN-PLAYERS MAX-PLAYERS]
-   
+   [provide FINISH-BONUS Q-BONUS MIN-PLAYERS MAX-PLAYERS]
+
+   [define FINISH-BONUS [make-parameter 8]]
+   [define Q-BONUS      [make-parameter 6]]
    [define MIN-PLAYERS 2]
    [define MAX-PLAYERS 4]
    )
@@ -136,11 +138,12 @@ for a turn as follows:
 @item{A player receives one point per tile in a contiguous sequence of a row
  or column that at least one of its newly placed tiles @emph{extends}.}
 
-@item{A player receives six bonus points for @emph{completing} a Q, which is a
- contiguous sequence of tiles that contains all shapes or all colors.}
+@item{A player receives @(~a [Q-BONUS]) bonus points for
+ @emph{completing} a Q, which is a contiguous sequence of tiles that
+ contains all shapes or all colors.}
 
-@item{A player also receives six bonus points for placing all tiles in its
- possession.} 
+@item{A player also receives @(~a [FINISH-BONUS]) bonus points for
+ placing all tiles in its possession.} 
  
 ]
 @; -----------------------------------------------------------------------------
