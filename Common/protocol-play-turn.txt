@@ -1,7 +1,7 @@
 
 referee                         player (p_1) . . . player (p_n)
   |                                |                 |
-  |   takeTurn(PublicState)        |                 | % player receives:
+  |   take-turn(PublicState)       |                 | % player receives:
   | -----------------------------> |                 | % - current visible state            
 
   ACTION 1:
@@ -12,7 +12,7 @@ referee                         player (p_1) . . . player (p_n)
 
   ACTION 2:
   |     REPLACE                    |                 | 
-  | <============================  |                 | % pass on this turn 
+  | <============================  |                 | % replace request
   |                                |                 | 
   |--+                             |                 |
   .  |                             .                 . % if legal:
@@ -37,12 +37,12 @@ referee                         player (p_1) . . . player (p_n)
   IF: the player asks for REPLACE or EXTENSIONS, the referee completes the turn: 
 
   |                                |                 |
-  |     newTiles(setOfTiles)       |                 | % the player is handed
+  |     new-tiles(setOfTiles)      |                 | % the player is handed
   | -----------------------------> |                 | % a new set of tiles 
 
 
   REPEAT: 
-  |   takeTurn(state)              |                 |
+  |   take-turn(PublicState)       |                 |
   | -----------------------------------------------> |
   |     response                   |                 |
   | <=============================================== | 
