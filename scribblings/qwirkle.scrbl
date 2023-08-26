@@ -10,10 +10,20 @@
 @(define-runtime-path qwirkle.png "qwirkle.png")
 
 @(module spec racket/base
-   [provide FINISH-BONUS Q-BONUS MIN-PLAYERS MAX-PLAYERS]
+   [provide
+     FINISH-BONUS Q-BONUS
+     FINISH-BONUS-7 Q-BONUS-7
+     FINISH-BONUS-8 Q-BONUS-8
+     MIN-PLAYERS MAX-PLAYERS]
 
-   [define FINISH-BONUS [make-parameter 6]]
-   [define Q-BONUS      [make-parameter 6]]
+   [define FINISH-BONUS-7 6]
+   [define Q-BONUS-7 6]
+
+   [define FINISH-BONUS-8 4]
+   [define Q-BONUS-8 8]
+
+   [define FINISH-BONUS [make-parameter FINISH-BONUS-7]]
+   [define Q-BONUS      [make-parameter Q-BONUS-7]]
    [define MIN-PLAYERS 2]
    [define MAX-PLAYERS 4]
    )
