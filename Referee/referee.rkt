@@ -819,7 +819,7 @@
     (newline)))
 ;; ---------------------------------------------------------------------------------------------------
 
-(module+ examples ;; for milestone 7 
+(module+ examples ;; for milestone 7 ;; ASSUME the bonus parameters are set to the -7 values 
   (define-integration-test dag-only-short
     #:desc "two dag players, 1 turn"
     #:player-tiles `[,tiles1 ,tiles1]
@@ -885,8 +885,8 @@
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["F"] []]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-medium2-rev-tiles 
@@ -962,8 +962,8 @@
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [["L2"] ["K"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-students-8)
 
   (define-integration-test bad-all-tiles-bad-players-inf-lsdag
@@ -973,8 +973,8 @@
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [[] ["M3" "O"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-students-8)
 
   (define-integration-test bad-all-tiles-bad-players-8-lsdag
@@ -984,8 +984,8 @@
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [["G"] []]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-students-8)
   
   (define-integration-test bad-all-tiles-ldasg-player*
@@ -995,8 +995,8 @@
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [["E"] []]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
   
   (define-integration-test bad-all-tiles-dag-player*
@@ -1006,8 +1006,8 @@
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [["A"] []]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev
@@ -1017,8 +1017,8 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["B"] []]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf1
@@ -1028,8 +1028,8 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["E"] ["K" "L2"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf2
@@ -1039,8 +1039,8 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "M7" "O"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf3
@@ -1050,8 +1050,8 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "L5" "M7" "O"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define the-exn (list-ref exn-player* 3))
@@ -1062,8 +1062,8 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "M7" "W" "O"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag
@@ -1073,19 +1073,19 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["M3" "W" "O"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2
-    #:desc "3 players: one dag, one exn, one inf"
+    #:desc "3 players: one dag"
     #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["L2" "W"]]
-    #:q-bonus      8
-    #:finish-bonus 4
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS
     #:kind         for-tests-8))
 
 ;                                                                        
