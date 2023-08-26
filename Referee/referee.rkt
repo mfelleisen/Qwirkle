@@ -777,7 +777,7 @@
            (define name
              (let ([descr  (~a 'name " " description)]
                    [expect [list (list winners ...) (list drop-outs ...)]])
-                 (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show qb fb)))
+               (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
 
   (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show QB FB)
@@ -933,15 +933,6 @@
     #:ref-map      map0
     #:expected     [["Z"] ["X" "Y" "W"]]
     #:kind         for-tests-7)
-
-  (define-integration-test bad-all-tiles-bad-players-inf
-    #:desc "surprise: one survuves because it can finish the game with the first take-turn"
-    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
-    #:externals    (take inf-player* MAX-PLAYERS)
-    #:ref-tiles    ALL-TILES
-    #:ref-map      map0
-    #:expected     [["L2"] ["K"]]
-    #:kind         for-students-8)
   
   (define-integration-test mixed-all-tiles
     #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
@@ -961,24 +952,62 @@
     #:expected     [["B"] []]
     #:kind         for-tests-7))
 
-
-(module+ examples ;; for milestone 8 ; more 8 above 
-  (define-integration-test bad-all-tiles-dag-player*
-    #:desc "one survuves"
+;; ---------------------------------------------------------------------------------------------------
+(module+ examples ;; for milestone 8 ; more 8 above
+  
+  (define-integration-test bad-all-tiles-bad-players-inf
+    #:desc "surprise: one survuves because it can finish the game with the first take-turn"
     #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
-    #:externals    dag-player*
+    #:externals    (take inf-player* MAX-PLAYERS)
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
-    #:expected     [["A"] []]
-    #:kind         for-tests-8)
+    #:expected     [["L2"] ["K"]]
+    #:q-bonus      8
+    #:finish-bonus 4
+    #:kind         for-students-8)
+
+  (define-integration-test bad-all-tiles-bad-players-inf-lsdag
+    #:desc "the inf-winner drops out; nobody else wins"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take (reverse inf-player*) MIN-PLAYERS) (take ldasg-player* MIN-PLAYERS))
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [[] ["M3" "O"]]
+    #:q-bonus      8
+    #:finish-bonus 4
+    #:kind         for-students-8)
+
+  (define-integration-test bad-all-tiles-bad-players-8-lsdag
+    #:desc "reminder: plain tests are fair game (ldasg)"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (take ldasg-player* MAX-PLAYERS)
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["G"] []]
+    #:q-bonus      8
+    #:finish-bonus 4
+    #:kind         for-students-8)
   
   (define-integration-test bad-all-tiles-ldasg-player*
-    #:desc "lsdag players only, all get the same tiles"
+    #:desc "reminder: lsdag players only, all get the same tiles but different from preceding test"
     #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
     #:externals    ldasg-player*
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
     #:expected     [["E"] []]
+    #:q-bonus      8
+    #:finish-bonus 4
+    #:kind         for-tests-8)
+  
+  (define-integration-test bad-all-tiles-dag-player*
+    #:desc "reminder: plain tests are fair game (dag)"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    dag-player*
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["A"] []]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev
@@ -988,61 +1017,75 @@
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["B"] []]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf1
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "two inf players, two ldasg player; permuted reversed tiles,rev players: order matters?"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take inf-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["E"] ["K" "L2"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf2
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "three inf players from back, one lsdag"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
-    #:externals    (append (take (reverse inf-player*) 2) (take ldasg-player* 2))
+    #:externals    (append (take (reverse inf-player*) 3) (take ldasg-player* 1))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [[] ["M3" "O"]]
+    #:expected     [[] ["M3" "M7" "O"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf3
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "all inf players with permutation tiles"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (take (reverse inf-player*) MAX-PLAYERS)
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "L5" "M7" "O"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define the-exn (list-ref exn-player* 3))
   (define-integration-test mixed-all-tiles-rev-inf-exn
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "an exn player with all inf players"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (cons the-exn (take (reverse inf-player*) (- MAX-PLAYERS 1)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "M7" "W" "O"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "one dag, one exn, two infs"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list* (first dag-player*) the-exn (take (reverse inf-player*) (- MAX-PLAYERS 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["M3" "W" "O"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2
-    #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
+    #:desc "3 players: one dag, one exn, one inf"
     #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["L2" "W"]]
+    #:q-bonus      8
+    #:finish-bonus 4
     #:kind         for-tests-8))
 
 ;                                                                        
@@ -1063,7 +1106,7 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) 24 "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) (+ 10 3 10 3) "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
   (check-equal? (length for-students-8) 3 "8: students get three tests -- expected to fail")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
