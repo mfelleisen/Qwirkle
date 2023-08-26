@@ -460,7 +460,7 @@
        [(= n 1) (render-tile (first tiles))]
        [(and (= n 6) (> l 6))
         (define dots (2:text "..." 22 'black))
-        (apply 2:beside (map render-tile (append (take tiles n) (list dots))))]
+        (apply 2:beside (append (map render-tile (take tiles n)) (list dots)))]
        [else (apply 2:beside (map render-tile (take tiles n)))]))))
 
 #; {PubKnowledge -> Image}
