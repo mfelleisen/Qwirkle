@@ -620,8 +620,8 @@
 
   (define (jsexpr->player* j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
-      [(list (app jsexpr->player (? player? p)) ...) p]
-      [_ (eprintf "value does not match JActor schema" (jsexpr->string j #:indent 4))
+      [(list (app (λ (j) (jsexpr->player j #:loops loops)) (? player? p)) ...) p]
+      [_ (eprintf "value does not match JActors schema:\n~a\n" (jsexpr->string j #:indent 4))
          #false]))
 
   (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
@@ -647,7 +647,7 @@
   #; {JSexpr N -> False}
   (define (err n j)
     (define str (jsexpr->string j #:indent 2))
-    (eprintf "~a object does not match schema [~a] \n ~a\n" 'jsexpr->player n str)
+    (eprintf "~a object does not match JActorSpec schema [~a] \n ~a\n" 'jsexpr->player n str)
     #false))
             
 (module+ test
