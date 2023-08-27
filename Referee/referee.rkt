@@ -874,19 +874,19 @@
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["E" "F"] []]
-    #:q-bonus      6
-    #:finish-bonus 6
+    #:q-bonus      Q-BONUS-7
+    #:finish-bonus FINISH-BONUS-7
     #:kind         for-tests-7)
 
   (define-integration-test mixed-medium2-rev-players-bonus-delta
-    #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
+    #:desc "two dag players, two ldasg player; revversed players: does the player order matter ΔBONUS"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["F"] []]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-medium2-rev-tiles 
@@ -963,7 +963,7 @@
     #:ref-map      map0
     #:expected     [["L2"] ["K"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
 
   (define-integration-test bad-all-tiles-bad-players-inf-lsdag
@@ -974,7 +974,7 @@
     #:ref-map      map0
     #:expected     [[] ["M3" "O"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
 
   (define-integration-test bad-all-tiles-bad-players-8-lsdag
@@ -985,7 +985,7 @@
     #:ref-map      map0
     #:expected     [["G"] []]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
   
   (define-integration-test bad-all-tiles-ldasg-player*
@@ -996,7 +996,7 @@
     #:ref-map      map0
     #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
   
   (define-integration-test bad-all-tiles-dag-player*
@@ -1007,7 +1007,7 @@
     #:ref-map      map0
     #:expected     [["A"] []]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev
@@ -1018,7 +1018,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["B"] []]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf1
@@ -1029,7 +1029,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["E"] ["K" "L2"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf2
@@ -1040,7 +1040,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "M7" "O"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf3
@@ -1051,7 +1051,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "L5" "M7" "O"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define the-exn (list-ref exn-player* 3))
@@ -1063,7 +1063,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [[] ["M3" "M7" "W" "O"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag
@@ -1074,7 +1074,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["M3" "W" "O"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2
@@ -1085,7 +1085,7 @@
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["L2" "W"]]
     #:q-bonus      Q-BONUS-8 
-    #:finish-bonus FINISH-BONUS
+    #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8))
 
 ;                                                                        
