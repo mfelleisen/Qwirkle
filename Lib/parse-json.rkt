@@ -25,12 +25,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define-syntax (def/jsexpr-> stx)
   (syntax-parse stx
-    [(_ to #:plain pred?)
+    [(_ to #:plain pred? (~optional r))
      #:with name (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
      #`(define name
          (λ (j)
            (match j
-             [(? pred? x) x]
+             [(? pred? x) (~? (r x) x)]
              [_ (eprintf "~a value does not satisfy ~a?\n  ~a\n" 'name 'to (jsexpr->string j))
                 #false])))]
 
