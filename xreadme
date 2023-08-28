@@ -1,0 +1,162 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+;; create the README.md files from README.source in the top-level & all git-tracked code directories:
+
+(define EXCEPTIONS '["Signatures" "scribblings"]) ;; no need for organization tables 
+
+(define ORDER
+  '[ "Referee"
+     "Player"
+     ["Common" "player-interface"]
+     ["Common" "states"]
+     "Common"])
+
+;; ---------------------------------------------------------------------------------------------------
+;; TODO:
+;; -- allow a specific order
+;; -- create interface-readme file
+;; ---------------------------------------------------------------------------------------------------
+
+(provide
+ ;; ./xreadme      ;; shows the generated README.md file
+ ;; ./xreadme --no ;; doesn't 
+ main)
+
+(define (main . x)
+  (define show (and (empty? x) (eq? (system-type) 'macosx)))
+  (define adirs (all-git-tracked-directories EXCEPTIONS))
+  (readme* adirs show)
+  (top-level-reademe adirs show))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof PathString] Boolean -> Void}
+(define (top-level-reademe adirs show)
+  (define afils (map (λ (d) (list (build-path d "README.md") d)) adirs))
+  (write-readme-and-show "directory" afils identity show))
+
+#; {[Listof PathString] Boolean -> Void}
+;; find README.source in each directory in `adirs` and create README.md in this directory
+(define (readme* adirs show)
+  (for ([dir adirs]) 
+    (parameterize ([current-directory dir])
+      (define afils (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (list f f)))
+      (write-readme-and-show "file" afils strip-semis show))))
+
+#; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
+;; write one README.md file with an organization table made from `afils` labeled with `header`
+;; `clean` each description line with 
+(define (write-readme-and-show header afils clean show)
+  (define purps (purpose-statements afils clean))
+  (copy-file2 "README.source" "README.md" 'delete-existing-one)
+  (with-output-to-file "README.md"
+    #:exists 'append
+    (λ () (printf "~a" (make-table header afils purps))))
+  (when show (system "open README.md")))
+
+#; {String [Listof [List PathString String]] [Listof String] -> String}
+(define (make-table header0 adirs purps)
+  (define header (make-header header0))
+  (define content
+    (for/list ([d adirs] [p purps])
+      (match-define (list dl dn) d)
+      (~a "| [" dn "](" dl ")" " | " p " | \n")))
+  (apply string-append header content))
+
+#; {[Listof [List PathString String]] -> [Listof String]}
+(define (purpose-statements l clean)
+  (for/list ([d l])
+    (with-handlers ([exn:fail? (missing-purpose-statement d)])
+      (with-input-from-file (first d)
+        (λ ()
+          (clean (string-trim (caddr (port->lines)))))))))
+
+#; {[List PathString String] -> Empty}
+(define ((missing-purpose-statement d) xn)
+  (error 'purpose-statement "~a \n~a" (first d) (exn-message xn)))
+
+#; {String[Filename] String[Filename] Any -> Void}
+;; copy the content from `old` to `new`
+;; replace "@@include(.)" with the content of the specified fle 
+(define (copy-file2 old new _)
+  (define c-old (file->list old read-line))
+  (define c-new (replace "@@include" c-old))
+  (with-output-to-file new #:exists 'replace (λ () (for ((l c-new)) (displayln l)))))
+
+#; {String String[Filename] Any -> Void}
+(define (replace _ c-old)
+  (for/fold ([new '()] #:result (reverse new)) ([line c-old])
+    (define m (regexp-match #px"@@include\\((.*)\\)" line))
+    (cond
+      [(boolean? m) (cons line new)]
+      [else
+       (define c (reverse (file->list (second m) read-line)))
+       (append (code-block c) new)])))
+
+#; {[Listof String] -> [Listof String]}
+;; surround given list of strings with ```
+(define (code-block c)
+  (append (cons "```" c) (list "```")))
+
+#; {String -> String}
+#; (strip-semis ";; ...") ;; yields "..."
+(define (strip-semis l) (substring l 3))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {-> [Listof String]}
+(define (all-git-tracked-directories except)
+  (define untracked (git-status-check))
+  (for*/list ([fd (directory-list)]
+              [fd-str (in-value (path->string fd))]
+              #:when (and (git-tracked-file? untracked fd) (not (member fd-str except))))
+    fd-str))
+
+#; {[Path] -> [Listof PathString]}
+;; a primitive way to exclude Untracked directories and files 
+(define (git-status-check [which-one "./"])
+  (parameterize ((current-directory which-one))
+    (match-define (list in out pid err control) (process "git status"))
+    (define status (port->list read-line in))
+    (let loop ((status status))
+      (cond
+        [(empty? status) '()]
+        [(regexp-match #px"Untracked" (first status)) (git-untracked status)]
+        [else (loop (rest status))]))))
+
+#; {[Listof String] -> [Listof PathString]}
+(define (git-untracked status)
+  (let inner ([status (cdddr status)])
+    (define next (string-trim (first status)))
+    (cond
+      [(equal? "" next) '()]
+      [else (cons next (inner (rest status)))])))
+
+#; {[Listof PathString] PathString -> Boolean}
+(define (git-tracked-file? untracked fd)
+  (and (directory-exists? fd)
+       (not (regexp-match #px"\\.|compiled" fd))
+       (not (member fd untracked))))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof String] -> [Listof String]}
+(define (follow-specified-order s)
+  s
+  #;
+  (for/list ([next ORDER])
+    (if (pair? next)
+        'insert-file
+        'confirm-in-s)))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (make-header x)
+  (string-append
+   "\n"
+   (string-append "| " x " | purpose |\n")
+   "|--------------------- | ------- |\n"))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ main
+  (main #; 'dontshow))

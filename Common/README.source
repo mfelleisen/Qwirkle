@@ -1,0 +1,67 @@
+## Common 
+
+The components in this directory represent the common ontology that the players and the gaming framework must share.
+
+Here is a rough overview of the layers: 
+
+```
+ KEY CONCEPTS
+ 
+        + ---------------- +
+        | player-interface |
+        + ---------------- +
+        | - setup          | refers to `states`, `coordinates`
+        | - take-turn      |
+        | - win            |
+        | - name           |
+        + ---------------- +
+        
+        + ----------- +          + ------- +         + ------ + 
+        | states      |          | players |         | rules  |
+        + ----------- +          + ------- +         + ------ +
+        | set-players |          | create  |         | legal? |
+        | shift*insert|          | new-goal|         | clegal |
+        | rotate    ? |          +-------- +         +--------+
+        | active-move |
+        | can-move?   |
+        | move        |
+        | turn-over   |
+        | finished?   |
+        | score-game  |
+        | fold-players|
+        + ------------+
+          
+        ---------------------------------------------------------------------------------------------------
+ BASIC CONCEPTS 
+
+                                        + ------------ +
+                                        | boards       |
+                                        + ------------ +
+                                        | shift&insert |
+                                        | can-reach?   |
+                                        + ------------ +
+
+                                        + ------------ +
+                                        | tiles        |
+                                        + ------------ +
+                                        | can-reach?   |
+                                        | go-from?     |
+                                        + ------------ +
+
+                                        + ------------ +
+                                        | directions   |
+                                        + ------------ +
+                                        | dir->Δ       |
+                                        | exit->entry  |
+                                        | UP DOWN      |
+                                        | LEFT RIGHT   |
+                                        + ------------ +
+
+                                + ------------ +          + ------------ +
+                                | coordinates  |          | geometry     |
+                                + ------------ +          + ------------ +
+                                | setup        |          | for graphics |
+                                | Eu--distance |          + ------------ +
+                                | coordinate+  |          
+                                + ------------ +          
+```

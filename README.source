@@ -1,0 +1,115 @@
+## The Q Project
+
+#### Next Step
+
+- remotes: (1) remote (2) client (3) server
+- modify essential aspect
+
+- integration tests for students 
+
+- readme sources : clean up
+  - explain the separation of `Common/game-state` and `Referee/ref-state` 
+
+#### Install
+
+```
+$ git clone git:...
+$ cd Qwirkle
+$ raco pkg install
+$ raco doc Qwirkle 
+```
+
+#### Run
+
+- todo
+
+#### Generate Readme
+
+To re-generate the README file, run
+
+```
+$ racket readme.rkt 
+```
+
+The repository is a fully functioning game framework, intended to be uses
+as both an educational and a research project.
+
+### The Idea 
+
+"Q" is a tole game. This repository is a framework for programming
+competitive "Q" players, a variant of the Qwirkle original game.
+Participants will design automated players that run on their desktops
+and connect to a (remote) "Q" server. This server will run a single
+game. Any misbehavior of a player---non-responsiveness due to bugs or
+cheating---results in immediate termination. So the competition is
+first about delivering robust code and second about writing great
+strategies.
+
+### Concepts and Relationships
+
+```
+ +----------------------------+                           +----------------------------+
+ | Client                     |                           | Server                     |
+ +----------------------------+                           +----------------------------+
+ | signup-with-server module  |                           | signing-up players module  |
+ | player mechanism           | relies on      relies on  | referees, its game state   |
+ | strategies                 |-----------+  +------------| observers                  |
+ +----------------------------+           |  |            +----------------------------+
+                                          |  |
+                                          v  v
+                 +---------------------------------------------------------+
+                 | Common Ontology (of Clients and Server)                 |
+                 +---------------------------------------------------------+
+                 | player interface and protocol                           |
+                 | the player's game state: its own knowledge              |
+                 |     plus its knowledge about others                     |
+                 | the rules (legality checking)			   |
+                 | basic game pieces and constants                         |
+                 +---------------------------------------------------------+
+```
+
+
+### The Common Ontology
+
+For participating AI players to connect to the server and participate in games, they
+need to understand the interaction protocol, which specify remote calls, their
+signatures, and their proper sequencing.  While each message is just a piece JSON
+data, the common ontology provides the proper interpretation of these pieces of data
+in context.
+
+Additionally, the players' creators need to know the rules of the game. The rules of
+the game are expressed in terms of game states and other games pieces. 
+
+Since even a detailed interpretation may leave questions about their meaning with
+respect to the rules of the game. the repository's `Common` directory publishes the
+code that interprets the remote calls with respect to the server and the sample
+player in this repository.
+
+### Server Sign-Up
+
+@@include(Common/remote-protocol-connect.txt)
+
+### The Logical Interaction Protocol
+
+The following sequence diagrams sketch how proxy referee and the proxy
+player re-connect the referee and the players over TCP. 
+
+#### Starting the Game 
+
+@@include(Common/protocol-start-game.txt)
+
+#### Running Turns
+
+@@include(Common/protocol-play-turn.txt)
+
+#### Ending the Game
+
+@@include(Common/protocol-end-game.txt)
+
+### Organization
+
+The following table describes the purpose of each directory in this repository.
+For detailed explanations of the files, follow the links. 
+
+
+
