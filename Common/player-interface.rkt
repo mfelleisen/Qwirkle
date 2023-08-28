@@ -9,7 +9,7 @@
  player/c
 
  ;; the only states a player may consume 
- info-state/c
+ pk?
 
   #; {Any -> Any : a string that satisfies the length and char cosntraint}
  MAX-PLAYER-NAME PLAYER-NAME
@@ -27,18 +27,18 @@
   (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define info-state/c
+(define pk?
   (and/c state? (flat-named-contract "PubKnowledge" (λ (s) (natural? (state-tiles s))))))
 
 (module+ test
-  (check-false (info-state/c +starter-state)))
+  (check-false (pk? +starter-state)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define player%/c
   (class/c
    [name      (->m string?)]
-   [setup     (->m info-state/c (listof tile?) void?)]
-   [take-turn (->m info-state/c action*?)]
+   [setup     (->m pk? (listof tile?) void?)]
+   [take-turn (->m pk? action*?)]
    [new-tiles (->m (listof tile?) void?)]
    [win       (->m boolean? void?)]))
 
