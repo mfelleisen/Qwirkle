@@ -10,16 +10,16 @@
  (contract-out
   [iterate-strategy
    ;; iterate the strategy as far as possible to obtain a sqeuence of placements or PASS/REPALCEMENT
-   (-> (-> info-state/c action?) state? action*?)]
+   (-> (-> pk? action?) pk? action*?)]
   (dag-strategy
    ;; strategy 1: dumb and greedy
    ;; choose "smallest tile" that has candidates; break tie among candidates via coodinate<
-   (-> info-state/c action?))
+   (-> pk? action?))
   (ldasg-strategy
    ;; strategy 2: a bit more sophisticate and still greedy
    ;; choose "smallest tile" that has candidates; pick most-constrained candidates;
    ;; break tie among candidates via coodinate<   
-   (-> info-state/c action?))
+   (-> pk? action?))
   ))
 
 ;; Tiles are lexically ordered as follows:
@@ -29,6 +29,8 @@
 (module+ examples
   (provide
    the-special-place
+   info-special-place*
+   info-special-places*dug
    ref-place
    constrained-special))
 
@@ -93,7 +95,14 @@
 (module+ examples
   (define constrained-special #s(placement #s(coordinate -3 1) #s(tile star green)))
   (define the-special-place #s(placement #s(coordinate -5 1) #s(tile star green)))
-  (define ref-place #s(placement #s(coordinate -1 0) #s(tile circle red))))
+  (define ref-place #s(placement #s(coordinate -1 0) #s(tile circle red)))
+
+  (define info-special-place*
+    '(#s(placement #s(coordinate -5 1) #s(tile star green))
+      #s(placement #s(coordinate -6 1) #s(tile diamond green))))
+  (define info-special-places*dug
+    '(#s(placement #s(coordinate -3 1) #s(tile star green))
+      #s(placement #s(coordinate -1 1) #s(tile diamond green)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; dumb and greedy strategy: pick "smallest" coordinate of all feasible candidates for the first tile 
@@ -173,13 +182,6 @@
            (until so-far+ (apply-action pk action)))])))
 
 (module+ test
-  (define info-special-place*
-    '(#s(placement #s(coordinate -5 1) #s(tile star green))
-      #s(placement #s(coordinate -6 1) #s(tile diamond green))))
-  (define info-special-places*dug
-    '(#s(placement #s(coordinate -3 1) #s(tile star green))
-      #s(placement #s(coordinate -1 1) #s(tile diamond green))))
-
   ;; these have tiles that don't fit 
   (check-equal? (iterate-strategy ldasg-strategy info-bad-state) PASS)
   (check-equal? (iterate-strategy dag-strategy info-starter-state) REPLACEMENT)
