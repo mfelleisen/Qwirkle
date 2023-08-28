@@ -41,7 +41,7 @@
    ;; --> introduce score+ function that determines by itself whether this is true??? 
    (->* (map? (listof placement?)) (#:finishing natural?) natural?)]))
 
-(module+ examples
+(module+ examples ;; these are all referee states with tiles and all 
   (provide
    +starter-state
    special-state

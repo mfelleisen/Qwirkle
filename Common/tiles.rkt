@@ -6,6 +6,7 @@
 (provide
  #; {type Tile}
  tile?
+ tiles?
  tile-shape
  tile-color
  tile/m
@@ -122,6 +123,8 @@
 ;                                                                 
 
 (struct tile [shape color] #:prefab)
+
+(define (tiles? x) (and (list? x) (andmap tile? x)))
 
 (define-match-expander (tile/m s c) (λ (stx) #'(tile s c)))
 
