@@ -1,11 +1,11 @@
 ## Clients
 
 The component in this directory implements the client code for the
-Maze game. The client program consumes a list of players and spawns a
+Q game. The client program consumes a list of players and spawns a
 client thread for each of them, as if they were running on separate
 machine.
 
-Each such thread TCP-connects to the Maze server on a specified port.
+Each such thread TCP-connects to the Q server on a specified port.
 Once the connection is accepted, it signs up the player with its given
 name.
 

@@ -3,10 +3,12 @@
 #### Next Step
 
 - remotes: (1) remote (2) client (3) server
-- readme sources 
 - modify essential aspect
 
 - integration tests for students 
+
+- readme sources : clean up
+  - explain the separation of `Common/game-state` and `Referee/ref-state` 
 
 #### Install
 
@@ -238,7 +240,7 @@ For detailed explanations of the files, follow the links.
 | [Client](Client/README.md) | The component in this directory implements the client code for the | 
 | [Common](Common/README.md) | The components in this directory represent the common ontology that the players and the gaming framework must share. | 
 | [Lib](Lib/README.md) | functionality that should probably exist in Racket's libraries | 
-| [Player](Player/README.md) | The component in this directory implements a Maze player. | 
-| [Referee](Referee/README.md) | The component in this directory implements the Maze referee. | 
+| [Player](Player/README.md) | The component in this directory implements a Q player. | 
+| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
 | [Remote](Remote/README.md) | The components in this directory implement the remote-proxy protocol | 
-| [Server](Server/README.md) | The component in this directory implements the Maze server. | 
+| [Server](Server/README.md) | The component in this directory implements the Q server. | 

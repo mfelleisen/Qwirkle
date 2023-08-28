@@ -1,9 +1,9 @@
 ## Server 
 
-The component in this directory implements the Maze server. 
+The component in this directory implements the Q server. 
 
 The server signs up clients over TCP that connect on behalf of an AI
-player and runs a Maze game. 
+player and runs a Q game. 
 
 A server configuration file has the following shape:
 
@@ -79,8 +79,7 @@ server                           client (c_1) ... client (c_i)
 
 ### Running
 
-The `xserver` script in the 22SwDev repo (Code/9) launches this server
-with a suitable configuration.  
+The `xserver` script ... 
 
 ### Organization 
 

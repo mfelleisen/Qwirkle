@@ -28,6 +28,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 (define (main . x)
   (define show (and (empty? x) (eq? (system-type) 'macosx)))
+  (eprintf "~a ~a\n" (system-type) show)
   (define adirs (all-git-tracked-directories EXCEPTIONS))
   (readme* adirs show)
   (top-level-reademe adirs show))
@@ -158,5 +159,6 @@ exec racket -tm "$0" -- ${1+"$@"}
    "|--------------------- | ------- |\n"))
 
 ;; ---------------------------------------------------------------------------------------------------
+#;
 (module+ main
   (main #; 'dontshow))

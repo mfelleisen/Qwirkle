@@ -1,9 +1,9 @@
 ## Players 
 
-The component in this directory implements a Maze player.
+The component in this directory implements a Q player.
 
 A player implements the mechanism that employs "strategies" to compute
-responses. For Maze, a strategy is a function from the current state
+responses. For Q, a strategy is a function from the current state
 of the game and the player's current goal to a response.
 
 Some player implementations realize 
@@ -21,12 +21,14 @@ Some player implementations realize
 +----------+               +----------+ 
 | Strategy | ------------> | Strategy |
 +----------+               +----------+ 
-| setup    |               | closest  | (DistanceOrdering e-r)
-| takeTurn |               | Euclid   |  use one of the two exported 
-| win      |               | Riemann  |
+| setup    |               | dag      | 
+| takeTurn |               | ldasg    | 
+| win      |               |          |
 +----------+               +----------+
      ^
      |
+     | via macros and mixins 
+     | 
      |
   +--+------------------------+ .... 
   |                           |
@@ -37,12 +39,11 @@ Some player implementations realize
 
 ### Functionality
 
-The player is a mostly-functional data representation. The goal is
-handed over via `setup` and acts as "temporary" constant. The
-`takeTurn` method combines the goal with the public-knowledge game
-state it receives to compute an action.
+The mechanism is a functional component.
 
-### Organization
+A strategy is always a function. Even a history-sensitive variant
+should consume a data representation of the game's history.  
+
 
 
 | file | purpose |

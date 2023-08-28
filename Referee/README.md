@@ -1,6 +1,6 @@
 ## Referee 
 
-The component in this directory implements the Maze referee. 
+The component in this directory implements the Q referee. 
 
 The referee is organized as a mechanism that sets up an initial state,
 consults external players to cause transitions from one state
@@ -13,31 +13,27 @@ until a final state is reached.
 +---------+
 | Referee |
 +---------+               +---------+
-| State s |-------------->| RState  | (ordering of players)
-| Rules r |---+           +---------+
-+---------+   |           | Tile x  |
-              |           | Undo u  |             +-------+
-              |           | Board b |------------>| Board |
-              |           | PlayerQ |---+         +-------+          +------+
-              |           +---------+   |         | Tiles |---*----->| Tile |
-              |                         |         | CoordS|          |      |
-              |                         |         +-------+          +------+
-              |                         |
-         +-----------+                  |
+| State s |-------------->| RefState| (between two rounds)
++---------+   +---------- +---------+
+              |           | Tiles x |
+              |           | PlayerQ |             +-------+
+              |           | Map m   |------------>| Map   |
+              |           +---------|---+         +-------+          +------+
+              |                         |         | Tiles |---*----->| Tile |
+              |                         |         |       |          +------+
+              |                         |         +-------+          | Color|
+              V                         |                            | Shape|
+         +-----------+                  |                            +------+
          | RuleCheck |                  * Queue 
          +-----------+                  |
                                         |         +---------+
-                                        +-------->| RIP     | (knowledge 
-                                                  | Referee |  about individual
-                                                  | Player  |  players)
+                                        +-------->| SoP     |
                                                   +---------+
-                                                  | Goal    |
-                                                  | Home    |
-                                                  | Current |
-                                                  | Color   |
-                                                  | PayLoad | (parametric, used to contact actual players)
-                                                  +---------+
-                                        
+                                                  | Tiles   |
+                                                  | Score   |
+                                                  | PayLoad | (parametric, 
+                                                  +---------+  connectionn to 
+                                                               actual player)                                        
 ```
 
 ### Functionality 
@@ -45,11 +41,12 @@ until a final state is reached.
 The referee creates an initial referee state and then proceeds as follows: 
 
 - it sets up the players with an initial public state and goal 
-- it grants the players turns on a per round bassis, and each turn may change the state 
-- it applies the rule book to each state after each transition
-  (possibly yielding the same state)
+- it grants the players turns on a per round bassis,
+- .. and each turn may change the state 
+- it checks the legality via a call to its state representation 
+- .. which yields the next (possibly same) state
+- it scores each turn via a call to its state representation 
 - it stops the game as any of the terminal conditions are met
-- it scores the final state, and
 - it informs the surviving players of their status as winners or losers.
 
 ### Referee and Observers
@@ -70,39 +67,31 @@ player or states). The thread hands states to this thread as long as
       |                   |  new(O)                 Referee  
       |                   | -------------------------> |
       |                   |                            | 
-      |                   |   update_state(State s)    | 
-      |                   | <------------------------- | %% the initial state 
       |                   |                            |
-      .                   |   update_state(State s)    | 
-      .                   | <------------------------- | %% + a state after each legal turn
+      .                   |   update(State s)          | 
+      .                   | <------------------------- | %% + a state before each legal turn
       .                   .                            .
       |                   .                            .
       |                   .                            .                               
       |                   |                            |
-      |                   |   update_state(State s)    |
+      |                   |   update(State s)          |
       |                   | <------------------------- | %% until the game ends 
       |                   |                            |    
       |                   |                            |
-      |                   |   game_over()              |
+      |                   |   game_over() == #false    |
       |                   | <------------------------- |
       |                   |
       |                  ---- the observer shuts down and cannot accept more update calls 
 ```
 
+The observer is a stateful function. When it receives a state, it
+updates its view. When it receives `#false`, the game is over. On
+`FLUSH`, it resets itself for the next use.
+
 ### Details: Referee 
 
-Refereeing a game proceeds in four and a half stages:
-
- 1. setting up the players so that they can "think" about the initial state 
- 2. running rounds of turns until
-    - there is a winner
-    - all players "pass" during a single round
-    - `LIMIT` rounds have been completed without either of the preceding outcomes
- 3. scoring the game
- 4. informing winners and losers of the outcome of the game
-
-On the side, the referee keeps track of ill-behaved players so that once they
-perform any bad action, they are never contacted again. 
+The referee keeps track of ill-behaved players so that once they
+perform any bad action, they are never contacted again.
 
 To discover ill-behaved players, the referee protects _all_ calls to players with
 
@@ -114,22 +103,24 @@ so that it catches
 - exn-s raised internally
 - can terminate overly long calls.
 
-The module introduces a form `xxsend`, which combines `xsend` with a case analysis for all possible results. 
+The module introduces a form `xsend+`, which combines `xsend` with a
+case analysis for all possible results of this eXternal call. 
 
 TODO It should protect calls to observer, too. 
 
 The referee's game state suffices to resume a game at exact round bondaries.
 
-The module comes with three entry points:
+The module comes with one entry point:
 
 - referee/zero, which consumes a list of players and runs the game with a random state
 - referee/state, which consumes a preconfigured state (plus optional observer) for testing
-- referee/config, which is like referee/state and also allows the configuration of several items
+- referee/config, which consumes
+  - a referee configuration including an initial state
+  - a list of external players (which implement `../Common/player-interface`. 
 
 Configurations: A configuration dictionary may contain: 
 
 - an initial state;
-- a limit on the number of rounds that the referee will run before declaring an end to the game;
 - a flag that controls whether some rudimentary game information goes to the "console";
 - a per-turn time limit, which enforces how many seconds a player gets per call; and
 - an observer.
@@ -149,7 +140,6 @@ signature:
 ```
 
 ### Organization 
-
 
 | file | purpose |
 |--------------------- | ------- |
