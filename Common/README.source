@@ -12,56 +12,78 @@ Here is a rough overview of the layers:
         + ---------------- +
         | - setup          | refers to `states`, `coordinates`
         | - take-turn      |
+        | - new-tiles      |
         | - win            |
         | - name           |
         + ---------------- +
         
-        + ----------- +          + ------- +         + ------ + 
-        | states      |          | players |         | rules  |
-        + ----------- +          + ------- +         + ------ +
-        | set-players |          | create  |         | legal? |
-        | shift*insert|          | new-goal|         | clegal |
-        | rotate    ? |          +-------- +         +--------+
-        | active-move |
-        | can-move?   |
-        | move        |
-        | turn-over   |
-        | finished?   |
-        | score-game  |
-        | fold-players|
-        + ------------+
+        + ---------------- +          + ---------------- +          
+        | game-state       |          | state-of-players |         
+        + ---------------- +          + ---------------- +         
+        | players          |          | score	    |
+        | tiles       	   |          | tiles 	    |
+        | legal       	   |          | payload	    |
+        | score      	   |          + ---------------- +
+        | active-*    	   |
+        + ---------------- +
           
         ---------------------------------------------------------------------------------------------------
  BASIC CONCEPTS 
 
                                         + ------------ +
-                                        | boards       |
+                                        | map          |
                                         + ------------ +
-                                        | shift&insert |
-                                        | can-reach?   |
+                                        | graph	       |
+					| extend       |
                                         + ------------ +
 
                                         + ------------ +
                                         | tiles        |
                                         + ------------ +
-                                        | can-reach?   |
-                                        | go-from?     |
+                                        | color        |
+                                        | shape	       |
                                         + ------------ +
 
-                                        + ------------ +
-                                        | directions   |
-                                        + ------------ +
-                                        | dir->Δ       |
-                                        | exit->entry  |
-                                        | UP DOWN      |
-                                        | LEFT RIGHT   |
-                                        + ------------ +
-
-                                + ------------ +          + ------------ +
-                                | coordinates  |          | geometry     |
-                                + ------------ +          + ------------ +
-                                | setup        |          | for graphics |
-                                | Eu--distance |          + ------------ +
-                                | coordinate+  |          
-                                + ------------ +          
+                                        + ------------ +          
+                                        | coordinates  |          
+                                	+ ------------ +          
+                                	| row relative |
+                                	| col relative |
+                                	| ordering     |
+                                	+ ------------ +          
 ```
+
+
+### The Remote Protocol
+
+The following sequence diagrams sketch how proxy referee and the proxy
+player re-connect the referee and the players over TCP. 
+
+#### Starting the Game 
+
+@@include(../Common/remote-protocol-start-game.txt)
+
+#### Running Turns
+
+@@include(../Common/remote-protocol-play-turn.txt)
+
+#### Ending the Game
+
+@@include(../Common/remote-protocol-end-game.txt)
+
+### The Logical Protocol 
+
+#### Starting the Game 
+
+@@include(../Common/protocol-start-game.txt)
+
+#### Running Turns
+
+@@include(../Common/protocol-play-turn.txt)
+
+#### Ending the Game
+
+@@include(../Common/protocol-end-game.txt)
+
+### Organization
+

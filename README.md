@@ -242,5 +242,5 @@ For detailed explanations of the files, follow the links.
 | [Lib](Lib/README.md) | functionality that should probably exist in Racket's libraries | 
 | [Player](Player/README.md) | The component in this directory implements a Q player. | 
 | [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
-| [Remote](Remote/README.md) | The components in this directory implement the remote-proxy protocol | 
+| [Remote](Remote/README.md) | The components in this directory support the implementationn of a remote-proxy | 
 | [Server](Server/README.md) | The component in this directory implements the Q server. | 
