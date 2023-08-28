@@ -18,14 +18,12 @@
 (def/jsexpr-> natural #:plain natural?)
 
 ; boolean?
-(struct FF ())
-
 (define (boolean->jsexpr b) b)
-(define (jsexpr->boolean x) (FF))
+(define (jsexpr->boolean x) x) ;; this makes sense because a parser must test boolean? first
 
 ; void?
 (define (void->jsexpr v) "void")
-(def/jsexpr-> void #:plain (curry equal? "void"))
+(def/jsexpr-> void #:plain (curry equal? "void") void)
 
 ; string?
 (define string->jsexpr values)
