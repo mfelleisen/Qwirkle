@@ -60,8 +60,7 @@
 (module+ test
   (require (submod ".."))
   (require (submod Qwirkle/Common/placement json))
-
-  (require (submod Qwirkle/Common/placement examples))
+  
   (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Player/strategies examples))
   (require (submod Qwirkle/Referee/ref-state examples))

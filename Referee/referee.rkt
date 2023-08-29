@@ -13,7 +13,9 @@
 (define PER-TURN 'time-per-turn)
 (define OBSERVE  'observe)
 (define SHOW     'observer-shows-for-s)
-(define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN))
+(define QBO      'q-bonus)
+(define FBO      'finish-bonus)
+(define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN QBO FBO))
 
 (define unit-test-mode [make-parameter #false])
 
@@ -26,6 +28,7 @@
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
 (provide
+ #; {type Configuration = [Hashtable Options]}
  ;; config options
  STATE0 QUIET OBSERVE SHOW PER-TURN
  
@@ -64,9 +67,7 @@
 (module+ examples
   (provide
    textual-observer
-   FLUSH
-
-   plain-main))
+   FLUSH))
 
 ;                                                          
 ;                                                          
@@ -137,6 +138,7 @@
   (require SwDev/Testing/check-values)
   (require SwDev/Lib/should-be-racket)
   (require rackunit)
+  (require json)
   (require (for-syntax syntax/parse)))
 
 
@@ -161,13 +163,19 @@
 (define with-obs #false)
 (define obs-show 1)
 
-#; {State -> [Hashtable Options]}
+#; {Configuration Natural Natural -> Configuration}
+(define (set-bonus config QB FB)
+  (dict-set (dict-set config FBO FB) QBO QB))
+
+#; {State -> Configuration}
 (define (create-config j #:observe (o #false) #:per-turn (pt #f))
   (hash
    OBSERVE  o
    SHOW     1
    STATE0   j
    QUIET    #true
+   QBO      Q-BONUS-7
+   FBO      FINISH-BONUS-7
    PER-TURN (or pt per-turn)))
 
 #; {[Hashtable options] -> (values State Observer)}
@@ -206,18 +214,22 @@
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
   (define-values (s o) (install-config c lo-players))
-  (referee/state s #:with-obs o))
+  (define QB (dict-ref c QBO Q-BONUS-7))
+  (define FB (dict-ref c FBO FINISH-BONUS-7))
+  (referee/state s #:with-obs o #:QB QB #:FB FB))
 
 #; {State {#:with-obs (U False Observer)} -> Result}
 ;; This is the workhorse of REFEREES.
 ;; ASSUME the given state is not finished (at least one player, no winner)
-(define (referee/state s0 #:with-obs (wo #false))
+(define (referee/state s0 #:with-obs (wo #false) #:QB (QB Q-BONUS-7) #:FB (FB FINISH-BONUS-7))
   [time-out-limit per-turn]
-  (dynamic-wind (setup-observer wo) (referee/state-proper s0) (unset-observer wo)))
+  (dynamic-wind (setup-observer wo) (referee/state-proper s0 QB FB) (unset-observer wo)))
 
 #; {State -> Result}
-(define [(referee/state-proper s0)]
-  (parameterize ([current-error-port (if [quiet] (open-output-string) (current-error-port))])
+(define [(referee/state-proper s0 QB FB)]
+  (parameterize ([current-error-port (if [quiet] (open-output-string) (current-error-port))]
+                 [Q-BONUS            QB]
+                 [FINISH-BONUS       FB])
     (let*-values ({[s out]              (setup s0)}
                   {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
                   ([winners0 losers0]   (apply values winners+losers))
@@ -709,6 +721,8 @@
 ;                                                          
 
 (module+ examples
+
+  (provide dag-player* ldasg-player* exn-player* inf-player*)
   
   (define dag-player*
     (let* ([f (retrieve-factory "good" factory-base)]
@@ -728,20 +742,20 @@
 
   (define (from-7 name) (retrieve-factory name factory-table-7))
   (define exn-player*
-    (let* ([A (create-player "X" ldasg-strategy #:bad (from-7 "setup"))]
-           [B (create-player "Y" ldasg-strategy #:bad (from-7 "take-turn" ))]
-           [C (create-player "Z" ldasg-strategy #:bad (from-7 "new-tiles" ))]
-           [D (create-player "W" ldasg-strategy #:bad (from-7 "win" ))])
+    (let* ([A (create-player "xnX" ldasg-strategy #:bad (from-7 "setup"))]
+           [B (create-player "xnY" ldasg-strategy #:bad (from-7 "take-turn" ))]
+           [C (create-player "xnZ" ldasg-strategy #:bad (from-7 "new-tiles" ))]
+           [D (create-player "xnW" ldasg-strategy #:bad (from-7 "win" ))])
       (list A B C D)))
 
   (define (from-8 name) (retrieve-factory name factory-table-8))
   (define inf-player*
-    (let* ([A (create-player "K" ldasg-strategy #:bad (from-8 "setup-1"))]
-           [B (create-player "L2" ldasg-strategy #:bad (from-8 "take-turn-2"))]
-           [C (create-player "L5" ldasg-strategy #:bad (from-8 "take-turn-4"))]
-           [D (create-player "M7" ldasg-strategy #:bad (from-8 "new-tiles-7"))]
-           [E (create-player "M3" ldasg-strategy #:bad (from-8 "new-tiles-3"))]
-           [F (create-player "O" ldasg-strategy #:bad (from-8 "win-1"))])
+    (let* ([A (create-player "infK"  ldasg-strategy #:bad (from-8 "setup-1"))]
+           [B (create-player "infL2" ldasg-strategy #:bad (from-8 "take-turn-2"))]
+           [C (create-player "infL5" ldasg-strategy #:bad (from-8 "take-turn-4"))]
+           [D (create-player "infM7" ldasg-strategy #:bad (from-8 "new-tiles-7"))]
+           [E (create-player "infM3" ldasg-strategy #:bad (from-8 "new-tiles-3"))]
+           [F (create-player "infO"  ldasg-strategy #:bad (from-8 "win-1"))])
       (list A B C D E F)))
     
   
@@ -781,24 +795,26 @@
            (set! kind (cons name kind)))]))
 
   (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show QB FB)
-    [define specs   (map list player-tiles (take '["X" "Y" "Z" "W"] (length player-tiles)))]
+    [define specs   (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
     [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
-    [define config  (dict-set (create-config state #:observe textual-observer) QUIET quiet)]
-
+    [define config
+      (set-bonus (dict-set (create-config state #:observe textual-observer) QUIET quiet) QB FB)]
+    
     ;; the Racket integration test
 
     #; {case-> [-> Void] [(-> Void) -> Void]}
     (define name
       (case-lambda
         [() [name-plain]]
+        ;; the next two clauses are for running the JSON integration tests 
         [(main) (name-jsexpr main)]
-        [(main expect) [name-jsexpr main expect]]))
+        [(main expect) [name-jsexpr main expect]]
+        ;; this clause exists to running tthe server/client setup
+        [(main _server _client) (main config externals expect)]))
 
     #; {-> Void}
     (define [name-plain]
-      (parameterize ([unit-test-mode #false]
-                     [Q-BONUS QB]
-                     [FINISH-BONUS FB])
+      (parameterize ([unit-test-mode #false])
         (check-equal? (referee/config config externals) expect L)
         (when show
           (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
@@ -807,19 +823,15 @@
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
       (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
-      (parameterize ([unit-test-mode #false]
-                     [Q-BONUS QB]
-                     [FINISH-BONUS FB])
-        (r-check-equal? main jsexpr-inputs `[,expect] L)))
+      (parameterize ([unit-test-mode #false])
+        (r-check-equal? {main config} jsexpr-inputs `[,expect] L)))
   
-    name)
-
-  (define (plain-main . x)
-    (write-json `[["A"] []] #:indent 2)
-    (newline)))
+    name))
 ;; ---------------------------------------------------------------------------------------------------
 
-(module+ examples ;; for milestone 7 ;; ASSUME the bonus parameters are set to the -7 values 
+(module+ examples ;; for milestone 7 ;; ASSUME the bonus parameters are set to the -7 values
+  (provide dag-only-short)
+
   (define-integration-test dag-only-short
     #:desc "two dag players, 1 turn"
     #:player-tiles `[,tiles1 ,tiles1]
@@ -829,14 +841,13 @@
     #:expected     [["A"] []]
     #:kind         for-students-7)
 
-  (define-integration-test
-    bad-setup 
+  (define-integration-test bad-setup 
     #:desc "one dag player, one drop out: 1 turn"
     #:player-tiles (list tiles1 tiles1)
     #:externals    (append (take dag-player* 1) `[,(first exn-player*)])
     #:ref-tiles    starter-tile*
     #:ref-map      map0
-    #:expected     [["A"] ["X"]]
+    #:expected     [["A"] ["xnX"]]
     #:kind         for-students-7)
 
   (define-integration-test dag-only-medium
@@ -913,7 +924,7 @@
     #:externals    exn-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [[] ["X" "Y" "Z" "W"]]
+    #:expected     [[] ["xnX" "xnY" "xnZ" "xnW"]]
     #:kind         for-tests-7)
 
   (define-integration-test bad-all-1
@@ -922,7 +933,7 @@
     #:externals    exn-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [["Z"] ["X" "Y" "W"]]
+    #:expected     [["xnZ"] ["xnX" "xnY" "xnW"]]
     #:kind         for-tests-7)
 
   (define-integration-test bad-all-tiles-bad-players
@@ -931,7 +942,7 @@
     #:externals    exn-player*
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
-    #:expected     [["Z"] ["X" "Y" "W"]]
+    #:expected     [["xnZ"] ["xnX" "xnY" "xnW"]]
     #:kind         for-tests-7)
   
   (define-integration-test mixed-all-tiles
@@ -961,7 +972,7 @@
     #:externals    (take inf-player* MAX-PLAYERS)
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
-    #:expected     [["L2"] ["K"]]
+    #:expected     [["infL2"] ["infK"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -972,7 +983,7 @@
     #:externals    (append (take (reverse inf-player*) MIN-PLAYERS) (take ldasg-player* MIN-PLAYERS))
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
-    #:expected     [[] ["M3" "O"]]
+    #:expected     [[] ["infM3" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -1027,7 +1038,7 @@
     #:externals    (reverse (append (take inf-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E"] ["K" "L2"]]
+    #:expected     [["E"] ["infK" "infL2"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1038,7 +1049,7 @@
     #:externals    (append (take (reverse inf-player*) 3) (take ldasg-player* 1))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [[] ["M3" "M7" "O"]]
+    #:expected     [[] ["infM3" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1049,7 +1060,7 @@
     #:externals    (take (reverse inf-player*) MAX-PLAYERS)
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [[] ["M3" "L5" "M7" "O"]]
+    #:expected     [[] ["infM3" "infL5" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1061,7 +1072,7 @@
     #:externals    (cons the-exn (take (reverse inf-player*) (- MAX-PLAYERS 1)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [[] ["M3" "M7" "W" "O"]]
+    #:expected     [[] ["infM3" "infM7" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1072,7 +1083,7 @@
     #:externals    (list* (first dag-player*) the-exn (take (reverse inf-player*) (- MAX-PLAYERS 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["M3" "W" "O"]]
+    #:expected     [["A"] ["infM3" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1083,7 +1094,7 @@
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["L2" "W"]]
+    #:expected     [["A"] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8))
@@ -1112,5 +1123,10 @@
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
   (check-equal? (length for-tests-8) 10 "8: we run students' code on ten tests")
 
+  ;; this test just ensures that the jsexpr entry point is run in a dummy way
+  (define ((plain-main-jsexpr c) . x) (write-json `[["A"] []] #:indent 2) (newline))
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
-  (for-each (λ (test) [test plain-main expected]) for-students-7))
+  (for-each (λ (test) [test plain-main-jsexpr expected]) for-students-7)
+
+  ;; this test just ensures that the server/client entry point works 
+  (for-each (λ (test) (test list 1 2)) for-students-8))

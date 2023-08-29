@@ -21,11 +21,7 @@
    ;; `port#` is a common port
    ;; `wait?` is #false
    ;; `quiet` is #true 
-   (->i ([players (listof (instanceof/c player/c))])
-        ([port# port/c]
-         [wait? boolean?]
-         [ip    string?]
-         #:quiet [quiet any/c]
+   (->i ([players (listof player/c)]) ([port# port/c] [wait? boolean?] [ip string?] #:quiet [quiet any/c]
          #:remote-manager [rm any/c])
         (r any/c))]))
 
