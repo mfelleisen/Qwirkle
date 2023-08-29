@@ -20,9 +20,9 @@ time raco test Player/*.rkt 2>> errors.txt
 echo "testing Referee" >> errors.txt
 time raco test Referee/ref-state.rkt Referee/referee.rkt 2>> errors.txt
 
-# time raco test Remote/*.rkt 2>> errors.txt
-# time raco test Client/*.rkt 2>> errors.txt
-# time raco test Server/*.rkt 2>> errors.txt
+time raco test Remote/*.rkt 2>> errors.txt
+time raco test Client/*.rkt 2>> errors.txt
+time raco test Server/*.rkt 2>> errors.txt
 
 echo "end" >> errors.txt
  
