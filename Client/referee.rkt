@@ -21,6 +21,8 @@
 ;; `create-reply` is the best name I could come up with for the argument of the `receiver`
 
 (provide
+ remote-manager/c
+ 
  (contract-out
   [make-remote-manager remote-manager/c]
   (pick-referee (-> string? (or/c #false remote-manager/c)))
