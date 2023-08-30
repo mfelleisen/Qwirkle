@@ -27,6 +27,8 @@
     (or (unit-test-mode)
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
+(define config/c (hash-carrier/c options))
+
 (provide
  #; {type Configuration = [Hashtable Options]}
  ;; config options
@@ -35,7 +37,11 @@
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe any/c #:per-turn (and/c real? positive?)) (hash-carrier/c options))]
+   (->* (state?) (#:observe any/c #:per-turn (and/c real? positive?)) config/c)]
+
+  [set-bonus
+   #; (set-bonus c Q-BONUS FINISH-BONUS)
+   (-> config/c natural? natural? config/c)]
   
   [referee/config
    ;; runs a game from the given configuration, which contains a ref state plus the above options
@@ -163,10 +169,6 @@
 (define with-obs #false)
 (define obs-show 1)
 
-#; {Configuration Natural Natural -> Configuration}
-(define (set-bonus config QB FB)
-  (dict-set (dict-set config FBO FB) QBO QB))
-
 #; {State -> Configuration}
 (define (create-config j #:observe (o #false) #:per-turn (pt #f))
   (hash
@@ -177,6 +179,10 @@
    QBO      Q-BONUS-7
    FBO      FINISH-BONUS-7
    PER-TURN (or pt per-turn)))
+
+#; {Configuration Natural Natural -> Configuration}
+(define (set-bonus config QB FB)
+  (dict-set (dict-set config FBO FB) QBO QB))
 
 #; {[Hashtable options] -> (values State Observer)}
 ;; EFFECT installs the values of `c` globally
@@ -824,7 +830,7 @@
     (define [name-jsexpr main (expect expect)]
       (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
       (parameterize ([unit-test-mode #false])
-        (r-check-equal? {main config} jsexpr-inputs `[,expect] L)))
+        (r-check-equal? main jsexpr-inputs `[,expect] L)))
   
     name))
 ;; ---------------------------------------------------------------------------------------------------
@@ -1124,7 +1130,7 @@
   (check-equal? (length for-tests-8) 10 "8: we run students' code on ten tests")
 
   ;; this test just ensures that the jsexpr entry point is run in a dummy way
-  (define ((plain-main-jsexpr c) . x) (write-json `[["A"] []] #:indent 2) (newline))
+  (define (plain-main-jsexpr . x) (write-json `[["A"] []] #:indent 2) (newline))
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
   (for-each (λ (test) [test plain-main-jsexpr expected]) for-students-7)
 

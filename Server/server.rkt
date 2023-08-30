@@ -359,7 +359,7 @@
     ;; for external integration tests, this must be moved to the `expected` part
     ;; WARNING -----------------------------------------------------------------
 
-    (define rconfig (dict-set rconfig0 PER-TURN 4.8))
+    (define rconfig (dict-set rconfig0 PER-TURN PER-TURN-s))
     (check-equal?
      (cond
        [quiet (run-server-client players rconfig)]
@@ -410,8 +410,30 @@
 
 (module+ test
   (require (submod Qwirkle/Referee/referee examples))
-
+  
   (for ([t for-tests-7] [i (in-naturals)])
-    (define k (test-server-client-plus (~a i) #:quiet #false))
+    (define k (test-server-client-plus (~a i) #:quiet 'yes!))
+    (t k 1 2))
+
+  (for ([t for-tests-8] [i (in-naturals)])
+    (define k (test-server-client-plus (~a i) #:quiet 'yes!))
     (t k 1 2)))
+
+#;
+(module+ test
+  (define [olis p (q Oli)] (cons q (append p Euclid**)))
+  (define players1 (append [olis '[]] Riemann**))
+  (define splayers (take players1 MAX-PLAYERS))
+  (define state1 (xstate padded-oli splayers))
+
+  'proper-tests
+  (test-server-client-plus (list-rotate- players1) state1 "7 players" #:quiet #false)
+
+  (test-server-client-with [olis '[]] 0 "olis and no extras")
+  (test-server-client-with (cons Bwin [olis '[]]) 0 "olis and Bwin")
+  (test-server-client-with (list* Bwin Btt Bsetup [olis '[]]) 1 "olis and many B")
+  (define 1bad-name (make-badly-named-player "ouch ouch"))
+  (define 2bad-name (make-badly-named-player "ouchouchouchouchouchouchouchouchouch"))
+  (define rplayers3 (list* 1bad-name 2bad-name [olis '[]]))
+  (test-server-client-with rplayers3 2 "olis and 2 bad names"))
 

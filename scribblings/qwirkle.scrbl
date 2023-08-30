@@ -12,6 +12,8 @@
 @(module spec racket/base
    [provide (all-defined-out)]
 
+   [define PER-TURN-s 5.0]
+
    [define FINISH-BONUS-7 6]
    [define Q-BONUS-7 6]
 
