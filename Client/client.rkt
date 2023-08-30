@@ -8,22 +8,31 @@
 (require (only-in SwDev/Testing/make-client port/c))
 
 (provide
- WAIT-BETWEEN-THREADS ;; s between launching threads 
+ WAIT-BETWEEN-THREADS ;; s between launching threads
 
  (contract-out
-  [client 
-   #; (client players ip port# wait?)
+
+  [clients 
+   #; (client players ip port# wait? #:quiet q #:remote remote-manager #:baddies lo-bad-clients)
    ;; runs each p in `players` as a client that connects to a server at `ip` on `port#`
    ;; if `wait?` the main thread waits for all of clients -- NEEDED FOR INDEPENDENT RUNS
-   ;; of the client in a shell process  (why?)
-   ;; BY DEFAULT: 
-   ;; `ip` is localhost
-   ;; `port#` is a common port
-   ;; `wait?` is #false
-   ;; `quiet` is #true 
-   (->i ([players (listof player/c)]) ([port# port/c] [wait? boolean?] [ip string?] #:quiet [quiet any/c]
-         #:remote-manager [rm any/c])
-        (r any/c))]))
+   ;; of `clients` in a shell process  (why?)
+   (->i ([players (listof player/c)])       ;; BY DEFAULT: 
+        ([port# port/c]                     ;; `port#` is a common port
+         [wait? boolean?]                   ;; `wait?` is #false
+         [ip string?]                       ;; `ip` is LOCALHOST
+         #:quiet [quiet any/c]              ;; `quiet` is #true
+         #:remote [rm any/c]                ;; `rm` is `make-remote-manager`
+         #:baddies [b (listof procedure?)]) ;; `b` is '[]
+        (r any/c))]
+    
+  (make-client-for-name-sender
+   #; (make-client-for-name-sender ns ip port# wait? #:quiet q)
+   (->i ([send-name (-> output-port? any)])  ;; BY DEFAULT: 
+        ([port# port/c]                     ;; `port#` is a common port
+         [ip string?]                       ;; `ip` is LOCALHOST
+         #:quiet [quiet any/c])             ;; `quiet` is #true
+         (r any/c)))))
 
 ;                                                          
 ;                                                          
@@ -65,43 +74,59 @@
 (define PORT0 45678)
 (define WAIT-BETWEEN-THREADS 3)
 
-(define (client players (port PORT0) (wait? #false) (ip LOCAL)
-                #:quiet (quiet #true)
-                #:remote-manager (rm make-remote-manager))
-  (define client-threads (run-clients players port ip quiet rm))
+(define (clients players (p# PORT0) (wait? #false) (ip LOCAL)
+                 #:quiet   (quiet #true)
+                 #:remote  (rm make-remote-manager)
+                 #:baddies [bad-clients '()])
+  (define clients-for-players (map (make-client-for-player p# ip quiet rm) players))
+  (define running-clients     (launch-clients (append clients-for-players bad-clients)))
   (when wait?
-    (wait-for-all client-threads)
+    (wait-for-all running-clients)
     (displayln "all done")))
 
-#; {type ChanneledThreads = [Listof [List Channel Thread]]}
+#; {type Client = [-> Void]}
+;; a client connects to the server as a callee (receiver) and then runs a thread that deals with RMCs 
 
-#; {[Listof Player] Port IP Boolean RemoteReferee -> ChanneledThreads}
-(define (run-clients players port ip quiet rr)
-  (for/list ((1player players))
-    (define name (send 1player name))
-    (define referee
-      (with-handlers ([exn:fail:network? [make-failed name]])
-        (define-values (receiver cust) (connect-to-server-as-receiver ip port #:init (sign-up name)))
-        (rr receiver cust)))
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Client] -> [Listof Thread]}
+(define (launch-clients clients-for-players)
+  (for/list ([1-client clients-for-players])
     (sleep WAIT-BETWEEN-THREADS) ;; to make determinism extremely likely
-    (thread (make-thread name 1player referee quiet))))
+    (thread 1-client)))
 
-#; {String Player RemoteRef Boolean -> (-> Any)}
-(define [(make-thread name 1player referee quiet)]
+;; ---------------------------------------------------------------------------------------------------
+#; {[InputPort -> Void] PortNumber IPAddress Boolean -> Client}
+;; the resulting client sends a name and then performs no work; but the name-sending thunk can loop
+;; `ns` is a name sender: it consumes an input port and `send-message`s a string to it 
+(define (make-client-for-name-sender ns (port# PORT0) (ip LOCAL) #:quiet (quiet #false)) 
+  (define referee-maker (make-referee-maker "bad client" port# ip quiet make-remote-manager ns))
+  (λ () [referee-maker] 'fake-client-is-done))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {PortNumber IPAddress Boolean RemoetManager -> Player -> Client}
+;; the connection to the server musy happens "at the same time" as the player becomes a thread
+;; because the server may immediately start the game as as sufficient number of players connected 
+(define [(make-client-for-player port# ip quiet rm) 1player]
+  (define referee-maker (make-referee-maker (send 1player name) port# ip quiet rm))
+  (define error-port (if quiet (open-output-string) (current-error-port)))
+  (λ () (connect-and-run-together referee-maker 1player error-port)))
+
+#; {String PortNumber IPAddress Boolean RemoetManager -> [-> ProxyReferee]}
+;; the resulting proxy referee gets connected to the server with `name`
+(define [(make-referee-maker name port# ip quiet rm (sender (λ (ip) (send-message name ip))))]
+  (with-handlers ([exn:fail:network? (λ (xn) (eprintf "fail! ~a" name) (λ (_) 'failed-connection))])
+    (define-values (r c) (connect-to-server-as-receiver ip port# #:init sender))
+    (rm r c)))
+
+#; {[-> ProxyReferee] Player OutputPort -> Void}
+(define (connect-and-run-together referee-maker 1player error-port)
   (parameterize ([prefix-with-spaces 5000]
-                 [current-error-port (if quiet (open-output-string) (current-error-port))]
+                 [current-error-port error-port]
                  [trickle-output?    #true])
-    (referee 1player)))
+    ([referee-maker] 1player)))
 
-#; {String -> OutputPort -> Void}
-(define (sign-up name) (λ (ip) (send-message name ip)))
-
-#; {String -> (Exn -> Symbol)}
-(define ([make-failed name] xn)
-  (eprintf "client ~a failed to connect\n" name)
-  (λ (_) 'failed-connection))
-
-#; {ChanneledThreads -> Void}
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Thread] -> Void}
 ;; display the results 
 (define (wait-for-all client-threads)
   (when (cons? client-threads)
