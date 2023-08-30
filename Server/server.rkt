@@ -295,23 +295,26 @@
         [else (channel-get result)])
       (custodian-shutdown-all custodian)))
 
-  #; {Configuration Custodian [Channel [Listof Any]] Output-port Port (U False N) (U False N) -> Void}
+  #; {Config Custodian [Channel list] Output-port Port [Option Natural] [Option Natural] -> Void}
   (define (launch-server-with-clients config2 custodian result err-out port k d n)
     (parameterize ([test-run?          result]
                    [current-custodian  custodian]
                    [current-error-port err-out])
       (define th (thread (λ () (server config2 #:result values))))
       (sleep 1)
-      (sign-up-fake-clients th port k d n)
+      (sign-up-fake-clients k port d n)
       th))
 
-  #;{Thread Port-Number (U False N) (U False N) (U False N) -> Void}
-  (define (sign-up-fake-clients th port k d n)
-    (unless (boolean? k)
-      (for ([i k])
+  #;{Thread [Option Natural] Port-Number [Option Natural] [Option Natural] -> Void}
+  (define (sign-up-fake-clients how-many port delay-this-one-s-name-submission this-one-sends-number)
+    (unless (boolean? how-many)
+      (for ([i how-many])
         (define-values (_ out) (tcp-connect LOCAL port))
-        (when (and d (= d i)) (sleep (+ (dict-ref DEFAULT-CONFIG WAIT-FOR-SIGNUP) .1)))
-        (if (and n (= n i)) (send-message 42 out) (send-message "a" out)))))
+        (when (and delay-this-one-s-name-submission (= delay-this-one-s-name-submission i))
+          (sleep (+ (dict-ref DEFAULT-CONFIG WAIT-FOR-SIGNUP) .1)))
+        (if (and this-one-sends-number (= this-one-sends-number i))
+            (send-message 42 out)
+            (send-message "a" out)))))
   
   'timing-tests
   (check-equal? (run-server-test 45671 #f) "" "no sign ups")
@@ -338,21 +341,10 @@
 
 ;; the following tests are game-specific 
 (module+ test
-
-  (require (submod Qwirkle/Referee/ref-state examples))
   
-  (define (test-server-client-with rplayers dont-include# msg #:quiet (quiet #true))
-    (define for-state (drop rplayers dont-include#))
-    (eprintf "testing ~a\n" msg)
-
-    #;
-    (test-server-client-plus rplayers (xstate padded-oli for-state) msg #:quiet quiet)
-    ;; the state includes just those players that survive 
-
-    (test-server-client-plus rplayers ref-starter-state msg #:quiet quiet))
-
   #; {[Listof Player] RefState String -> Void}
-  (define ((test-server-client-plus msg  #:quiet (quiet #true)) rconfig0 players expected)
+  (define ((test-server-client-plus msg  #:quiet (quiet #true)  #:extras (bad-clients '[]))
+           rconfig0 players expected)
 
     ;; WARNING -----------------------------------------------------------------
     ;; reverse so that they sign up in the order in which they are in the state
@@ -360,22 +352,16 @@
     ;; WARNING -----------------------------------------------------------------
 
     (define rconfig (dict-set rconfig0 PER-TURN PER-TURN-s))
-    (check-equal?
-     (cond
-       [quiet (run-server-client players rconfig)]
-       [else
-        (define rconfig+ (set-verbose rconfig))
-        (define sconfig+ (set-verbose DEFAULT-CONFIG))
-        (run-server-client players rconfig+ sconfig+)])
-     expected
-     msg))
+    (define rconfig+ (dict-set rconfig QUIET quiet))
+    (define sconfig+ (dict-set DEFAULT-CONFIG QUIET quiet))
+    (check-equal? (run-server-client players rconfig+ sconfig+ bad-clients) expected msg))
   
-  (define (run-server-client players (rconfig '[]) (sconfig DEFAULT-CONFIG))
+  (define (run-server-client players rconfig sconfig bad-clients)
     (define PORT# 45674)
     (parameterize ([current-custodian (make-custodian)])
       (define sconfig+ (adjust-server-configuration sconfig rconfig PORT#))
       (define quiet    (dict-ref sconfig+ QUIET #true))
-      (define client   (launch-clients players PORT# quiet))
+      (define client   (launch-clients players PORT# quiet bad-clients))
       (define result   (launch-server sconfig+ quiet))
       (begin0
         result
@@ -389,51 +375,55 @@
       (server sconfig descending-by-age #:result values)))
 
   #; {[Listof Player] PortNo Boolean -> Thread}
-  (define (launch-clients players PORT# quiet)
+  (define (launch-clients players port# quiet bad-clients)
     (define err-out (if quiet (open-output-string) (current-error-port)))
     (thread
      (λ ()
        (parameterize ([current-error-port err-out])
-         (client players PORT# #:quiet quiet)))))
+         ;; for failuers before the threads are launched
+         ;; `quiet` is passed along so that thrreads can quiet the proxy refs
+         (define baddies (map (λ (f) (f port#)) bad-clients))
+         (clients players port# #:quiet quiet #:baddies baddies)))))
 
-  #; {ServerConfiguration RefereeConfiguration -> ServerConfiguration}
+  #; {ServerConfiguration RefereeConfiguration PortNumber -> ServerConfiguration}
   (define (adjust-server-configuration sconfig0 rconfig port#)
     (let* ([config sconfig0]
-           [config (hash-set config PORT port#)]
-           [config (hash-set config REF-SPEC rconfig)])
-      config))
+           [config (dict-set config PORT port#)]
+           [config (dict-set config REF-SPEC rconfig)])
+      config)))
 
-  #; {String -> RIP}
-  (define (make-badly-named-player name)
-    (define xbad-name (create-player name dag-strategy))
-    (cons (create-player "irrelevant" 't-coord 'h-coord "navy" #:ep xbad-name) 'c-coord)))
-
-(module+ test
+(module+ test ;; tests with broken players 
   (require (submod Qwirkle/Referee/referee examples))
   
   (for ([t for-tests-7] [i (in-naturals)])
-    (define k (test-server-client-plus (~a i) #:quiet 'yes!))
+    (define k (test-server-client-plus (~a "7: " i) #:quiet 'yes!))
+    (t k 1 2))
+  
+  (for ([t for-tests-8] [i (in-naturals)])
+    (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
     (t k 1 2))
 
-  (for ([t for-tests-8] [i (in-naturals)])
-    (define k (test-server-client-plus (~a i) #:quiet 'yes!))
+    (for ([t for-bonus-A] [i (in-naturals)])
+    (define k (test-server-client-plus (~a "8: " i) #:quiet #f #;'yes!))
     (t k 1 2)))
 
-#;
-(module+ test
-  (define [olis p (q Oli)] (cons q (append p Euclid**)))
-  (define players1 (append [olis '[]] Riemann**))
-  (define splayers (take players1 MAX-PLAYERS))
-  (define state1 (xstate padded-oli splayers))
+(module+ test ;; tests with broken clients 
+  (define [client-diverge-before-sending-name port#]
+    (make-client-for-name-sender (λ (ip) (let L () (L))) port#))
 
-  'proper-tests
-  (test-server-client-plus (list-rotate- players1) state1 "7 players" #:quiet #false)
+  (define [client-diverge-after-sending-name port#]
+    (make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
+  
+  (mixed-all-tiles-rev-inf-exn-dag2-A
+   (test-server-client-plus
+    (~a "a client that connects but does not complete the registration")
+    #:quiet #false  #;'yes!
+    #:extras (list client-diverge-before-sending-name))
+   1 2)
 
-  (test-server-client-with [olis '[]] 0 "olis and no extras")
-  (test-server-client-with (cons Bwin [olis '[]]) 0 "olis and Bwin")
-  (test-server-client-with (list* Bwin Btt Bsetup [olis '[]]) 1 "olis and many B")
-  (define 1bad-name (make-badly-named-player "ouch ouch"))
-  (define 2bad-name (make-badly-named-player "ouchouchouchouchouchouchouchouchouch"))
-  (define rplayers3 (list* 1bad-name 2bad-name [olis '[]]))
-  (test-server-client-with rplayers3 2 "olis and 2 bad names"))
-
+  (mixed-all-tiles-rev-inf-exn-dag2-A
+   (test-server-client-plus
+    (~a "a client that connects but does not complete the registration")
+    #:quiet #false  #;'yes!
+    #:extras (list client-diverge-after-sending-name))
+   1 2))

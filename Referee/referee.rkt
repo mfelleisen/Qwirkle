@@ -1132,7 +1132,9 @@
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
-  
+
+  (provide mixed-all-tiles-rev-inf-exn-dag2-A)
+
   (define t-mixed-all-tiles-rev-inf-exn-dag2-A (pick-fixed-permutation (reverse ALL-TILES)))
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2-A
     #:desc "3 players: one dag"
