@@ -729,7 +729,7 @@
 (module+ examples
 
   (provide dag-player* ldasg-player* exn-player* inf-player*)
-  
+
   (define dag-player*
     (let* ([f (retrieve-factory "good" factory-base)]
            [A (create-player "A" dag-strategy #:bad f)]
@@ -763,8 +763,13 @@
            [E (create-player "infM3" ldasg-strategy #:bad (from-8 "new-tiles-3"))]
            [F (create-player "infO"  ldasg-strategy #:bad (from-8 "win-1"))])
       (list A B C D E F)))
+
+  (define badly-named-player*
+    (let* ([f (retrieve-factory "good" factory-base)]
+           [A (create-player "ouch ouch" dag-strategy #:bad f)]
+           [B (create-player "ouchouchouchouchouchouchouchouchouch" dag-strategy #:bad f)])
+      (list A B)))
     
-  
   (define for-students-7 '[])
   (define for-tests-7    '[])
 
@@ -785,11 +790,12 @@
           #:desc         description:string
           #:player-tiles player-tiles
           #:externals    externals
-          #:ref-tiles    ref-tiles
+          #:ref-tiles    tiles0
           #:ref-map      map0
           #:expected     [[winners:str ...] [drop-outs:str ...]]
           (~optional (~seq #:q-bonus qb) #:defaults ([qb #'[Q-BONUS]]))
           (~optional (~seq #:finish-bonus fb) #:defaults ([fb #'[FINISH-BONUS]]))
+          (~optional     (~seq #:extras xtras) #:defaults ([xtras #''[]]))
           #:kind         kind:id
           (~optional     (~seq #:quiet quiet) #:defaults ([quiet #'#true]))
           (~optional     (~seq #:show show)   #:defaults ([show #'#false])))
@@ -797,12 +803,12 @@
            (define name
              (let ([descr  (~a 'name " " description)]
                    [expect [list (list winners ...) (list drop-outs ...)]])
-               (int-tst/proc descr player-tiles externals ref-tiles map0 expect quiet show qb fb)))
+               (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
 
-  (define (int-tst/proc L player-tiles externals ref-tiles map0 expect quiet show QB FB)
+  (define (setup-tsts L player-tiles externals xtras tiles0 map0 expect quiet show QB FB)
     [define specs   (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
-    [define state   (create-ref-state map0 specs #:tiles0 ref-tiles)]
+    [define state   (create-ref-state map0 specs #:tiles0 tiles0)]
     [define config
       (set-bonus (dict-set (create-config state #:observe textual-observer) QUIET quiet) QB FB)]
     
@@ -816,7 +822,8 @@
         [(main) (name-jsexpr main)]
         [(main expect) [name-jsexpr main expect]]
         ;; this clause exists to running tthe server/client setup
-        [(main _server _client) (main config externals expect)]))
+        ;; `xtras` are players that misbehave in some way before the game starts 
+        [(main _server _client) (main config (append xtras externals) expect)]))
 
     #; {-> Void}
     (define [name-plain]
@@ -836,8 +843,6 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (module+ examples ;; for milestone 7 ;; ASSUME the bonus parameters are set to the -7 values
-  (provide dag-only-short)
-
   (define-integration-test dag-only-short
     #:desc "two dag players, 1 turn"
     #:player-tiles `[,tiles1 ,tiles1]
@@ -846,6 +851,16 @@
     #:ref-map      map0
     #:expected     [["A"] []]
     #:kind         for-students-7)
+
+  (define-integration-test dag-only-short-A
+    #:desc "two dag players, 1 turn"
+    #:player-tiles `[,tiles1 ,tiles1]
+    #:externals    (take dag-player* 2)
+    #:ref-tiles    tiles0
+    #:ref-map      map0
+    #:expected     [["A"] []]
+    #:extras       badly-named-player*
+    #:kind         for-bonus-A)
 
   (define-integration-test bad-setup 
     #:desc "one dag player, one drop out: 1 turn"
@@ -1004,6 +1019,18 @@
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
+
+  (define-integration-test bad-all-tiles-bad-players-8-lsdag-A
+    #:desc "reminder: plain tests are fair game (ldasg), plus extras"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (take ldasg-player* MAX-PLAYERS)
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["G"] []]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:extras       badly-named-player*
+    #:kind         for-bonus-A)
   
   (define-integration-test bad-all-tiles-ldasg-player*
     #:desc "reminder: lsdag players only, all get the same tiles but different from preceding test"
@@ -1094,16 +1121,29 @@
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
 
+  (define t-mixed-all-tiles-rev-inf-exn-dag2 (pick-fixed-permutation (reverse ALL-TILES)))
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2
     #:desc "3 players: one dag"
     #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
-    #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
+    #:ref-tiles    t-mixed-all-tiles-rev-inf-exn-dag2
     #:ref-map      (start-map #s(tile clover yellow))
     #:expected     [["A"] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8))
+    #:kind         for-tests-8)
+  
+  (define t-mixed-all-tiles-rev-inf-exn-dag2-A (pick-fixed-permutation (reverse ALL-TILES)))
+  (define-integration-test mixed-all-tiles-rev-inf-exn-dag2-A
+    #:desc "3 players: one dag"
+    #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (list (first dag-player*) the-exn (second inf-player*))
+    #:ref-tiles    t-mixed-all-tiles-rev-inf-exn-dag2-A
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [[] ["infL2" "xnW"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-bonus-A))
 
 ;                                                                        
 ;                                                                        
