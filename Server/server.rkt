@@ -394,33 +394,38 @@
 
 (module+ test ;; tests with broken players 
   (require (submod Qwirkle/Referee/referee examples))
-  
+
+  'for-tests-7
   (for ([t for-tests-7] [i (in-naturals)])
     (define k (test-server-client-plus (~a "7: " i) #:quiet 'yes!))
     (t k 1 2))
-  
+
+  'for-tests-8
   (for ([t for-tests-8] [i (in-naturals)])
     (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
     (t k 1 2))
 
-    (for ([t for-bonus-A] [i (in-naturals)])
-    (define k (test-server-client-plus (~a "8: " i) #:quiet #f #;'yes!))
+  'for-bonus-A
+  (for ([t for-bonus-A] [i (in-naturals)])
+    (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
     (t k 1 2)))
 
 (module+ test ;; tests with broken clients 
   (define [client-diverge-before-sending-name port#]
     (make-client-for-name-sender (λ (ip) (let L () (L))) port#))
 
-  (define [client-diverge-after-sending-name port#]
-    (make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
-  
+  'special1
   (mixed-all-tiles-rev-inf-exn-dag2-A
    (test-server-client-plus
     (~a "a client that connects but does not complete the registration")
     #:quiet #false  #;'yes!
     #:extras (list client-diverge-before-sending-name))
    1 2)
+  
+  (define [client-diverge-after-sending-name port#]
+    (make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
 
+  'special2
   (mixed-all-tiles-rev-inf-exn-dag2-A
    (test-server-client-plus
     (~a "a client that connects but does not complete the registration")
