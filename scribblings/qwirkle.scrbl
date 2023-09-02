@@ -28,6 +28,9 @@
    [define WAIT-FOR-SIGNUP 3]  ;; chance to send a name 
    [define SERVER-WAIT 20]     ;; seconds per round 
 
+   (define MAX-PLAYER-NAME 20)
+   (define PLAYER-NAME "^[a-zA-Z0-9]+$")
+   
    )
 
 @(require 'spec)
