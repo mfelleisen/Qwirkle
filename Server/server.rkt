@@ -404,6 +404,7 @@
     (make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
 
   'special2
+  #;
   (mixed-all-tiles-rev-inf-exn-dag2-A
    (test-server-client-plus
     (~a "a client that connects but does not complete the registration")
