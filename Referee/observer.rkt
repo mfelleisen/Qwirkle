@@ -15,7 +15,7 @@
  ;; -->    next state
  ;; blank  save current state via file dialog
  ;; (By deleting the `unless` protection, the observer would work on "live" games)
- textual-observer)
+ observer)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Referee/ref-state)
@@ -32,24 +32,25 @@
 (define *live-list '[])         ;; a sequence of referee states 
 
 #; {Command -> Void}
-(define (textual-observer s)
+(define (observer s)
   (cond
     [(false? s)
-     (set! *complete  (reverse *live-list))
+     (set! *complete  (map (λ (x) (list x (scale .77 (render-ref-state x)))) (reverse *live-list)))
      (set! *live-list '[])]
     [(eq? FLUSH s)
      (set! *complete #false)]
     [(eq? SHOW  s)
      (when (cons? *complete)
-       (big-bang 0 [to-draw show] [on-key back-or-forth]))
+       (define i0 (index-of *complete (argmax (compose image-height second) *complete)))
+       (big-bang i0 [to-draw show] [on-key back-or-forth]))
      (void)]
     [else
      (unless *complete (set! *live-list (cons s *live-list)))
-     textual-observer]))
+     observer]))
 
 #; {Natural -> Image}
 (define (show i)
-  (render-ref-state (list-ref *complete i)))
+  (second (list-ref *complete i)))
 
 #; {Natural -> Natural}
 ;; 
@@ -57,7 +58,7 @@
   (cond
     [(key=? key-event "left")  (sub1/nat i)]
     [(key=? key-event "right") (add1/nat i)]
-    [(key=? key-event "space") (save-file i)]
+    [(key=? key-event " ") (save-file i)]
     [else (void)]))
 
 #; {Natural -> Natural}
