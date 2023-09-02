@@ -31,12 +31,12 @@
 (provide
  #; {type Configuration = [Hashtable Options]}
  ;; config options
- STATE0 QUIET OBSERVE SHOW PER-TURN
+ STATE0 QUIET OBSERVE PER-TURN
  
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe any/c #:per-turn (and/c real? positive?)) config/c)]
+   (->* (state?) (#:observe procedure?) config/c)]
 
   [set-bonus
    #; (set-bonus c Q-BONUS FINISH-BONUS)
@@ -85,7 +85,6 @@
 ;                     ;                                    
 
 (require Qwirkle/Common/state-of-player)
-(require Qwirkle/Referee/observer)
 (require Qwirkle/Referee/ref-state)
 
 ;; -----------------------------------------------------------------------------
@@ -102,7 +101,7 @@
 #; {Symbol SoPlayer Failed -> Void}
 (define (report m p f-msg)
   (define n (send (sop-player p) name))
-  (eprintf "~a dropped out on ~a: ~v [time limit ~v]\n" n m f-msg per-turn))
+  (eprintf "~a dropped out on ~a: ~v [time limit ~v]\n" n m f-msg [time-out-limit]))
 ;; -----------------------------------------------------------------------------
 
 (module+ examples
@@ -111,6 +110,7 @@
   (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Player/mechanics json))
   (require (submod Qwirkle/Referee/ref-state json))
+  (require Qwirkle/Referee/observer)
   
   (require Qwirkle/Common/map)
   (require Qwirkle/Common/tiles)
@@ -122,7 +122,7 @@
   (require SwDev/Lib/should-be-racket)
   (require SwDev/Testing/check-values)
   (require SwDev/Testing/testing)
-  (require json)
+  ; (require json) 
   (require rackunit)
   (require (for-syntax syntax/parse)))
 
@@ -135,6 +135,7 @@
   (require (submod Qwirkle/Referee/ref-state examples))
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
+  (require Qwirkle/Referee/observer)
   (require Qwirkle/Lib/check-message)
   (require SwDev/Testing/check-values)
   (require SwDev/Lib/should-be-racket)
@@ -157,46 +158,34 @@
 ;                                       ;;;  
 ;                                            
 
-(define per-turn 0.1)  ;; time limit per turn
-(define (set-per x) (set! per-turn x)) ;; for the testing submod 
 (define quiet    [make-parameter #false])
-(define (set-with x) (set! with-obs x))
-(define with-obs #false)
+(define (set-with-obs x) (set! with-obs x))
+(define with-obs void)
 
 (define DEFAULT-CONFIG
   (hash
-   OBSERVE  #false
+   OBSERVE  void
    QUIET    #true
    QBO      Q-BONUS-7
    FBO      FINISH-BONUS-7
-   PER-TURN per-turn))
+   PER-TURN [time-out-limit]))
 
 #; {-> Void}
 (define (install-default-config)
-  (define c DEFAULT-CONFIG)
-  (set-with #false)
-  (quiet (dict-ref c QUIET))
-  (set-per (dict-ref c PER-TURN)))
+  (set-with-obs       void)
+  (quiet          (dict-ref DEFAULT-CONFIG QUIET))
+  (time-out-limit (dict-ref DEFAULT-CONFIG PER-TURN)))
 
 #; {State -> Configuration}
-(define (create-config j #:observe (o #false) #:per-turn (pt #f))
+(define (create-config s0 #:observe (o void))
   (let* ([c DEFAULT-CONFIG]
-         [c (dict-set c STATE0 j)]
-         [c (dict-set c OBSERVE o)])
+         [c (dict-set c OBSERVE o)]
+         [c (dict-set c STATE0 s0)])
     c))
 
 #; {Configuration Natural Natural -> Configuration}
 (define (set-bonus config QB FB)
   (dict-set (dict-set config FBO FB) QBO QB))
-
-#; {[Hashtable options] -> (values State Observer)}
-;; EFFECT installs the values of `c` globally
-;; returns the content of the state field 
-(define (install-config c players)
-  (quiet (dict-ref c QUIET quiet))
-  (set-per (dict-ref c PER-TURN per-turn))
-  (define state0 (dict-ref c STATE0))
-  (values (set-ref-state-players state0 players) (dict-ref c OBSERVE with-obs)))
 
 ;                                                          
 ;                    ;;                                    
@@ -220,88 +209,68 @@
 (define DEFAULT-RESULT '[[] []]) 
 
 #; {Configuration [Listof [Instanceof Player]] -> Result}
+;; `c` must be defined at STATE0
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
-  (install-default-config) ;; set configuration back to defaults
-  (define-values (s o) (install-config c lo-players))
-  (define QB (dict-ref c QBO Q-BONUS-7))
-  (define FB (dict-ref c FBO FINISH-BONUS-7))
-  (referee/state s #:with-obs o #:QB QB #:FB FB))
+  (install-default-config)
+  (define s0 (set-ref-state-players (dict-ref c STATE0) lo-players))
+  (define wo (dict-ref c OBSERVE))
+  (define qq (dict-ref c QUIET quiet))
+  (parameterize* ([current-error-port (if qq (open-output-string) (current-error-port))]
+                  [time-out-limit (dict-ref c PER-TURN [time-out-limit])]
+                  [Q-BONUS            (dict-ref c QBO Q-BONUS-7)]
+                  [FINISH-BONUS       (dict-ref c FBO FINISH-BONUS-7)])
+    (dynamic-wind (setup-observer wo) (referee/state s0) (unset-observer wo))))
 
 #; {State {#:with-obs (U False Observer)} -> Result}
 ;; This is the workhorse of REFEREES.
 ;; ASSUME the given state is not finished (at least one player, no winner)
-(define (referee/state s0 #:with-obs (wo #false) #:QB (QB Q-BONUS-7) #:FB (FB FINISH-BONUS-7))
-  [time-out-limit per-turn]
-  (dynamic-wind (setup-observer wo) (referee/state-proper s0 QB FB) (unset-observer wo)))
-
 #; {State -> Result}
-(define [(referee/state-proper s0 QB FB)]
-  (parameterize ([current-error-port (if [quiet] (open-output-string) (current-error-port))]
-                 [Q-BONUS            QB]
-                 [FINISH-BONUS       FB])
-    (let*-values ({[s out]              (setup s0)}
-                  {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
-                  ([winners0 losers0]   (apply values winners+losers))
-                  {[true-winners out]   (inform-about-outcome winners0 #true out)}
-                  {[_true-losers out]   (inform-about-outcome losers0 #false out)})
-      (list (sort (extract-names true-winners) string<?)
-            (reverse (extract-names out))))))
+(define [(referee/state s0)]
+  (let*-values ({[s out]              (setup s0)}
+                {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
+                ([winners0 losers0]   (apply values winners+losers))
+                {[true-winners out]   (inform-about-outcome winners0 #true out)}
+                {[_true-losers out]   (inform-about-outcome losers0 #false out)})
+    (list (sort (extract-names true-winners) string<?)
+          (reverse (extract-names out)))))
 
 #; {State (U False Observer) -> Void}
 ;; turn with-obs into a function that consumes a state
 (define [(setup-observer wo)]
-  (set-with (or wo void)))
+  (set-with-obs (or wo void)))
 
 #; {(U False Observer) -> Void}
+;; signal "end of game" to the observer 
 (define [(unset-observer wo)]
-  (with-obs #false)
-  (set-with #false))
+  (with-obs #false))
 
 (module+ test
   #; {TC is pne of:
          (ref-test-case title:String className:StringExpr factory:id state:Expr
                         [win:ListofString out:ListOfString] ;; winners and losers, drop-outs 
-                        MaybePlayers
-                        MaybeQuiet
-                        MaybeObserver)}
+                        MaybePlayers)}
   
   #; {MaybePlayers  = ϵ || #:extra n:Id x:PlayerExpr}
-  #; {MaybeQuiet    = ϵ || #:quiet x:BoolExpr}
-  #; {MaybeObserver = ϵ || #:with-obs x:FunExpr μf.[State -> f]}
-
+  
   ;; tests both referee/state and referee/config 
   (define-syntax (ref-test-case stx)
     (syntax-parse stx
       [(test-case msg:string name:string factory:id state:expr [win out]
-                  (~optional (~seq #:extra Bname:id B:expr))
-                  (~optional (~seq #:quiet Q:expr) #:defaults ([Q #'#false]))
-                  (~optional (~seq #:with-obs O:expr)))
-       #'(let ()
-           (parameterize ([unit-test-mode #true])
-             (let* ([run (λ (x) (~? (referee/state x) (referee/state x #:with-obs O)))]
-                    (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
-                    [S (set-ref-state-players state [cons P (~? (list B) '[])])])
-               [quiet #false]
-               (check-equal? (check-message msg cep #px"dropped" (run S)) (list win out) msg))
-             ;; --- to cover the default #:with-obs clause 
-             (let* ([config (λ (s) (~? (create-config s #:observe O) (create-config s)))]
-                    [C (dict-set (config state) QUIET Q)]
-                    (P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
-                    [run (λ () (referee/config C (cons P (~? (list B) '[]))))])
-               (check-equal?
-                (if Q [run] (check-message msg cep #px"dropped" [run])) `(,win ,out) msg))))])))
+                  (~optional (~seq #:extra Bname:id B:expr)))
+       #'(parameterize ([unit-test-mode #true])
+           (let* ((P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
+                  [C (dict-set (create-config state) QUIET #false)])
+             (check-equal?
+              (check-message msg cep #px"dropped" (referee/config C [cons P (~? (list B) '[])]))
+              (list win out)
+              msg)))])))
 
 (module+ test
   (ref-test-case "receiving new tiles fails"
                  "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
                  ['[] '["A"]])
-
-  (ref-test-case "receiving new tiles fails"
-                 "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
-                 ['[] '["A"]]
-                 #:quiet 'yes)
-
+  
   (ref-test-case "setup fails"
                  "setup" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
                  ['[] '["A"]])
@@ -315,14 +284,6 @@
                  (active-sop-hand state1-with (list #s(tile clover red)))
                  ['["B"] '["A"]]
                  #:extra B (create-player "B" dag-strategy)))
-
-(module+ test 
-  (ref-test-case "receiving new tiles fails, cover observer"
-                 "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
-                 ['[] '["A"]]
-                 #:with-obs textual-observer)
-  (check-equal? (textual-observer #false) (void))
-  (textual-observer FLUSH))
 
 ;                                     
 ;                                     
@@ -438,13 +399,13 @@
                       (A (create-player (~a "A-" title) dag-strategy #:bad F))
                       [_ (send A setup (ref-state-to-info-state T) '())]
                       [S (set-ref-state-players T [cons A C])])
-                 (set-with void)
+                 (set-with-obs void)
                  (define-values [W O] (check-message title cep #px"dropped" (rounds S '[])))
                  (define awinners (map (λ (x) (send (sop-player x) name)) (first W)))
                  (define alosers (map sop-player (second W)))
                  (check-equal? `[,awinners ,alosers] `[,winners ,losers] (~a "winners " L))
                  (check-equal? (map sop-player O) out (~a "drop outs " L))
-                 (set-with #false)))))])))
+                 (set-with-obs void)))))])))
 
 (module+ test
   (*-rounds-test-case "receiving new tiles fails; game goes on with one more player"
@@ -517,7 +478,7 @@
                       (P (create-player (~a "A-" title) dag-strategy #:bad F))
                       [_ (send P setup (ref-state-to-info-state T) '())]
                       [S (set-ref-state-players T [cons P C])])
-                 (set-with void)
+                 (set-with-obs void)
                  (define-values [S++ end out]
                    (if dr
                        (check-message W cep #px"dropped out" (one-round S '[]))
@@ -527,7 +488,7 @@
                  (if dr
                      (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
                      (check-equal? out '[] (~a "no:" W)))
-                 (set-with #false)))))])))
+                 (set-with-obs void)))))])))
 
 (module+ test
   (1-round-test-case "receiving new tiles fails"
@@ -628,7 +589,7 @@
                     [_ (send P setup (ref-state-to-info-state T) '())]
                     [S (set-ref-state-players T [cons P C])]
                     [A (active-player S)])
-               (set-with void)
+               (set-with-obs void)
                (define-values (~? [S++ end out] [S++ out])
                  (if dr
                      (check-message W cep #px"dropped out" (run A S '[]))
@@ -639,7 +600,7 @@
                (if dr
                    (check-equal? (map sop-player out) `[,P] (~a "A drop out" W))
                    (check-equal? out '[] (~a "no:" W)))
-               (set-with #false)
+               (set-with-obs void)
                (set-box! passed #true #;"restore old value"))))])))
 
 (module+ test
@@ -800,8 +761,7 @@
   (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
     [define specs   (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
     [define state   (create-ref-state map0 specs #:tiles0 tiles0)]
-    [define config 
-      (set-bonus (dict-set (create-config state #:observe textual-observer) QUIET quiet) qb fb)]
+    [define config (set-bonus (dict-set (create-config state #:observe observer) QUIET quiet) qb fb)]
     
     ;; the Racket integration test
 
@@ -819,10 +779,9 @@
     #; {-> Void}
     (define [name-plain]
       (parameterize ([unit-test-mode #false])
+        (with-obs FLUSH)
         (check-equal? (referee/config config externals) expect descr)
-        (when show
-          (textual-observer SHOW))
-        (textual-observer FLUSH)))
+        (when show (with-obs SHOW))))
 
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
@@ -831,8 +790,8 @@
         (r-check-equal? main jsexpr-inputs `[,expect] descr)))
   
     name))
-;; ---------------------------------------------------------------------------------------------------
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; for milestone 7 ;; ASSUME the bonus parameters are set to the -7 values
   (define-integration-test dag-only-short
     #:desc "two dag players, 1 turn"
@@ -842,7 +801,7 @@
     #:ref-map      map0
     #:expected     [["A"] []]
     #:kind         for-students-7)
-
+  
   (define-integration-test dag-only-short-A
     #:desc "two dag players, 1 turn, plus one bad client"
     #:player-tiles `[,tiles1 ,tiles1]
