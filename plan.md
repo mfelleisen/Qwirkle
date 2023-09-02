@@ -1,8 +1,7 @@
 ## REWRITES
 
--- jsexpr parsing in `placement` should be "normalized" 
+-- check why last test case diverges"
 -- bake rounds into state? 
-
 
 ## Interactive Player
 
