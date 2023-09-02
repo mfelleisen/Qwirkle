@@ -12,10 +12,9 @@
 (define QUIET    'quiet)
 (define PER-TURN 'time-per-turn)
 (define OBSERVE  'observe)
-(define SHOW     'observer-shows-for-s)
 (define QBO      'q-bonus)
 (define FBO      'finish-bonus)
-(define options  (list STATE0 QUIET OBSERVE SHOW PER-TURN QBO FBO))
+(define options  (list STATE0 QUIET OBSERVE PER-TURN QBO FBO))
 
 (define unit-test-mode [make-parameter #false])
 
@@ -70,11 +69,6 @@
    #; {[Listof ->]}
    all-tests))
 
-(module+ examples
-  (provide
-   textual-observer
-   FLUSH))
-
 ;                                                          
 ;                                                          
 ;                                  ;                       
@@ -91,6 +85,7 @@
 ;                     ;                                    
 
 (require Qwirkle/Common/state-of-player)
+(require Qwirkle/Referee/observer)
 (require Qwirkle/Referee/ref-state)
 
 ;; -----------------------------------------------------------------------------
@@ -167,18 +162,28 @@
 (define quiet    [make-parameter #false])
 (define (set-with x) (set! with-obs x))
 (define with-obs #false)
-(define obs-show 1)
 
-#; {State -> Configuration}
-(define (create-config j #:observe (o #false) #:per-turn (pt #f))
+(define DEFAULT-CONFIG
   (hash
-   OBSERVE  o
-   SHOW     1
-   STATE0   j
+   OBSERVE  #false
    QUIET    #true
    QBO      Q-BONUS-7
    FBO      FINISH-BONUS-7
-   PER-TURN (or pt per-turn)))
+   PER-TURN per-turn))
+
+#; {-> Void}
+(define (install-default-config)
+  (define c DEFAULT-CONFIG)
+  (set-with #false)
+  (quiet (dict-ref c QUIET))
+  (set-per (dict-ref c PER-TURN)))
+
+#; {State -> Configuration}
+(define (create-config j #:observe (o #false) #:per-turn (pt #f))
+  (let* ([c DEFAULT-CONFIG]
+         [c (dict-set c STATE0 j)]
+         [c (dict-set c OBSERVE o)])
+    c))
 
 #; {Configuration Natural Natural -> Configuration}
 (define (set-bonus config QB FB)
@@ -190,10 +195,8 @@
 (define (install-config c players)
   (quiet (dict-ref c QUIET quiet))
   (set-per (dict-ref c PER-TURN per-turn))
-  (set! obs-show (dict-ref c SHOW obs-show))
   (define state0 (dict-ref c STATE0))
   (values (set-ref-state-players state0 players) (dict-ref c OBSERVE with-obs)))
-  
 
 ;                                                          
 ;                    ;;                                    
@@ -219,6 +222,7 @@
 #; {Configuration [Listof [Instanceof Player]] -> Result}
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
+  (install-default-config) ;; set configuration back to defaults
   (define-values (s o) (install-config c lo-players))
   (define QB (dict-ref c QBO Q-BONUS-7))
   (define FB (dict-ref c FBO FINISH-BONUS-7))
@@ -252,7 +256,6 @@
 #; {(U False Observer) -> Void}
 (define [(unset-observer wo)]
   (with-obs #false)
-  (when wo (sleep obs-show))
   (set-with #false))
 
 (module+ test
@@ -313,24 +316,12 @@
                  ['["B"] '["A"]]
                  #:extra B (create-player "B" dag-strategy)))
 
-(module+ examples
-  ;; a primitive textual observer 
-  (define seq* '[])
-  (define FLUSH (gensym 'flush))
-  (define (textual-observer s)
-    (cond
-      [(false? s) (reverse seq*)]
-      [(eq? FLUSH s) (set! seq* '[])]
-      [else
-       (set! seq* (cons s seq*))
-       textual-observer])))
-
 (module+ test 
   (ref-test-case "receiving new tiles fails, cover observer"
                  "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
                  ['[] '["A"]]
                  #:with-obs textual-observer)
-  (check-equal? (length (textual-observer #false)) 1)
+  (check-equal? (textual-observer #false) (void))
   (textual-observer FLUSH))
 
 ;                                     
@@ -805,12 +796,12 @@
                    [expect [list (list winners ...) (list drop-outs ...)]])
                (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
-
-  (define (setup-tsts L player-tiles externals xtras tiles0 map0 expect quiet show QB FB)
+  
+  (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
     [define specs   (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
     [define state   (create-ref-state map0 specs #:tiles0 tiles0)]
-    [define config
-      (set-bonus (dict-set (create-config state #:observe textual-observer) QUIET quiet) QB FB)]
+    [define config 
+      (set-bonus (dict-set (create-config state #:observe textual-observer) QUIET quiet) qb fb)]
     
     ;; the Racket integration test
 
@@ -828,16 +819,16 @@
     #; {-> Void}
     (define [name-plain]
       (parameterize ([unit-test-mode #false])
-        (check-equal? (referee/config config externals) expect L)
+        (check-equal? (referee/config config externals) expect descr)
         (when show
-          (for-each (compose pretty-print render-ref-state) (textual-observer #false)))
+          (textual-observer SHOW))
         (textual-observer FLUSH)))
 
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
       (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
       (parameterize ([unit-test-mode #false])
-        (r-check-equal? main jsexpr-inputs `[,expect] L)))
+        (r-check-equal? main jsexpr-inputs `[,expect] descr)))
   
     name))
 ;; ---------------------------------------------------------------------------------------------------
@@ -853,7 +844,7 @@
     #:kind         for-students-7)
 
   (define-integration-test dag-only-short-A
-    #:desc "two dag players, 1 turn"
+    #:desc "two dag players, 1 turn, plus one bad client"
     #:player-tiles `[,tiles1 ,tiles1]
     #:externals    (take dag-player* 2)
     #:ref-tiles    tiles0
