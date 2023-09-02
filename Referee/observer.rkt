@@ -7,9 +7,9 @@
           = (U False          ;; end of game
                FLUSH          ;; get ready for next game 
                SHOW           ;; open a window so that a user can view and inspect the game states 
-               RefereeState)}
+               RefereeState)} ;; record state 
  
- #; {Command -> Void}
+ #; {μf.Command -> (U f Void)}
  ;; collect game states for viewing and inspection after the game is complete 
  ;; <--    previous state
  ;; -->    next state
@@ -19,8 +19,11 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Qwirkle/Referee/ref-state)
+(require (submod Qwirkle/Referee/ref-state json))
 (require 2htdp/universe)
 (require 2htdp/image)
+(require json)
+(require (only-in racket/gui get-file get-text-from-user))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; a primitive textual observer 
@@ -72,5 +75,9 @@
 
 #; {Natural -> Natural}
 (define (save-file i)
-  (eprintf "file saving not iomplemented yet\n")
+  (define state0 (first (list-ref *complete i)))
+  (define jstate (state->jsexpr state0))
+  (define file   (or (get-file) (get-text-from-user "new json file" "specify a file")))
+  (when file
+    (with-output-to-file file #:exists 'replace (λ () (write-json jstate))))
   i)
