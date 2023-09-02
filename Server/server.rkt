@@ -40,28 +40,6 @@
          #:result (return-results-or-void (-> list? any/c)))
         (result any/c))]))
 
-#;
-(module+ examples
-  (provide
-
-   set-verbose DEFAULT-CONFIG
-
-   #; {[Listof [Cons RefPlayer Coordinate]] Natural String [#:quiet Boolean] -> Result}
-   test-server-client-with
-
-   #; {[Listof [Cons RefPlayer Coordinate]] RefState String [#:quiet Boolean]-> Result}
-   test-server-client-plus
-
-   #; {[Listof Player] RefereeConfiguration ServerConfiuration -> Result}
-   run-server-client
-
-   #; {[List [Listof Player] [Listof Player]] -> [List [Listof String] [Listof String]]}
-   ;; from `main` for integration tests 
-   referee-results->names
-
-   #; {String -> RIP}
-   make-badly-named-player))
-
 ;                                                          
 ;                                                          
 ;                                  ;                       
