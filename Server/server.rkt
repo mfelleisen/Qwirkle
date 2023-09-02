@@ -379,7 +379,7 @@
     (t k 1 2))
 
   'for-tests-8
-  (for ([t for-tests-8] [i (in-naturals)])
+  (for ([t for-tests-9] [i (in-naturals)])
     (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
     (t k 1 2))
 
