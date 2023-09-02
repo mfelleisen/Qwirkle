@@ -64,7 +64,7 @@
 (module+ examples
   (provide
    for-students-7 for-tests-7
-   for-students-8 for-tests-8
+   for-students-9 for-tests-9
    for-bonus-A
 
    #; {[Listof ->]}
@@ -773,13 +773,13 @@
   (define for-students-7 '[])
   (define for-tests-7    '[])
 
-  (define for-students-8 '[])
-  (define for-tests-8    '[])
+  (define for-students-9 '[])
+  (define for-tests-9    '[])
   
   (define for-bonus-A    '[])
   
   (define [all-tests]
-    (append for-students-7 for-tests-7 for-students-8 for-tests-8
+    (append for-students-7 for-tests-7 for-students-9 for-tests-9
             for-bonus-A))
 
   ;; this could be a procedure if (1) the for-*:id were bound to boxed,
@@ -919,7 +919,7 @@
     #:expected     [["F"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-medium2-rev-tiles 
     #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
@@ -996,7 +996,7 @@
     #:expected     [["infL2"] ["infK"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-students-8)
+    #:kind         for-students-9)
 
   (define-integration-test bad-all-tiles-bad-players-inf-lsdag
     #:desc "the inf-winner drops out; nobody else wins"
@@ -1007,7 +1007,7 @@
     #:expected     [[] ["infM3" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-students-8)
+    #:kind         for-students-9)
 
   (define-integration-test bad-all-tiles-bad-players-8-lsdag
     #:desc "reminder: plain tests are fair game (ldasg)"
@@ -1018,7 +1018,7 @@
     #:expected     [["G"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-students-8)
+    #:kind         for-students-9)
 
   (define-integration-test bad-all-tiles-bad-players-8-lsdag-A
     #:desc "reminder: plain tests are fair game (ldasg), plus extras"
@@ -1041,7 +1041,7 @@
     #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
   
   (define-integration-test bad-all-tiles-dag-player*
     #:desc "reminder: plain tests are fair game (dag)"
@@ -1052,7 +1052,7 @@
     #:expected     [["A"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-all-tiles-rev
     #:desc "two dag players, two ldasg player; permuted reversed tiles,rev players: order matters?"
@@ -1063,7 +1063,7 @@
     #:expected     [["B"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-all-tiles-rev-inf1
     #:desc "two inf players, two ldasg player; permuted reversed tiles,rev players: order matters?"
@@ -1074,7 +1074,7 @@
     #:expected     [["E"] ["infK" "infL2"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-all-tiles-rev-inf2
     #:desc "three inf players from back, one lsdag"
@@ -1085,7 +1085,7 @@
     #:expected     [[] ["infM3" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-all-tiles-rev-inf3
     #:desc "all inf players with permutation tiles"
@@ -1096,7 +1096,7 @@
     #:expected     [[] ["infM3" "infL5" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define the-exn (list-ref exn-player* 3))
   (define-integration-test mixed-all-tiles-rev-inf-exn
@@ -1108,7 +1108,7 @@
     #:expected     [[] ["infM3" "infM7" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag
     #:desc "one dag, one exn, two infs"
@@ -1119,7 +1119,7 @@
     #:expected     [["A"] ["infM3" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (define t-mixed-all-tiles-rev-inf-exn-dag2 (pick-fixed-permutation (reverse ALL-TILES)))
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2
@@ -1131,7 +1131,7 @@
     #:expected     [["A"] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-tests-8)
+    #:kind         for-tests-9)
 
   (provide mixed-all-tiles-rev-inf-exn-dag2-A)
 
@@ -1165,11 +1165,11 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) (+ 10 3 10 3) "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) (+ 10 3 10 3 3) "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
-  (check-equal? (length for-students-8) 3 "8: students get three tests -- expected to fail")
+  (check-equal? (length for-students-9) 3 "8: students get three tests -- expected to fail")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
-  (check-equal? (length for-tests-8) 10 "8: we run students' code on ten tests")
+  (check-equal? (length for-tests-9) 10 "8: we run students' code on ten tests")
 
   ;; this test just ensures that the jsexpr entry point is run in a dummy way
   (define (plain-main-jsexpr . x) (write-json `[["A"] []] #:indent 2) (newline))
@@ -1177,4 +1177,4 @@
   (for-each (λ (test) [test plain-main-jsexpr expected]) for-students-7)
 
   ;; this test just ensures that the server/client entry point works 
-  (for-each (λ (test) (test list 1 2)) for-students-8))
+  (for-each (λ (test) (test list 1 2)) for-students-9))
