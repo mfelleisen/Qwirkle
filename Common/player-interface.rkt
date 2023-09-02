@@ -11,13 +11,14 @@
  ;; the only states a player may consume 
  pk?
 
-  #; {Any -> Any : a string that satisfies the length and char cosntraint}
+ #; {Any -> Any : a string that satisfies the length and char cosntraint}
  MAX-PLAYER-NAME PLAYER-NAME
  player-name? 
 
  (all-from-out Qwirkle/Common/placement))
 
 ;; ---------------------------------------------------------------------------------------------------
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/tiles)
@@ -49,8 +50,6 @@
 (define (player-name? x)
   (and (string? x) (and (<= (string-length x) MAX-PLAYER-NAME) (regexp-match PLAYER-NAME-PX x))))
 
-(define MAX-PLAYER-NAME 20)
-(define PLAYER-NAME "^[a-zA-Z0-9]+$")
 (define PLAYER-NAME-PX (pregexp PLAYER-NAME))
 
 (module+ test
