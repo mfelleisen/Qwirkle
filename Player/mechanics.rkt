@@ -427,10 +427,12 @@
     ,bad-ask-for-tiles%
     ,no-fit%])
 
+(define ACHEAT "a cheat")
+
 (define factory-table-8
   (for*/list ([c% all-cheater-classes])
     (define name (class-name c%))
-    (list (format "~a" name) (λ (n s) (new c% [badfm `(,name)] [my-name n] [strategy s])))))
+    (list (format "~a" name) (λ (n s) (new c% [badfm `(,ACHEAT ,name)] [my-name n] [strategy s])))))
 
 ;                       
 ;                       
@@ -489,9 +491,9 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; a player that raises an exn for setup new-tiles win 
   (define new-exn-setup    (retrieve-factory "setup" factory-table-7))
-  (define exn-setup-player (create-player "bad" dag-strategy #:bad new-exn-setup))
+  (define exn-setup-player (create-player "baddy" dag-strategy #:bad new-exn-setup))
   
-  (check-equal? (check-message "div" cep #px"bad won" (send exn-setup-player win #t)) (void))
+  (check-equal? (check-message "div" cep #px"baddy won" (send exn-setup-player win #t)) (void))
   (check-exn #px"division"
              (λ ()
                (send exn-setup-player setup info-starter-state starter-tiles)))
@@ -631,18 +633,37 @@
          ['()
           (create-player name s)]
          [(list (? string? bad-method))
-          (define f (retrieve-factory bad-method factory-table-7))
-          (create-player name s #:bad (retrieve-factory bad-method factory-table-7))]
-         [(list (? string? bad-method) (? natural? n))
           (cond
-            [(false? loops)
+            [(not-in bad-method factory-table-7)
              (eprintf "jsexpr->player: bad format: ~a\n" j)
              #false]
             [else 
-             (define f (retrieve-factory (~a bad-method "-" n) factory-table-9))
+             (define f (retrieve-factory bad-method factory-table-7))
+             (create-player name s #:bad (retrieve-factory bad-method factory-table-7))])]
+         [(list (== ACHEAT) (? string? bad-method))
+          (cond
+            [(or (false? cheaters) (not-in bad-method factory-table-8))
+             (eprintf "jsexpr->player: bad format: ~a\n" j)
+             #false]
+            [else 
+             (define f (retrieve-factory bad-method factory-table-8))
+             (create-player name s #:bad f)])]
+         [(list (? string? bad-method) (? natural? n))
+          (define bad-method-name (~a bad-method "-" n))
+          (cond
+            [(or (false? loops) (not-in bad-method-name factory-table-9))
+             (eprintf "jsexpr->player: bad format: ~a\n" j)
+             #false]
+            [else 
+             (define f (retrieve-factory bad-method-name factory-table-9))
              (create-player name s #:bad f)])]
          [_ (err 2 j)])]
       [_ (err 1 j)]))
+
+  #; {String FactoryTable -> Boolean}
+  (define (not-in bad-method factory-table)
+    (define r (assoc bad-method factory-table))
+    (not r))
 
   #; {JSexpr N -> False}
   (define (err n j)
@@ -653,9 +674,9 @@
 (module+ test
   (require (submod ".." json))
   
-  (check-false (check-message "" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
-  (check-false (check-message "" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
-  (check-false (check-message "" cep #px"bad format" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
+  (check-false (check-message "a" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
+  (check-false (check-message "b" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
+  (check-false (check-message "c" cep #px"bad format" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
 
   (check-equal? (let ()
                   (define j (player->jsexpr player-normal))
@@ -676,4 +697,10 @@
                  (define j (player->jsexpr setup-1-player))
                  (define p (jsexpr->player j #:loops 'yes))
                  (send p setup info-+starter-state '[])))
-             "infinite loop player"))
+             "infinite loop player")
+  
+  (check-true (let* ([factory (second (first factory-table-8))]
+                     [j (player->jsexpr (factory "A" dag-strategy))]
+                     [p (jsexpr->player j #:cheating 'yes!) ])
+                (is-a? p player%))
+              "cheating player"))
