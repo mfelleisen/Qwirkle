@@ -36,11 +36,11 @@
    ;; methods that raise exceptions after a specified number of calls 
    factory-table]
 
-  [factory-table-8
+  [factory-table-9
    ;; methods that go into infinite loops after a specified number of calls 
    factory-table]
 
-  [factory-table-10
+  [factory-table-8
    ;; methods that return a type-correct, but logically incorrect result 
    factory-table]
 
@@ -320,7 +320,7 @@
 (define [loop] [loop])
 (define Count# 7)
 
-(define factory-table-8
+(define factory-table-9
   (for*/list ([f (list setup% take-turn% new-tiles% win%)] [k (in-range 1 (+ Count# 1) 1)])
     (define class% (f loop k))
     (define name-% (class-name f))
@@ -427,10 +427,10 @@
     ,bad-ask-for-tiles%
     ,no-fit%])
 
-(define factory-table-10
-  (for*/list ([class% all-cheater-classes])
-    (define name (class-name class%))
-    (list (format "~a" name) (λ (n s) (new class% [badfm `(,name)] [my-name n] [strategy s])))))
+(define factory-table-8
+  (for*/list ([c% all-cheater-classes])
+    (define name (class-name c%))
+    (list (format "~a" name) (λ (n s) (new c% [badfm `(,name)] [my-name n] [strategy s])))))
 
 ;                       
 ;                       
@@ -447,7 +447,7 @@
 ;                       
 ;                       
 
-(define factory-all (append (append factory-table-10 factory-table-8 factory-table-7)))
+(define factory-all (append (append factory-table-8 factory-table-9 factory-table-7)))
 
 ;                                          
 ;                                          
@@ -508,7 +508,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; a player that goes into an infinite loop on setup (1st call) 
-  (define new-setup-1    (retrieve-factory "setup-1" factory-table-8))
+  (define new-setup-1    (retrieve-factory "setup-1" factory-table-9))
   (define setup-1-player (create-player "bad" dag-strategy #:bad new-setup-1))
   
   (check-equal? (get-field badfm setup-1-player) '["setup" 1])
@@ -519,7 +519,7 @@
                  (send setup-1-player setup info-starter-state starter-tiles)))))
 
 (module+ test ;; a player that goes into an infinite loop on third call to new-tiles 
-  (define new-nt-3    (retrieve-factory "new-tiles-3" factory-table-8))
+  (define new-nt-3    (retrieve-factory "new-tiles-3" factory-table-9))
   (define nt-3-player (create-player "bad-3" dag-strategy #:bad new-nt-3))
 
   (check-equal? (send nt-3-player setup info-starter-state starter-tiles) [void])
@@ -532,7 +532,7 @@
                  (send nt-3-player new-tiles starter-tiles)))))
 
 (module+ test ;; a player that goes into an infinite loop on third call to take-turn 
-  (define new-tt-3    (retrieve-factory "take-turn-3" factory-table-8))
+  (define new-tt-3    (retrieve-factory "take-turn-3" factory-table-9))
   (define tt-3-player (create-player "tt-3" dag-strategy #:bad new-tt-3))
 
   (check-equal? 
@@ -568,18 +568,18 @@
   (define illegal-in-info-starter-state? (illegal-placement info-starter-state)))
 
 (module+ test ;; the requested placement is not adjacted to an existig tiles 
-  (define new-nat    (retrieve-factory "non-adjacent-coordinate" factory-table-10))
+  (define new-nat    (retrieve-factory "non-adjacent-coordinate" factory-table-8))
   (define nat-player (create-player "bad" dag-strategy #:bad new-nat))
   (check-pred illegal-in-info-starter-state? (send nat-player take-turn info-starter-state)))
 
 (module+ test ;; player places a tile it doesn't own 
-  (define new-tno    (retrieve-factory "tile-not-owned" factory-table-10))
+  (define new-tno    (retrieve-factory "tile-not-owned" factory-table-8))
   (define tno-player (create-player "bad" dag-strategy #:bad new-tno))
   (check-true (placement? (first (send tno-player take-turn info-all-tiles))) "coverage")
   (check-pred illegal-in-info-starter-state? (send tno-player take-turn info-starter-state)))
 
 (module+ test ;; the requested placements are not on a line
-  (define new-nal    (retrieve-factory "not-a-line" factory-table-10))
+  (define new-nal    (retrieve-factory "not-a-line" factory-table-8))
   (define nal-player (create-player "bad" dag-strategy #:bad new-nal))
 
   (check-equal? (send nal-player take-turn info-starter-state) REPLACEMENT "coverage")
@@ -587,13 +587,13 @@
   (check-pred (illegal-placement info-special-state) (send nal-player take-turn info-special-state)))
 
 (module+ test ;; player requests tiles when there aren't enough 
-  (define new-br    (retrieve-factory "bad-ask-for-tiles" factory-table-10))
+  (define new-br    (retrieve-factory "bad-ask-for-tiles" factory-table-8))
   (define br-player (create-player "bad" dag-strategy #:bad new-br))
   (check-equal? (send br-player take-turn info-starter-state) REPLACEMENT "coverage")
   (check-equal? (send br-player take-turn info-bad-state) REPLACEMENT))
 
 (module+ test ;; the requested placement does not match its neighnor(s)
-  (define new-nf    (retrieve-factory "no-fit" factory-table-10))
+  (define new-nf    (retrieve-factory "no-fit" factory-table-8))
   (define nf-player (create-player "bad" dag-strategy #:bad new-nf))
   (check-true (placement? (first (send nf-player take-turn info-+starter-state))) "coverage")
   (check-pred illegal-in-info-starter-state? (send nf-player take-turn info-starter-state)))
@@ -639,7 +639,7 @@
              (eprintf "jsexpr->player: bad format: ~a\n" j)
              #false]
             [else 
-             (define f (retrieve-factory (~a bad-method "-" n) factory-table-8))
+             (define f (retrieve-factory (~a bad-method "-" n) factory-table-9))
              (create-player name s #:bad f)])]
          [_ (err 2 j)])]
       [_ (err 1 j)]))

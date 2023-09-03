@@ -618,7 +618,7 @@
                     [#:passed? 'yes!])
 
   (1-turn-test-case "correctly shaped, but illegal placement request; state is #false in this case"
-                    "tile-not-owned" factory-table-10 bad-state
+                    "tile-not-owned" factory-table-8 bad-state
                     [#:state? #false #:passed? 'yes! #:dropped? 'yes!])
 
   (1-turn-test-case "cover illegal request; state is #false in this case because there's 1 player"
@@ -706,7 +706,7 @@
            [D (create-player "xnW" ldasg-strategy #:bad (from-7 "win" ))])
       (list A B C D)))
 
-  (define (from-8 name) (retrieve-factory name factory-table-8))
+  (define (from-8 name) (retrieve-factory name factory-table-9))
   (define inf-player*
     (let* ([A (create-player "infK"  ldasg-strategy #:bad (from-8 "setup-1"))]
            [B (create-player "infL2" ldasg-strategy #:bad (from-8 "take-turn-2"))]
