@@ -46,6 +46,8 @@
 
   [factory-all factory-table]))
 
+(provide all-cheater-classes) ;; for homework 
+
 (module+ json
   (provide
    ACHEAT ;; for homework 
@@ -422,16 +424,16 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (define all-cheater-classes
-  `[,non-adjacent-coordinate%
-    ,tile-not-owned%
-    ,not-a-line%
-    ,bad-ask-for-tiles%
-    ,no-fit%])
+  `[[,non-adjacent-coordinate% "the placement of a tile that is not adjacent to a placed tile."]
+    [,tile-not-owned%          "the placement of a tile that it does not own."]
+    [,not-a-line%              "placements that are not in one line (row, column)."]
+    [,bad-ask-for-tiles%       "a tile replacement but it owns more tiles than the referee has left."]
+    [,no-fit%                  "the placement of a tile that does not match its adjacent tiles."]])
 
 (define ACHEAT "a cheat")
 
 (define factory-table-8
-  (for*/list ([c% all-cheater-classes])
+  (for*/list ([c% (map first all-cheater-classes)])
     (define name (class-name c%))
     (list (format "~a" name) (λ (n s) (new c% [badfm `(,ACHEAT ,name)] [my-name n] [strategy s])))))
 
@@ -623,44 +625,32 @@
 
   (define (jsexpr->player* j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
-      [(list (app (λ (j) (jsexpr->player j #:loops loops)) (? player? p)) ...) p]
+      [(list (app (λ (j) (jsexpr->player j #:loops loops #:cheating cheaters)) (? player? p)) ...) p]
       [_ (eprintf "value does not match JActors schema:\n~a\n" (jsexpr->string j #:indent 4))
          #false]))
 
   (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
       [(list* (? string? name) (app jsexpr->strategy (? procedure? s)) remainder)
+       (define check-then-create [check-then-create/curried j name s])
        (match remainder
          ['()
-          (create-player name s)]
+          (check-then-create #false "good" 'x factory-base)]
          [(list (? string? bad-method))
-          (cond
-            [(not-in bad-method factory-table-7)
-             (eprintf "jsexpr->player: bad format: ~a\n" j)
-             #false]
-            [else 
-             (define f (retrieve-factory bad-method factory-table-7))
-             (create-player name s #:bad (retrieve-factory bad-method factory-table-7))])]
+          (check-then-create #false bad-method "exception" factory-table-7)]
          [(list (== ACHEAT) (? string? bad-method))
-          (cond
-            [(or (false? cheaters) (not-in bad-method factory-table-8))
-             (eprintf "jsexpr->player: bad format: ~a\n" j)
-             #false]
-            [else 
-             (define f (retrieve-factory bad-method factory-table-8))
-             (create-player name s #:bad f)])]
+          (check-then-create (false? cheaters) bad-method "cheating" factory-table-8)]
          [(list (? string? bad-method) (? natural? n))
-          (define bad-method-name (~a bad-method "-" n))
-          (cond
-            [(or (false? loops) (not-in bad-method-name factory-table-9))
-             (eprintf "jsexpr->player: bad format: ~a\n" j)
-             #false]
-            [else 
-             (define f (retrieve-factory bad-method-name factory-table-9))
-             (create-player name s #:bad f)])]
-         [_ (err 2 j)])]
-      [_ (err 1 j)]))
+          (check-then-create (false? loops) (~a bad-method "-" n) "looping" factory-table-9)]
+         [_ (err "plain" j)])]
+      [_ (err "no" j)]))
 
+  #; {JSexpr String Strategey -> Boolean String Natural FactoryTable -> [Option Player]}
+  (define ([check-then-create/curried j name s] b? bad-method n factory-table)
+    (cond
+      [(or b? (not-in bad-method factory-table)) (err n j)]
+      [else (create-player name s #:bad (retrieve-factory bad-method factory-table))]))
+  
   #; {String FactoryTable -> Boolean}
   (define (not-in bad-method factory-table)
     (define r (assoc bad-method factory-table))
@@ -668,8 +658,8 @@
 
   #; {JSexpr N -> False}
   (define (err n j)
-    (define str (jsexpr->string j #:indent 2))
-    (eprintf "~a object does not match JActorSpec schema [~a] \n ~a\n" 'jsexpr->player n str)
+    (define s (jsexpr->string j #:indent 2))
+    (eprintf "~a does not match JActorSpec schema [close to ~a methods] \n ~a\n" 'jsexpr->player n s)
     #false))
             
 (module+ test
@@ -677,7 +667,7 @@
   
   (check-false (check-message "a" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
   (check-false (check-message "b" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
-  (check-false (check-message "c" cep #px"bad format" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
+  (check-false (check-message "c" cep #px"not match" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
 
   (check-equal? (let ()
                   (define j (player->jsexpr player-normal))
@@ -701,7 +691,7 @@
              "infinite loop player")
   
   (check-true (let* ([factory (second (first factory-table-8))]
-                     [j (player->jsexpr (factory "A" dag-strategy))]
-                     [p (jsexpr->player j #:cheating 'yes!) ])
-                (is-a? p player%))
+                     [j (player*->jsexpr (list (factory "A" dag-strategy)))]
+                     [p (jsexpr->player* j #:cheating 'yes!) ])
+                (andmap player? p))
               "cheating player"))

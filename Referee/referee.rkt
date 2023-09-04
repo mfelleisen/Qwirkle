@@ -706,14 +706,21 @@
            [D (create-player "xnW" ldasg-strategy #:bad (from-7 "win" ))])
       (list A B C D)))
 
-  (define (from-8 name) (retrieve-factory name factory-table-9))
+  (define (from-8 name) (retrieve-factory name factory-table-8))
+  (define cheating-player*
+    (map (λ (name method) (create-player name ldasg-strategy #:bad (from-8 method)))
+         (map (λ (x) (~a "ch" (substring x 0 5))) (map first factory-table-8))
+         (map first factory-table-8)))
+  (map (λ (x) (send x name)) cheating-player*)
+
+  (define (from-9 name) (retrieve-factory name factory-table-9))
   (define inf-player*
-    (let* ([A (create-player "infK"  ldasg-strategy #:bad (from-8 "setup-1"))]
-           [B (create-player "infL2" ldasg-strategy #:bad (from-8 "take-turn-2"))]
-           [C (create-player "infL5" ldasg-strategy #:bad (from-8 "take-turn-4"))]
-           [D (create-player "infM7" ldasg-strategy #:bad (from-8 "new-tiles-7"))]
-           [E (create-player "infM3" ldasg-strategy #:bad (from-8 "new-tiles-3"))]
-           [F (create-player "infO"  ldasg-strategy #:bad (from-8 "win-1"))])
+    (let* ([A (create-player "infK"  ldasg-strategy #:bad (from-9 "setup-1"))]
+           [B (create-player "infL2" ldasg-strategy #:bad (from-9 "take-turn-2"))]
+           [C (create-player "infL5" ldasg-strategy #:bad (from-9 "take-turn-4"))]
+           [D (create-player "infM7" ldasg-strategy #:bad (from-9 "new-tiles-7"))]
+           [E (create-player "infM3" ldasg-strategy #:bad (from-9 "new-tiles-3"))]
+           [F (create-player "infO"  ldasg-strategy #:bad (from-9 "win-1"))])
       (list A B C D E F)))
 
   (define badly-named-player*
