@@ -711,8 +711,7 @@
     (map (λ (name method) (create-player name ldasg-strategy #:bad (from-8 method)))
          (map (λ (x) (~a "ch" (substring x 0 5))) (map first factory-table-8))
          (map first factory-table-8)))
-  (map (λ (x) (send x name)) cheating-player*)
-
+  
   (define (from-9 name) (retrieve-factory name factory-table-9))
   (define inf-player*
     (let* ([A (create-player "infK"  ldasg-strategy #:bad (from-9 "setup-1"))]
@@ -731,6 +730,9 @@
     
   (define for-students-7 '[])
   (define for-tests-7    '[])
+    
+  (define for-students-8 '[])
+  (define for-tests-8    '[])
 
   (define for-students-9 '[])
   (define for-tests-9    '[])
@@ -738,7 +740,7 @@
   (define for-bonus-A    '[])
   
   (define [all-tests]
-    (append for-students-7 for-tests-7 for-students-9 for-tests-9
+    (append for-students-7 for-tests-7 for-students-8 for-tests-8 for-students-9 for-tests-9
             for-bonus-A))
 
   ;; this could be a procedure if (1) the for-*:id were bound to boxed,
@@ -1104,6 +1106,168 @@
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-bonus-A))
 
+;; ******** keep in this order to preserve random number generation **********
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ examples ;; for milestone 8 ;; ASSUME the bonus parameters are set to the -8 values
+
+  (define-integration-test non-adjacent-coordinate 
+    #:desc "one dag player, one cheating drop out: 1 turn"
+    #:player-tiles (list 2starter-tile* 3starter-tile*)
+    #:externals    (append (take dag-player* 1) `[,(first cheating-player*)])
+    #:ref-tiles    starter-tile*
+    #:ref-map      map0
+    #:expected     [["A"] ["chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-students-8)
+
+  (define-integration-test mixed-medium2-with-2-cheaters
+    #:desc "two cheating players, two ldasg player, many turns"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["E"] ["chnon-a" "chtile-"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-students-8)
+
+  (define-integration-test ldags-with-2-cheaters
+    #:desc "two cheating players, two ldasg player; revversed players: does the player order matter ΔBONUS"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (reverse (append (take cheating-player* 2) (take ldasg-player* 2)))
+    #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["E"] ["chtile-" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-students-8)
+
+  ;; -------------------------------------------------------------------------------------------------
+  (define-integration-test ldasgs-with-two-cheaters
+    #:desc "two cheating players, two ldasg player; revversed tiles: does the tile order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["F"] ["chnon-a" "chtile-"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define 1dag-1exn-1ldag-1cheater-player*
+    (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(0 1 2 3)])
+      (list-ref l  0)))
+  (define-integration-test 1dag-1exn-1ldag-1cheater
+    #:desc "one kind player each: 0 1 2 3; revversed tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    1dag-1exn-1ldag-1cheater-player*
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+  
+  (define-integration-test first-max-cheating-players
+    #:desc "all drop out, in the epxected order"
+    #:player-tiles (list 2starter-tile* 3starter-tile* starter-tile* 3starter-tile*)
+    #:externals    (take cheating-player* MAX-PLAYERS)
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      map0
+    #:expected     [[] ["chnon-a" "chtile-" "chnot-a" "chbad-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define-integration-test last-max-cheating-players
+    #:desc "all drop out, in the epxected order"
+    #:player-tiles (list 2starter-tile* 3starter-tile* starter-tile* 3starter-tile*)
+    #:externals    (take (reverse cheating-player*) MAX-PLAYERS)
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      map0
+    #:expected     [[] ["chno-fi" "chtile-" "chnot-a" "chbad-a"]]
+    #:kind         for-tests-8)
+  
+  (define-integration-test bad-all-cheating-tiles-1
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    (rest cheating-player*)
+    #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
+    #:ref-map      map0
+    #:expected     [["chnot-a"] ["chtile-"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define-integration-test bad-all-cheating-tiles-bad-players
+    #:desc "surprise: one survuves"
+    #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
+    #:externals    (rest (reverse cheating-player*))
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["chbad-a"] []]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define 1dag-1exn-1ldag-1cheater-player*-2
+    (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(1 2 0 5)])
+      (list-ref l  0)))
+  (define-integration-test mixed-all-tiles-8
+    #:desc "one kind player each: 1 2 0 5; revversed tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    1dag-1exn-1ldag-1cheater-player*-2 
+    #:ref-tiles    ALL-TILES
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["E"] ["xnX" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define 1dag-1exn-1ldag-1cheater-player*-3
+    (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(2 1 0 4)])
+      (list-ref l  0)))
+  (define-integration-test mixed-all-tiles-perm-8
+    #:desc "one kind player each: 2 1 0 4; permuted tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    1dag-1exn-1ldag-1cheater-player*-3
+    #:ref-tiles    ALL-TILES-PERM
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define 1dag-1exn-1ldag-1cheater-player*-4
+    (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(2 0 1 3)])
+      (list-ref l  0)))
+  (define-integration-test mixed-all-tiles-perm-80
+    #:desc "one kind player each: 2 0 1 3; permuted tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    1dag-1exn-1ldag-1cheater-player*-4
+    #:ref-tiles    ALL-TILES-PERM
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8)
+
+  (define 1dag-1exn-1ldag-1cheater-player*-5
+    (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(3 1 1 2)])
+      (list-ref l  0)))
+  (define-integration-test mixed-all-tiles-perm-800
+    #:desc "one kind player each: 3 1 1 2; permuted tiles and players: does the order matter"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    1dag-1exn-1ldag-1cheater-player*-5
+    #:ref-tiles    ALL-TILES-PERM
+    #:ref-map      (start-map #s(tile clover yellow))
+    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:kind         for-tests-8))
+
 ;                                                                        
 ;                                                                        
 ;      ;            ;                    ;                    ;          
@@ -1122,7 +1286,7 @@
 (module+ test ;; run all integration tests
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) (+ 10 3 10 3 3) "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 3) "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
   (check-equal? (length for-students-9) 3 "8: students get three tests -- expected to fail")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
