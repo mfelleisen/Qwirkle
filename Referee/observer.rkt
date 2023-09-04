@@ -13,8 +13,8 @@
  ;; collect game states for viewing and inspection after the game is complete 
  ;; <--    previous state
  ;; -->    next state
- ;; blank  save current state via file dialog
- ;; (By deleting the `unless` protection, the observer would work on "live" games)
+ ;; blank  save current state as JSON via file dialog
+ ;; EXTRA "s" save current state as image via file dialog 
  observer)
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -32,12 +32,12 @@
 (define SHOW  (gensym 'show))
 
 (define *complete   #false) ;; (when *complete .. the game is over ..)
-(define *live-list '[])         ;; a sequence of referee states 
+(define *live-list '[])     ;; a sequence of referee states 
 
 #; {Command -> Void}
 (define (observer s)
   (cond
-    [(false? s)
+    [(false? s) ;; expensive but 
      (set! *complete  (map (λ (x) (list x (scale .77 (render-ref-state x)))) (reverse *live-list)))
      (set! *live-list '[])]
     [(eq? FLUSH s)
@@ -52,32 +52,34 @@
      observer]))
 
 #; {Natural -> Image}
-(define (show i)
-  (second (list-ref *complete i)))
+(define xxx "use ->, <-, space, or \"s\"")
+(define (show i) (overlay/align 'right 'bottom (text xxx 22 'grey) (second (list-ref *complete i))))
 
 #; {Natural -> Natural}
-;; 
 (define (back-or-forth i key-event)
   (cond
     [(key=? key-event "left")  (sub1/nat i)]
     [(key=? key-event "right") (add1/nat i)]
-    [(key=? key-event " ") (save-file i)]
-    [else (void)]))
+    [(key=? key-event " ") (save-state-as-json i)]
+    [(key=? key-event "s") (save-state-as-image i)]
+    [else i]))
 
 #; {Natural -> Natural}
-(define (add1/nat i)
-  (define next (+ i 1))
-  (min (sub1 (length *complete)) next))
+(define (add1/nat i) (min (sub1 (length *complete)) (+ i 1)))
 
 #; {Natural -> Natural}
-(define (sub1/nat i)
-  (max 0 (sub1 i)))
+(define (sub1/nat i) (max 0 (sub1 i)))
 
-#; {Natural -> Natural}
-(define (save-file i)
-  (define state0 (first (list-ref *complete i)))
-  (define jstate (state->jsexpr state0))
+#; {[X] [RefState -> X] [X -> Void] -> Natural -> Natural}
+;; EFFECT use 'state->` to render the `i`th state; then ask user to select file and save with write
+(define ([save-state-as state-> write] i)
+  (define state0 (list-ref *complete i))
+  (define output (state-> state0))
   (define file   (or (get-file) (get-text-from-user "new json file" "specify a file")))
-  (when file
-    (with-output-to-file file #:exists 'replace (λ () (write-json jstate))))
+  (when file (with-output-to-file file #:exists 'replace (λ () (write output))))
   i)
+
+#; {Natural -> Natural}
+(define save-state-as-json (save-state-as (compose state->jsexpr first) write-json))
+
+(define (save-state-as-image i) (save-state-as second save-image))
