@@ -48,6 +48,7 @@
 
 (module+ json
   (provide
+   ACHEAT ;; for homework 
    (contract-out
     [player->jsexpr  (-> player/c jsexpr?)]
     [jsexpr->player  (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))]

@@ -45,4 +45,4 @@
 ; (req->prov (submod Qwirkle/Common/players json))
 (req->prov (submod Qwirkle/Common/game-state json))
 (req->prov (submod Qwirkle/Common/state-of-player json))
-; (req->prov (submod Qwirkle/Common/tiles json))
+(req->prov (submod Qwirkle/Player/mechanics json))
