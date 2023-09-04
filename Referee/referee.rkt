@@ -63,6 +63,7 @@
 (module+ examples
   (provide
    for-students-7 for-tests-7
+   for-students-8 for-tests-8
    for-students-9 for-tests-9
    for-bonus-A
 
@@ -1134,7 +1135,7 @@
     #:kind         for-students-8)
 
   (define-integration-test ldags-with-2-cheaters
-    #:desc "two cheating players, two ldasg player; revversed players: does the player order matter ΔBONUS"
+    #:desc "two cheating players, two ldasg player"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take cheating-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
