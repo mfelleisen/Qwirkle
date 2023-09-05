@@ -55,6 +55,7 @@
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/game-state)
+(require Qwirkle/Lib/parse-json)
 
 (module+ examples
   (require (submod Qwirkle/Referee/ref-state examples)))
@@ -227,7 +228,7 @@
       [(== DAG)   dag-strategy]
       [(== LDASG) ldasg-strategy]
       [_
-       (define str (jsexpr->string j #:indent 2))
+       (define str (jsexpr->string/ j))
        (eprintf "~a object does not match schema\n ~a\n" 'jsexpr->strategy str)
        #false])))
       

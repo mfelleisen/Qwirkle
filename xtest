@@ -4,7 +4,7 @@ echo "gc-ing"
 rm -rf *~ */*~ ; rm -rf errors.txt 
 
 echo "making"
-time raco make Common/game-state.rkt
+time raco make Server/server.rkt 
 
 echo "start" > errors.txt
 

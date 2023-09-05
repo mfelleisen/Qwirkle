@@ -84,7 +84,7 @@
 
 (module+ json
   (require (submod ".."))
-  (require json))
+  (require Qwirkle/Lib/parse-json))
 
 (module+ test
   (require (submod ".."))
@@ -626,7 +626,7 @@
   (define (jsexpr->player* j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
       [(list (app (λ (j) (jsexpr->player j #:loops loops #:cheating cheaters)) (? player? p)) ...) p]
-      [_ (eprintf "value does not match JActors schema:\n~a\n" (jsexpr->string j #:indent 4))
+      [_ (eprintf "value does not match JActors schema:\n~a\n" (jsexpr->string j))
          #false]))
 
   (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
@@ -658,7 +658,7 @@
 
   #; {JSexpr N -> False}
   (define (err n j)
-    (define s (jsexpr->string j #:indent 2))
+    (define s (jsexpr->string/ j))
     (eprintf "~a does not match JActorSpec schema [close to ~a methods] \n ~a\n" 'jsexpr->player n s)
     #false))
             

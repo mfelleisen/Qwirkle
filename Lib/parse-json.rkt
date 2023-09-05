@@ -13,14 +13,45 @@
  ;; including the mismatched object or array 
  def/jsexpr->)
 
+(provide
+  jsexpr->boolean boolean->jsexpr
+  jsexpr->natural natural->jsexpr
+  jsexpr->void    void->jsexpr
+  jsexpr->string  string->jsexpr
+  jsexpr->symbol  symbol->jsexpr)
+
+(provide
+ jsexpr->string/
+ write-json/)
+
+(provide
+ (all-from-out json))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/syntax))
-(require json)
+
+(require (except-in json write-json jsexpr->string))
+(require (prefix-in old: (only-in json write-json jsexpr->string)))
 
 (module+ test
   (require Qwirkle/Lib/check-message)
   (require rackunit))
+
+;; ---------------------------------------------------------------------------------------------------
+
+(define (jsexpr->string/ content)
+  (define r (regexp-match #px"8.10\\." (version)))
+  (if r 
+      (old:jsexpr->string content #:indent 4)
+      (old:jsexpr->string content)))
+
+(define [write-json/ content]
+  (define r (regexp-match #px"8.10\\." (version)))
+  (if r 
+      (old:write-json content #:indent 4)
+      (old:write-json content)))
+
 
 ;; ---------------------------------------------------------------------------------------------------
 (define-syntax (def/jsexpr-> stx)
@@ -40,7 +71,7 @@
          (λ (j)
            (match j
              [pat body ...]
-             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string j #:indent 2))
+             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string/ j))
                 #false])))]
     
     [(_ to #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
@@ -51,10 +82,31 @@
          (λ (j)
            (match j
              [(hash-table [(? (curry eq? key)) (app jsexpr-> pat)] ...) body ...]
-             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string j #:indent 2))
+             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string/ j))
                 #false])))]))
 
 (define (jsexpr->id x) x)
+
+;; ---------------------------------------------------------------------------------------------------
+; natural? 
+(define (natural->jsexpr x) x)
+(def/jsexpr-> natural #:plain natural?)
+
+; boolean?
+(define (boolean->jsexpr b) b)
+(define (jsexpr->boolean x) x) ;; this makes sense because a parser must test boolean? first
+
+; void?
+(define (void->jsexpr v) "void")
+(def/jsexpr-> void #:plain (curry equal? "void") void)
+
+; string?
+(define string->jsexpr values)
+(def/jsexpr-> string #:plain string?)
+
+;; symbols
+(define symbol->jsexpr ~a)
+(define jsexpr->symbol string->symbol)
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test

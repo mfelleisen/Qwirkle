@@ -5,6 +5,8 @@
 
 (require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/player-interface)
+(require Qwirkle/Lib/json)
+
 (require SwDev/Contracts/unique)
 (require SwDev/Lib/hash-contract)
 
@@ -141,7 +143,7 @@
   (require SwDev/Testing/check-values)
   (require SwDev/Lib/should-be-racket)
   (require rackunit)
-  (require json)
+  (require Qwirkle/Lib/parse-json)
   (require (for-syntax syntax/parse)))
 
 
@@ -1294,7 +1296,7 @@
   (check-equal? (length for-tests-9) 10 "8: we run students' code on ten tests")
 
   ;; this test just ensures that the jsexpr entry point is run in a dummy way
-  (define (plain-main-jsexpr . x) (write-json `[["A"] []] #:indent 2) (newline))
+  (define (plain-main-jsexpr . x) (write-json/ `[["A"] []]) (newline))
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
   (for-each (λ (test) [test plain-main-jsexpr expected]) for-students-7)
 

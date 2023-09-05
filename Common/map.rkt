@@ -90,8 +90,7 @@
 
 (module+ json
   (require (submod Qwirkle/Common/tiles json))
-  (require Qwirkle/Lib/parse-json)
-  (require json))
+  (require Qwirkle/Lib/parse-json))
 
 (module+ test
   (require (submod ".."))

@@ -74,7 +74,7 @@
   (require (submod Qwirkle/Common/coordinates json))
   (require (submod Qwirkle/Common/tiles json))
   (require Qwirkle/Lib/parse-json)
-  (require json))
+  (require Qwirkle/Lib/json))
 
 (module+ test
   (require (submod ".."))
@@ -201,18 +201,18 @@
 
   (define (jsexpr->action* j)
     (match j
-      [(regexp JPASS) PASS]
-      [(regexp JREPLACEMENT) REPLACEMENT]
+      [(== JPASS) PASS]
+      [(== JREPLACEMENT) REPLACEMENT]
       [(list i ...) (jsexpr->placements j)]
-      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string j #:indent 4))
+      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string/ j))
          #false]))
 
   (define (jsexpr->action j)
     (match j
-      [(regexp JPASS) PASS]
-      [(regexp JREPLACEMENT) REPLACEMENT]
+      [(== JPASS) PASS]
+      [(== JREPLACEMENT) REPLACEMENT]
       [(app jsexpr->placements (? placement p)) p]
-      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string j #:indent 4))
+      [_ (eprintf "Action* value does not match schema ~a\n" (jsexpr->string/ j))
          #false]))
 
   #; {Placements -> [Listof JPlacement]}

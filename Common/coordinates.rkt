@@ -49,7 +49,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
-  (require Qwirkle/Lib/parse-json)
+  (require (except-in Qwirkle/Lib/parse-json string->jsexpr jsexpr->string))
   (require json))
 
 (module+ test
