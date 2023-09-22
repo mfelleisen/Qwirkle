@@ -125,8 +125,8 @@ When granted a turn, a player may take one of the following three actions:
     @item{every tile placed must share a side with at least one tile on the map
     that it extends;}
 
-    @item{every tile placed must match the colors of its immediate neighbors (if
-    any) along a line (row, column) or it must match the shapes along a line;}
+    @item{every tile placed must match the colors of @purple{all} its immediate neighbors (if
+    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @strike{along a line};}
     
 
     @item{all tiles placed during a turn must be in the same row or column,
