@@ -125,7 +125,7 @@ When granted a turn, a player may take one of the following three actions:
     @item{every tile placed must share a side with at least one tile on the map
     that it extends;}
 
-    @item{every tile placed must match the colors of @purple{all} its immediate neighbors (if
+    @item{every tile placed must match the colors of @purple{all} its immediate @purple{(up/down, left/right)} neighbors (if
     any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @strike{along a line};}
     
 
@@ -139,7 +139,9 @@ When granted a turn, a player may take one of the following three actions:
   
 ]
 @; -----------------------------------------------------------------------------
-The referee eliminates any player that violates any rules during a turn.
+The referee eliminates any player that violates any rules during a
+turn. @purple{The eliminated player's tiles get appended to the referee's
+tiles.} 
 
 @bold{Scoring a Turn} A player that passes or exchanges its tiles receives no
 points. 
@@ -164,7 +166,7 @@ for a turn as follows:
  
 ]
 @; -----------------------------------------------------------------------------
-The referee keep track of the scores on a per turn basis and shares the scores
+The referee keeps track of the scores on a per turn basis and shares the scores
 of all players with the player to whom it grants a turn.
 
 @; -----------------------------------------------------------------------------
