@@ -126,7 +126,7 @@ When granted a turn, a player may take one of the following three actions:
     that it extends;}
 
     @item{every tile placed must match the colors of @purple{all} its immediate @purple{(up/down, left/right)} neighbors (if
-    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @strike{along a line};}
+    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @purple{of all its immediate neihgbors} @strike{along a line};}
     
 
     @item{all tiles placed during a turn must be in the same row or column,
@@ -154,8 +154,9 @@ for a turn as follows:
 
 @item{A player receives one point per tile placed.}
 
-@item{A player receives one point per tile in a contiguous sequence of a row
- or column that at least one of its newly placed tiles @emph{extends}.}
+@item{A player receives one point per tile in a contiguous sequence of
+ @purple{tiles} (in a row or column) that @purple{contains} at least one of its
+ newly placed tiles @strike{@emph{extends}}.}
 
 @item{A player receives @(~a [Q-BONUS]) bonus points for
  @emph{completing} a Q, which is a contiguous sequence of tiles that
