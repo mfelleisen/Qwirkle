@@ -345,11 +345,6 @@
 
 #; {Map Placemennt* -> Option<Map>}
 ;; create the map that the placements specify and check at each step that a tile can be placed & fits
-(module+ test
-  (check-equal? (all-adjacent-and-fits? map1 plmt1) map2)
-  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)) "aa 1")
-  (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
-  (check-false (all-adjacent-and-fits? starter-map plmnt-2-away) "aa 2"))
 (define (all-adjacent-and-fits? gmap0 placements)
   (let/ec return 
     (for/fold ([gmap gmap0]) ([p placements])
@@ -360,6 +355,12 @@
       (add-tile gmap p))))
 
 ;; ---------------------------------------------------------------------------------------------------
+(module+ test ;; all-adjacent-and-fits 
+  (check-equal? (all-adjacent-and-fits? map1 plmt1) map2)
+  (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)) "aa 1")
+  (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
+  (check-false (all-adjacent-and-fits? starter-map plmnt-2-away) "aa 2"))
+
 (module+ test ;; legal integration tests 
   (check-false (legal +atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal bad-state bad-spec-plmnt))

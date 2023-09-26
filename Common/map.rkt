@@ -70,7 +70,8 @@
   (provide starter-free start+1-map-unfit start+1-free start+1-can)
   (provide map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)
   (provide map0 starter-map starter-can lshaped-map-unfit)
-  (provide special-map special-map+green-circle-at--2-2 special-map+green-circle-at--2-2++))
+  (provide special-map special-map+green-star-at--3-1
+           special-map+green-circle-at--2-2 special-map+green-circle-at--2-2++))
 
 (module+ json
   (provide
@@ -172,6 +173,19 @@
            [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))])
       s))
 
+  (define special-map+green-star-at--3-1
+    (let* ([s (start-map                      #s(tile circle red))]
+           [s (add-tile s #s(placement #s(coordinate -3 1) #s(tile star green)))]
+
+           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
+           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
+           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
+           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
+           ;; hooks 
+           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
+           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))])
+      s))
+
   (define special-map+green-circle-at--2-2
     (let* ([s (start-map                      #s(tile circle red))]
            [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
@@ -231,12 +245,13 @@
 ;; all candidates 
 
 #; {Map Tile -> [Setof Candidate]}
-(module+ test
-  (check-equal? (find-candidates starter-map starter-tile) starter-can)
-  (check-equal? (find-candidates start+1-map-unfit starter-tile) start+1-can))
 (define (find-candidates gmap t)
   (for*/set ([co (in-set (all-free-neighbors gmap))] [can (in-value (fits gmap co t))] #:when can)
     can))
+
+(module+ test
+  (check-equal? (find-candidates starter-map starter-tile) starter-can)
+  (check-equal? (find-candidates start+1-map-unfit starter-tile) start+1-can))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; fitting a tile into the map at a coordinate 
@@ -272,6 +287,9 @@
     [else (or
            (and (equal? (tile-shape one-side) shape) (equal? (tile-shape other-side) shape))
            (and (equal? (tile-color one-side) color) (equal? (tile-color other-side) color)))]))
+
+(module+ test 
+  (check-true (candidate? (fits special-map #s(coordinate -3 1) #s(tile star green)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the neighboring coordinate of a map
@@ -345,7 +363,7 @@
 (define (render-tile+ co+tile)
   (match-define [list co tile] co+tile)
   (define co-as-text (~a "(" (coordinate-row co) ","  (coordinate-column co) ")"))
-  (2:overlay (2:text co-as-text 11 'black) (render-tile tile)))
+  (2:overlay 2:empty-image #;(2:text co-as-text 11 'black) (render-tile tile)))
   
 #; {N -> Image}
 (define (blank-spaces n)
@@ -548,20 +566,20 @@
   'map10 (render-map map10)
   'map11 (render-map map11))
 
-;                                                                 
-;                            ;                                    
-;                            ;                   ;                
-;                            ;                                    
-;    ;;;;   ;;;   ; ;;    ;;;;   ;;;    ;;;;   ;;;   ; ;;    ;;;; 
-;    ;;  ; ;;  ;  ;;  ;  ;; ;;  ;;  ;   ;;  ;    ;   ;;  ;  ;;  ; 
-;    ;     ;   ;; ;   ;  ;   ;  ;   ;;  ;        ;   ;   ;  ;   ; 
-;    ;     ;;;;;; ;   ;  ;   ;  ;;;;;;  ;        ;   ;   ;  ;   ; 
-;    ;     ;      ;   ;  ;   ;  ;       ;        ;   ;   ;  ;   ; 
-;    ;     ;      ;   ;  ;; ;;  ;       ;        ;   ;   ;  ;; ;; 
-;    ;      ;;;;  ;   ;   ;;;;   ;;;;   ;      ;;;;; ;   ;   ;;;; 
-;                                                               ; 
-;                                                            ;  ; 
-;                                                             ;;  
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
 
 (module+ json
 

@@ -125,9 +125,12 @@ When granted a turn, a player may take one of the following three actions:
     @item{every tile placed must share a side with at least one tile on the map
     that it extends;}
 
-    @item{every tile placed must match the colors of @purple{all} its immediate @purple{(up/down, left/right)} neighbors (if
-    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @purple{of all its immediate neihgbors} @strike{along a line};}
-    
+    @item{@strike{every tile placed must match the colors of @purple{all} its immediate @purple{(up/down, left/right)} neighbors (if
+    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @purple{of all its immediate neihgbors} @strike{along a line};}}
+
+    @item{@purple{every tile added to the map must simultaneously match both of
+    its immediate neighbors along its row and column, separately, in terms of
+    either shape or color;}}
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
@@ -188,3 +191,32 @@ The game ends if one of the following condition holds:
 Once a player has requested the placement of tiles, the current round of turns
 cannot end the game even if this player drops out (for whatever reason) and even
 if all other players pass or request exchanges. 
+
+@(require (submod Qwirkle/Common/map examples))
+@(require Qwirkle/Common/map)
+@(require (prefix-in t: Qwirkle/Common/tiles))
+
+
+@; -----------------------------------------------------------------------------
+@bold{Sample Placements}
+
+@(define (fake-test in tile place out)
+ @nested[#:style 'inset]{
+ @tt{(check-equal?
+      (fits @(scale .5 [render-map in]) @tt{@place} @(scale .5 [t:render-tile @tile]))
+      @scale[.5 (render-map out)])}})
+
+@(define (fake-false in tile place) 
+ @nested[#:style 'inset]{
+ @tt{(check-equal?
+      (fits @(scale .5 [render-map in]) @tt{@place} @(scale .5 [t:render-tile @tile]))
+      #false)}})
+
+@fake-test[special-map #s(tile star green) "P1" special-map+green-star-at--3-1]
+
+@fake-false[special-map #s(tile star purple) "P1"]
+
+@;fake-test[special-map+green-circle-at--2-2 #s(tile circle orange) "P2" special-map+green-circle-at--2-2++]
+
+@;fake-test[special-map+green-circle-at--2-2 #s(tile circle orange) "P2" special-map+green-circle-at--2-2++]
+
