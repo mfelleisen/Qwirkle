@@ -216,7 +216,12 @@ if all other players pass or request exchanges.
 
 @fake-false[special-map #s(tile star purple) "P1"]
 
-@;fake-test[special-map+green-circle-at--2-2 #s(tile circle orange) "P2" special-map+green-circle-at--2-2++]
 
-@;fake-test[special-map+green-circle-at--2-2 #s(tile circle orange) "P2" special-map+green-circle-at--2-2++]
+@fake-test[special-map+purple-star-at-1-2 #s(tile star green) "P2" special-map+purple-star-at-1-2++]
+
+@fake-false[special-map+purple-star-at-1-2 #s(tile star blue) "P2"]
+
+@;(define p2 #s(placement #s(coordinate -4 1) #s(tile circle red)))
+@;fake-false[(add-tile special-map+green-circle-at--2-2 p2) #s(tile circle red) "P2"]
+
 
