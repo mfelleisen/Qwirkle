@@ -40,7 +40,7 @@
    (-> map? coordinate? boolean?)]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
-   (-> map? coordinate? tile? (or/c candidate? #false))]
+   (-> map? placement? (or/c candidate? #false))]
   
   [all-row-segments
    ;; gather all continuous segments of tiles in the specified row 
@@ -212,20 +212,8 @@
     (add-tile special-map+purple-star-at-1-2 special-map+purple-placement))
 
   (define special-map+green-circle-at--2-2++
-    (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
-           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
-           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
-           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
-           ;; hooks 
-           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
-           [s (add-tile s #s(placement #s(coordinate -4 2) #s(tile clover purple)))]
-           [s (add-tile s #s(placement #s(coordinate -3 2) #s(tile circle purple)))]
-           [s (add-tile s #s(placement #s(coordinate -2 2) #s(tile circle orange)))]
-           [s (add-tile s #s(placement #s(coordinate -1 2) #s(tile circle blue)))]
-           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))]
-           [s (add-tile s #s(placement #s(coordinate +1 2) #s(tile circle purple)))]
-           [s (add-tile s #s(placement #s(coordinate  0 2) #s(tile circle yellow)))])
+    (let* ([s (make-special-map+green-circle-at--2-2 #s(tile circle purple))]
+           [s (add-tile s #s(placement #s(coordinate -2 2) #s(tile circle orange)))])
       s)))
 
 ;                                                                        
@@ -255,8 +243,8 @@
 
 #; {Map Tile -> [Setof Candidate]}
 (define (find-candidates gmap t)
-  (for*/set ([co (in-set (all-free-neighbors gmap))] [can (in-value (fits gmap co t))] #:when can)
-    can))
+  (for*/set ([co (all-free-neighbors gmap)] [C (in-value (fits gmap (placement co t)))] #:when C)
+    C))
 
 (module+ test
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
@@ -265,16 +253,18 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; fitting a tile into the map at a coordinate 
 
-#; {Map Coordinate Tile -> [Option Candidate]}
-(define (fits map co tile)
-  (define left  (neighbor-tile map co left-of))
-  (define top   (neighbor-tile map co top-of))
-  (define right (neighbor-tile map co right-of))
-  (define below (neighbor-tile map co below-of))
+#; {Map Placement -> [Option Candidate]}
+(define (fits map p)
+  (define cord (placement-coordinate p))
+  (define tile (placement-tile p))
+  (define left  (neighbor-tile map cord left-of))
+  (define top   (neighbor-tile map cord top-of))
+  (define right (neighbor-tile map cord right-of))
+  (define below (neighbor-tile map cord below-of))
   (and (fit-line left tile right)
        (fit-line top tile below)
        ;; --- if it fits both ways, return: 
-       (candidate co left top right below)))
+       (candidate cord left top right below)))
 
 #; {Map Coordinate [Coordinate -> Coordinate] -> [Option Tile]}
 ;; what's the tile (if any) that neighbors `co` in `direction`
@@ -298,8 +288,8 @@
            (and (equal? (tile-color one-side) color) (equal? (tile-color other-side) color)))]))
 
 (module+ test
-  (check-true (candidate? (fits special-map+purple-star-at-1-2  #s(coordinate -3 1) #s(tile star green))))
-  (check-true (candidate? (fits special-map #s(coordinate -3 1) #s(tile star green)))))
+  (check-true (candidate? (fits special-map+purple-star-at-1-2  special-map+purple-placement)))
+  (check-true (candidate? (fits special-map #s(placement #s(coordinate -3 1) #s(tile star green))))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the neighboring coordinate of a map
@@ -373,7 +363,7 @@
 (define (render-tile+ co+tile)
   (match-define [list co tile] co+tile)
   (define co-as-text (~a "(" (coordinate-row co) ","  (coordinate-column co) ")"))
-  (2:overlay 2:empty-image #;(2:text co-as-text 11 'black) (render-tile tile)))
+  (2:overlay (2:text co-as-text 11 'black) (render-tile tile)))
   
 #; {N -> Image}
 (define (blank-spaces n)

@@ -418,7 +418,7 @@
   (define places (all-free-neighbors gmap))
   (let/ec return 
     (for* ([ti tile*] [co places])
-      (unless (fits gmap co ti)
+      (unless (fits gmap (placement co ti))
         (return (placement co ti))))
     #false))
 

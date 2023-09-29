@@ -348,9 +348,7 @@
 (define (all-adjacent-and-fits? gmap0 placements)
   (let/ec return 
     (for/fold ([gmap gmap0]) ([p placements])
-      (define co (placement-coordinate p))
-      (define ti (placement-tile p))
-      (unless (and (adjacent? gmap co) (candidate? (fits gmap co ti)))
+      (unless (and (adjacent? gmap (placement-coordinate p)) (candidate? (fits gmap p)))
         (return #false))
       (add-tile gmap p))))
 
@@ -365,7 +363,7 @@
   (check-false (legal +atop-state place-atop-starter) "b/c can't place tile atop another")
   (check-false (legal bad-state bad-spec-plmnt))
   (check-true (map? (legal special-state special-placements)))
-
+  
   (check-equal? (legal special-state+green-circle-at--2-2 place-orange-circle-at--2-2)
                 special-map+green-circle-at--2-2++)
   
