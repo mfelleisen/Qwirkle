@@ -33,7 +33,7 @@
   
   [find-candidates
    ;; where can the given tile extend this map 
-   (->* (map? tile?) () (set/c candidate?))]
+   (->* (map? tile?) (#:match-when fit-into-spot/c) (set/c candidate?))]
   
   [adjacent?
    ;; is the coordinate adjacent to, and not on top of, an occupied space?
