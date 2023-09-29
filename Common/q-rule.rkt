@@ -3,7 +3,7 @@
 ;; the Q specific rule for fitting a tile into a space
 
 (define opt-tile/c (or/c #false tile?))
-(define fit-into-spot/c (-> opt-tile/c opt-tile/c opt-tile/c opt-tile/c opt-tile/c boolean?))
+(define fit-into-spot/c (-> tile? opt-tile/c opt-tile/c opt-tile/c opt-tile/c boolean?))
 
 (provide
  fit-into-spot/c
