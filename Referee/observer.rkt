@@ -1,5 +1,7 @@
 #lang racket
 
+;; a primitive observer that saves all images in Tmp/ and allows users to view game developments
+
 (provide
  FLUSH SHOW
  
@@ -17,16 +19,47 @@
  ;; EXTRA "s" save current state as image via file dialog 
  observer)
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                  
+;                                                                  
+;                                      ;                           
+;                                                                  
+;                                                                  
+;    ;;;;    ;;;;    ;;; ;  ;    ;   ;;;     ;;;;    ;;;;    ;;;;  
+;    ;;  ;  ;    ;  ;;  ;;  ;    ;     ;     ;;  ;  ;    ;  ;    ; 
+;    ;      ;;;;;;  ;    ;  ;    ;     ;     ;      ;;;;;;  ;      
+;    ;      ;       ;    ;  ;    ;     ;     ;      ;        ;;;;  
+;    ;      ;       ;    ;  ;    ;     ;     ;      ;            ; 
+;    ;      ;;   ;  ;;  ;;  ;   ;;     ;     ;      ;;   ;  ;    ; 
+;    ;       ;;;;;   ;;; ;   ;;; ;   ;;;;;   ;       ;;;;;   ;;;;  
+;                        ;                                         
+;                        ;                                         
+;                        ;                                         
+;                                                                  
+
 (require Qwirkle/Referee/ref-state)
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require (submod Qwirkle/Referee/ref-state json))
 (require 2htdp/universe)
 (require 2htdp/image)
 (require json)
 (require (only-in racket/gui get-file get-text-from-user))
 
-;; ---------------------------------------------------------------------------------------------------
-;; a primitive textual observer 
+;                                                                  
+;                                                                  
+;           ;                                                      
+;           ;                                                      
+;           ;                                                      
+;    ;;;;   ; ;;;    ;;;;    ;;;;    ;;;;   ;    ;   ;;;;    ;;;;  
+;   ;;  ;;  ;;  ;;  ;    ;  ;    ;   ;;  ;  ;;  ;;  ;    ;   ;;  ; 
+;   ;    ;  ;    ;  ;       ;;;;;;   ;       ;  ;   ;;;;;;   ;     
+;   ;    ;  ;    ;   ;;;;   ;        ;       ;  ;   ;        ;     
+;   ;    ;  ;    ;       ;  ;        ;       ;;;;   ;        ;     
+;   ;;  ;;  ;;  ;;  ;    ;  ;;   ;   ;        ;;    ;;   ;   ;     
+;    ;;;;   ; ;;;    ;;;;    ;;;;;   ;        ;;     ;;;;;   ;     
+;                                                                  
+;                                                                  
+;                                                                  
+;                                                                  
 
 (define FLUSH (gensym 'flush))
 (define SHOW  (gensym 'show))
@@ -39,6 +72,7 @@
   (cond
     [(false? s) ;; expensive but 
      (set! *complete  (map (λ (x) (list x (scale .77 (render-ref-state x)))) (reverse *live-list)))
+     (save-all-as-pngs)
      (set! *live-list '[])]
     [(eq? FLUSH s)
      (set! *complete #false)]
@@ -72,14 +106,24 @@
 
 #; {[X] [RefState -> X] [X -> Void] -> Natural -> Natural}
 ;; EFFECT use 'state->` to render the `i`th state; then ask user to select file and save with write
-(define ([save-state-as state-> write] i)
+(define ([save-state-as state-> write] i #:file (f #false))
   (define state0 (list-ref *complete i))
   (define output (state-> state0))
-  (define file   (or (get-file) (get-text-from-user "new json file" "specify a file")))
-  (when file (with-output-to-file file #:exists 'replace (λ () (write output))))
+  (define file   (or f (get-file) (get-text-from-user "name a file" "specify a file")))
+  (when file (with-output-to-file file #:exists 'replace (λ () (write output file))))
   i)
 
+#; {-> Void}
+;; save all PNGs in `*complete` in `Tmp/0.png` ...
+(define (save-all-as-pngs)
+  (unless (directory-exists? Tmp/)
+    (make-directory Tmp/))
+  (parameterize ([current-directory Tmp/])
+    (for ([i (in-naturals)] [_ *complete])
+      (define f (~a i PNG))
+      [(save-state-as second save-image) i #:file f])))
+      
 #; {Natural -> Natural}
-(define save-state-as-json (save-state-as (compose state->jsexpr first) write-json))
+(define save-state-as-json (save-state-as (compose state->jsexpr first) (λ (j _) (write-json j))))
 
-(define (save-state-as-image i) (save-state-as second save-image))
+(define save-state-as-image (save-state-as second save-image))

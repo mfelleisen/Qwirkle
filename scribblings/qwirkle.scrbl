@@ -31,7 +31,10 @@
    (define MAX-PLAYER-NAME 20)
    (define PLAYER-NAME "^[a-zA-Z0-9]+$")
   
-   (define [OBS] "observe!") 
+   (define [OBS] "--show") 
+
+   (define Tmp/ "Tmp/")
+   (define PNG ".png")
 
    )
 
