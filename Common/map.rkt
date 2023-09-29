@@ -33,14 +33,14 @@
   
   [find-candidates
    ;; where can the given tile extend this map 
-   (-> map? tile? (set/c candidate?))]
+   (->* (map? tile?) () (set/c candidate?))]
   
   [adjacent?
    ;; is the coordinate adjacent to, and not on top of, an occupied space?
    (-> map? coordinate? boolean?)]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
-   (-> map? placement? (or/c candidate? #false))]
+   (->* (map? placement?) (#:match-when fit-into-spot/c) (or/c candidate? #false))]
   
   [all-row-segments
    ;; gather all continuous segments of tiles in the specified row 
@@ -81,8 +81,25 @@
     [map->jsexpr (-> map? jsexpr?)]
     [jsexpr->map (-> jsexpr? (or/c map? #false))])))
 
-;; ---------------------------------------------------------------------------------------------------
+;                                                                  
+;                                                                  
+;                                      ;                           
+;                                                                  
+;                                                                  
+;    ;;;;    ;;;;    ;;; ;  ;    ;   ;;;     ;;;;    ;;;;    ;;;;  
+;    ;;  ;  ;    ;  ;;  ;;  ;    ;     ;     ;;  ;  ;    ;  ;    ; 
+;    ;      ;;;;;;  ;    ;  ;    ;     ;     ;      ;;;;;;  ;      
+;    ;      ;       ;    ;  ;    ;     ;     ;      ;        ;;;;  
+;    ;      ;       ;    ;  ;    ;     ;     ;      ;            ; 
+;    ;      ;;   ;  ;;  ;;  ;   ;;     ;     ;      ;;   ;  ;    ; 
+;    ;       ;;;;;   ;;; ;   ;;; ;   ;;;;;   ;       ;;;;;   ;;;;  
+;                        ;                                         
+;                        ;                                         
+;                        ;                                         
+;                                                                  
+
 (require Qwirkle/Common/coordinates)
+(require Qwirkle/Common/q-rule)
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/placement)
 (require (prefix-in 2: 2htdp/image))
@@ -242,9 +259,11 @@
 ;; all candidates 
 
 #; {Map Tile -> [Setof Candidate]}
-(define (find-candidates gmap t)
-  (for*/set ([co (all-free-neighbors gmap)] [C (in-value (fits gmap (placement co t)))] #:when C)
-    C))
+(define (find-candidates gmap t #:match-when (q-fits q-fits))
+  (for*/set ([co (all-free-neighbors gmap)]
+             [can (in-value (fits gmap (placement co t) #:match-when q-fits))]
+             #:when can)
+    can))
 
 (module+ test
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
@@ -254,38 +273,20 @@
 ;; fitting a tile into the map at a coordinate 
 
 #; {Map Placement -> [Option Candidate]}
-(define (fits map p)
-  (define cord (placement-coordinate p))
-  (define tile (placement-tile p))
+(define (fits map p #:match-when (q-fits q-fits))
+  (define cord  (placement-coordinate p))
+  (define tile  (placement-tile p))
   (define left  (neighbor-tile map cord left-of))
   (define top   (neighbor-tile map cord top-of))
   (define right (neighbor-tile map cord right-of))
   (define below (neighbor-tile map cord below-of))
-  (and (fit-line left tile right)
-       (fit-line top tile below)
-       ;; --- if it fits both ways, return: 
+  (and (q-fits tile left right top below)
        (candidate cord left top right below)))
 
 #; {Map Coordinate [Coordinate -> Coordinate] -> [Option Tile]}
 ;; what's the tile (if any) that neighbors `co` in `direction`
 (define (neighbor-tile map co direction)
   (hash-ref map (direction co) #false))
-
-#; {[Option Tile] Tile [Option Tile] -> Boolean}
-;; is the tile compatible with the tiles on either side (if any) or both (if they exist) 
-(define (fit-line one-side tile other-side)
-  (define color (tile-color tile))
-  (define shape (tile-shape tile))
-  ;; tile/m
-  (cond
-    [(and (not one-side) (not other-side)) #true]
-    [(not one-side)
-     (or (equal? (tile-shape other-side) shape) (equal? (tile-color other-side) color))]
-    ((not other-side)
-     (or (equal? (tile-shape one-side) shape) (equal? (tile-color one-side) color)))
-    [else (or
-           (and (equal? (tile-shape one-side) shape) (equal? (tile-shape other-side) shape))
-           (and (equal? (tile-color one-side) color) (equal? (tile-color other-side) color)))]))
 
 (module+ test
   (check-true (candidate? (fits special-map+purple-star-at-1-2  special-map+purple-placement)))
