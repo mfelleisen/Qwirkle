@@ -403,27 +403,28 @@
 (define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
   (for/sum ([1segment segment*])
-    (define the-tiles (map placement-tile 1segment))
-    (q-bonus the-tiles (contains-1-placement 1segment placements))))
+    (q-bonus (map placement-tile 1segment) (contains-1-placement 1segment placements))))
 
-#;{Segment [Listof Placement] -> Natural}
+#;{Segment [Listof Placement] -> [Option Natural]}
 ;; lengt of segment if it contain one placement; 0 otherwise 
 (define (contains-1-placement 1segment placements)
-  (define count (for/first ([p 1segment] #:when (member p placements)) (length 1segment)))
-  (if (false? count) 0 count))
+  (for/first ([p 1segment] #:when (member p placements))
+    (length 1segment)))
 
 #; {Map [Listof Placements] -> Natural}
 ;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus
 (define (score-orthoginal-lines gmap line placements)
-  (define coord (map placement-coordinate placements))
-  (define walk (if (row? line) walk-column-orthogonally walk-row-orthogonally))
-  (for/sum ([co coord])
-    (define continuous-run (walk gmap co))
+  (define coord* (map placement-coordinate placements))
+  (define walk   (if (row? line) walk-column-orthogonally walk-row-orthogonally))
+  (for/sum ([cord coord*])
+    (define continuous-run (walk gmap cord))
     (q-bonus continuous-run (length continuous-run))))
 
-#; {[Listof Tile] Natural -> Natural}
-(define (q-bonus line count)
-  (if (or (all-colors? line) (all-shapes? line)) (+ [Q-BONUS] count) count))
+#; {[Listof Tile] [Option Natural] -> Natural}
+;; a player receives 6 bonus points for completing a Q, which is a contiguous sequence of tiles
+;; that contains all shapes or all colors.
+(define (q-bonus tile* count)
+  (if (and count (or (all-colors? tile*) (all-shapes? tile*))) (+ [Q-BONUS] count) count))
 
 (module+ test
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) 0) [Q-BONUS])
