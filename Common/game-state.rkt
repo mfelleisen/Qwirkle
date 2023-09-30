@@ -422,14 +422,19 @@
 
 #; {[Listof Tile] [Option Natural] -> Natural}
 ;; a player receives 6 bonus points for completing a Q, which is a contiguous sequence of tiles
-;; that contains all shapes or all colors.
-(define (q-bonus tile* count)
-  (if (and count (or (all-colors? tile*) (all-shapes? tile*))) (+ [Q-BONUS] count) count))
+;; that contains all shapes or all colors and nothing else
+(define (q-bonus tile* count-if-newly-completed)
+  (if (and count-if-newly-completed (or (all-colors? tile*) (all-shapes? tile*)))
+      (+ [Q-BONUS] count-if-newly-completed)
+      (or count-if-newly-completed 0)))
 
 (module+ test
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) 0) [Q-BONUS])
-  (check-equal? (q-bonus duplicate-tiles 0) 0))
+  (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) #false) 0)
+  (check-equal? (q-bonus duplicate-tiles 0) 0)
+  (check-equal? (q-bonus duplicate-tiles #false) 0))
 
+  
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
   (for ([m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
