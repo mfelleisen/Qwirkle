@@ -166,7 +166,7 @@ for a turn as follows:
 
 @item{A player receives @(~a [Q-BONUS]) bonus points for
  @emph{completing} a Q, which is a contiguous sequence of tiles that
- contains all shapes or all colors.}
+ contains all shapes or all colors @purple{and nothing else}.}
 
 @item{A player also receives @(~a [FINISH-BONUS]) bonus points for
  placing all tiles in its possession.} 
