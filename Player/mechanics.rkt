@@ -79,6 +79,7 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Player/strategies)
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 
 (require (for-syntax syntax/parse))
 
@@ -642,8 +643,16 @@
           (check-then-create (false? cheaters) bad-method "cheating" factory-table-8)]
          [(list (? string? bad-method) (? natural? n))
           (check-then-create (false? loops) (~a bad-method "-" n) "looping" factory-table-9)]
-         [_ (err "plain" j)])]
-      [_ (err "no" j)]))
+         [_ (err "options beyond 'plain' don't match" j)])]
+      [_ (err "not an array" j)]))
+
+  #; {JSexpr -> [Option String]}
+  (define (jname? j)
+    (cond
+      [(not (string? j)) (err "name not a string" j)]
+      [(not (regexp-match (pregexp PLAYER-NAME) j)) (err "name not alphanumeric" j)]
+      [(not (<= (string-length j) MAX-PLAYER-NAME)) (err "name too long" j)]
+      [else j]))
 
   #; {JSexpr String Strategey -> Boolean String Natural FactoryTable -> [Option Player]}
   (define ([check-then-create/curried j name s] b? bad-method n factory-table)
@@ -659,7 +668,7 @@
   #; {JSexpr N -> False}
   (define (err n j)
     (define s (jsexpr->string/ j))
-    (eprintf "~a does not match JActorSpec schema [close to ~a methods] \n ~a\n" 'jsexpr->player n s)
+    (eprintf "~a does not match JActorSpec schema [~a] \n ~a\n" 'jsexpr->player n s)
     #false))
             
 (module+ test
