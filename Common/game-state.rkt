@@ -421,6 +421,7 @@
     (q-bonus continuous-run (length continuous-run))))
 
 #; {[Listof Tile] [Option Natural] -> Natural}
+;; complete scoring and add bonus, if applicable 
 ;; a player receives 6 bonus points for completing a Q, which is a contiguous sequence of tiles
 ;; that contains all shapes or all colors and nothing else
 (define (q-bonus tile* count-if-newly-completed)
@@ -433,7 +434,6 @@
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) #false) 0)
   (check-equal? (q-bonus duplicate-tiles 0) 0)
   (check-equal? (q-bonus duplicate-tiles #false) 0))
-
   
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test ;; scoring tests 
