@@ -28,7 +28,8 @@
   [start-map  (-> tile? map?)]
   [render-map (-> map? 2:image?)]
   [add-tile
-   (->i ([b map?] [p placement?]) #:pre/name (b p) "neighbor?" (adjacent? b (placement-coordinate p))
+   ;; add a tile at a particular spot (placement) to this map
+   (->i ([m map?] [p placement?]) #:pre/name (m p) "neighbor?" (adjacent? m (placement-coordinate p))
         (r map?))]
   
   [find-candidates
@@ -36,7 +37,7 @@
    (->* (map? tile?) (#:match-when fit-into-spot/c) (set/c candidate?))]
   
   [adjacent?
-   ;; is the coordinate adjacent to, and not on top of, an occupied space?
+   ;; is the coordinate adjacent to, and not on top of, an occupied space in this map?
    (-> map? coordinate? boolean?)]
   [fits
    ;; would the `tile` fit into this `map` at coordinate `co`
