@@ -266,7 +266,7 @@
              #:when can)
     can))
 
-(module+ test
+(module+ test 
   (check-equal? (find-candidates starter-map starter-tile) starter-can)
   (check-equal? (find-candidates start+1-map-unfit starter-tile) start+1-can))
 
@@ -616,12 +616,28 @@
   (def/jsexpr-> map #:array
     [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile?))) ...)) ...)
      (for/fold ([h (hash)]) ([r row])
+       (is-a-set 'row (map first row))
        (match-define (list ri cell ...) r)
+       ; this doesn't necessarily hold 
+       ; (is-a-set 'column (map first cell))
        (for/fold ([h h]) ([c cell])
          (match-define [list ci ti] c)
-         (hash-set h (coordinate ri ci) (jsexpr->tile ti))))]))
+         (hash-set h (coordinate ri ci) (jsexpr->tile ti))))])
+
+  #; {[Listof N] -> Void}
+  (define (is-a-set tag l)
+    (define left  (apply min l))
+    (define right (apply max l))
+    (cond
+      [(and (= (length l) (- right left)))
+       (error 'jsexpr->map "CONSTRAINT: the ~a integers do not cover an interval: ~a\n" tag l)]
+      [else #true])))
                      
 (module+ test
+  #;
+  (for/list ([gmap (list special-map map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)])
+    (map->jsexpr gmap))
+  
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
   (check-equal? (jsexpr->map (map->jsexpr map1)) map1)
   (check-equal? (jsexpr->map (map->jsexpr map2)) map2))

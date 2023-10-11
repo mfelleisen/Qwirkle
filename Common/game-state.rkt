@@ -8,6 +8,14 @@
  ;; where [SoPlayer X] is the active player 
  ;; where [Listof _] specifies the order of turns that players take from here on out
  
+ #; {type [RefState X]  = [GameState X [SoPlayer X] [Listof Tile]]}
+ ;;      what the referee knows about the game 
+ #; {type PubKnowledge  = [GameState String Natural Natural]}
+ ;;      what a player may know: its own state with nam; the scores of others; order of play; tiles left
+ #; {type [SoPlayer Y]  = [sop Natural [Listof Tile] Y]}
+ ;;      where Y is typically an external player or just a symbolic name
+
+
  state?
  state-map
  state-players 
@@ -30,7 +38,7 @@
   [active-sop-tiles     (-> state? (listof tile?))]
   
   [legal
-   ;; is the series of placements legale in this state; if so computer the new map 
+   ;; is the series of placements legale in this state; if so compute the new map 
    (-> state? (listof placement?) (or/c #false map?))]
   
   [score

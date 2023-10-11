@@ -777,7 +777,7 @@
     
     ;; the Racket integration test
 
-    #; {case-> [-> Void] [(-> Void) -> Void]}
+    #; {case-> [-> Void] (-> (-> Void) Void) (-> (-> Void) Any Void) (-> (-> Void) Any Any Void)}
     (define name
       (case-lambda
         [() [name-plain]]
