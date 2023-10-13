@@ -614,29 +614,36 @@
 
   #; {JSexpr -> Option<Tile>}
   (def/jsexpr-> map #:array
-    [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile?))) ...)) ...)
-     (for/fold ([h (hash)]) ([r row])
-       (is-a-set 'row (map first row))
-       (match-define (list ri cell ...) r)
-       ; this doesn't necessarily hold 
-       ; (is-a-set 'column (map first cell))
-       (for/fold ([h h]) ([c cell])
-         (match-define [list ci ti] c)
-         (hash-set h (coordinate ri ci) (jsexpr->tile ti))))])
+    [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile? t*))) ...)) ...)
+     (let/ec return
+       (when (ormap empty? t*)
+         (eprintf "jsexpr->map object does not match schema: empty array of tiles encountered")
+         (return #false))
+       (for/fold ([h (hash)]) ([r row])
+         (unless (is-a-set 'row (map first row))
+           (eprintf "jsexpr->map object does not match schema: row index CONSTRAINT violated")
+           (return #false))
+         (match-define (list ri cell ...) r)
+         ; this doesn't necessarily hold 
+         ; (is-a-set 'column (map first cell))
+         (for/fold ([h h]) ([c cell])
+           (match-define [list ci ti] c)
+           (hash-set h (coordinate ri ci) (jsexpr->tile ti)))))])
 
-  #; {[Listof N] -> Void}
+  #; {[Listof N] -> Boolean}
   (define (is-a-set tag l)
     (define left  (apply min l))
     (define right (apply max l))
     (cond
-      [(and (= (length l) (- right left)))
-       (error 'jsexpr->map "CONSTRAINT: the ~a integers do not cover an interval: ~a\n" tag l)]
+      [(and (= (length l) (- right left))) #false]
       [else #true])))
                      
 (module+ test
   #;
   (for/list ([gmap (list special-map map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)])
     (map->jsexpr gmap))
+
+  (check-equal? (jsexpr->map '[[-1] [0]]) #false)
   
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
   (check-equal? (jsexpr->map (map->jsexpr map1)) map1)
