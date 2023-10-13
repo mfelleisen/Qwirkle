@@ -49,7 +49,9 @@
    ;; --> introduce score+ function that determines by itself whether this is true??? 
    (->* (map? (listof placement?)) (#:finishing natural?) natural?)]))
 
-(module+ examples ;; these are all referee states with tiles and all 
+(module+ examples ;; these are all referee states with tiles and all
+  (provide Tests/ ForStudents/ Local)
+  
   (provide
    +starter-state
    special-state
@@ -442,11 +444,23 @@
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) #false) 0)
   (check-equal? (q-bonus duplicate-tiles 0) 0)
   (check-equal? (q-bonus duplicate-tiles #false) 0))
-  
-;; ---------------------------------------------------------------------------------------------------
-(module+ examples
-  (provide Tests/ ForStudents/ Local)
 
+;                                                                               
+;                                                                               
+;                                                                               
+;                                                                               
+;    ;;;    ;;;    ;;;   ; ;;                  ;;;    ;;;    ;;;    ;;;;   ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;                ;   ;  ;;  ;  ;; ;;   ;;  ; ;;  ; 
+;   ;      ;      ;   ;; ;   ;                ;      ;      ;   ;   ;     ;   ;;
+;    ;;;   ;      ;;;;;; ;   ;                 ;;;   ;      ;   ;   ;     ;;;;;;
+;       ;  ;      ;      ;   ;                    ;  ;      ;   ;   ;     ;     
+;   ;   ;  ;;     ;      ;   ;   ;;           ;   ;  ;;     ;; ;;   ;     ;     
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;            ;;;    ;;;;   ;;;    ;      ;;;; 
+;                                                                               
+;                                                                               
+;                                                                               
+
+(module+ examples
   (define-syntax-rule (score-scenario kind game-map placement expected msg)
     (set! kind (append kind (list [list game-map placement expected msg]))))
 
