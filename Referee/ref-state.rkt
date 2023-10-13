@@ -89,6 +89,8 @@
   [render-info-state (-> state? 2:image?)]))
 
 (module+ examples
+  (provide ForStudents/ Tests/)
+
   (provide
    ref-starter-state
    ;; yields 
@@ -155,7 +157,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
-  (require (submod Qwirkle/Common/game-state examples))
+  (require (except-in (submod Qwirkle/Common/game-state examples) ForStudents/ Tests/))
   (require (submod Qwirkle/Common/map examples))
   (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/tiles examples))
@@ -221,9 +223,60 @@
   (define info-special-state (ref-state-to-info-state special-state))
   (define info-bad-state (ref-state-to-info-state bad-state)))
 
+;                                                                               
+;                                                                               
+;                                             ;;;                         ;;;   
+;                                               ;                           ;   
+;    ;;;    ;;;    ;;;   ; ;;                   ;     ;;;    ;;;;  ;;;;     ;   
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;                  ;    ;;  ;  ;;  ;      ;    ;   
+;   ;      ;      ;   ;; ;   ;                  ;    ;   ;; ;   ;      ;    ;   
+;    ;;;   ;      ;;;;;; ;   ;                  ;    ;;;;;; ;   ;   ;;;;    ;   
+;       ;  ;      ;      ;   ;                  ;    ;      ;   ;  ;   ;    ;   
+;   ;   ;  ;;     ;      ;   ;   ;;             ;    ;      ;; ;;  ;   ;    ;   
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;              ;;   ;;;;   ;;;;   ;;;;     ;; 
+;                                                               ;               
+;                                                            ;  ;               
+;                                                             ;;                
+
 (module+ examples
   (provide state1-with) 
   (define state1-with (create-ref-state map0 `[(,tiles1 player1) ([,(tile 'square 'green)] extra)])))
+
+(module+ examples
+  (require (submod Qwirkle/Common/placement examples))
+
+  (define ForStudents/ '[])
+  (define Tests/ '[])
+
+  #; {Map [Listof Placement] Option<Map> String -> Void}
+  (define-syntax-rule (legal-scenario kind gmap pp expected msg)
+    (begin
+      (define tiles*  (map placement-tile pp))
+      (define rstate0 (create-ref-state gmap `[[,(cons +starter-tile tiles*) ,(~a 'player msg)]]))
+      (define gstate0 (ref-state-to-info-state rstate0))
+      (set! kind (append kind (list (list gstate0 pp expected msg))))))
+
+  (for ([m0 (list map9 map10)] [m+ (list map10 map11)] [pp (list plmt9 plmt10)] [ii (in-naturals)])
+    (legal-scenario ForStudents/ m0 pp #; tt #; cc m+ (~a "for students step " ii)))
+
+  ;; one more 
+  (define xs (ref-state-to-info-state ref-starter-state))
+  (set! ForStudents/ (append ForStudents/ `[[,xs ,lshaped-placement* #false "b/c p* is lshaped"]]))
+
+  (define j+ref-atop-state (ref-state-to-info-state +atop-state))
+  (define jplace-atop-starter place-atop-starter)
+  (set! Tests/
+        (append Tests/ `[[,j+ref-atop-state ,place-atop-starter #false "don't place tile atop"]]))
+  (for ([m0 (list map0 map2)] [m+ (list map1 map3)] [pp (list plmt0 plmt2)] [ii (in-naturals)])
+    (legal-scenario Tests/ m0 pp m+ (~a "tests step " ii))))
+
+(module+ test
+  (define (check-legal l)
+    (match-define [list gstate0 pp expected msg] l)
+    (check-equal? (legal gstate0 pp) expected msg))
+
+  (for-each check-legal ForStudents/)
+  (for-each check-legal Tests/))
 
 ;                              
 ;      ;;                    ; 
@@ -402,7 +455,6 @@
 (module+ test
   (define kicked (create-ref-state starter-map (rest starter-players) #:tiles0 handouts))
   (check-equal? (state-kick ref-starter-state) kicked))
-
 
 ;                                                   
 ;                                                   
