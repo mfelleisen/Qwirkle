@@ -11,7 +11,7 @@
  #; {type [RefState X]  = [GameState X [SoPlayer X] [Listof Tile]]}
  ;;      what the referee knows about the game 
  #; {type PubKnowledge  = [GameState String Natural Natural]}
- ;;      what a player may know: its own state with nam; the scores of others; order of play; tiles left
+ ;;      active player knows: its own state with nam; the scores of others; order of play; tiles left
  #; {type [SoPlayer Y]  = [sop Natural [Listof Tile] Y]}
  ;;      where Y is typically an external player or just a symbolic name
 
@@ -444,18 +444,46 @@
   (check-equal? (q-bonus duplicate-tiles #false) 0))
   
 ;; ---------------------------------------------------------------------------------------------------
-(module+ test ;; scoring tests 
+(module+ examples
+  (provide Tests/ ForStudents/ Local)
+
+  (define-syntax-rule (score-scenario kind game-map placement expected msg)
+    (set! kind (append kind (list [list game-map placement expected msg]))))
+
+  (define ForStudents/ '[])
+  (score-scenario ForStudents/ map1 plmt0 (list-ref score* 0) "10")
+  (score-scenario ForStudents/ map2 plmt1 (list-ref score* 1) "21")
+  (score-scenario ForStudents/ map4 plmt3 (list-ref score* 3) "43")
+
+  (define Tests/ '[])
+  (score-scenario Tests/ map3 plmt2 (list-ref score* 2) "32")
+  (score-scenario Tests/ map8 plmt7 (list-ref score* 7) "87")
+  (score-scenario Tests/ map9 plmt8 (list-ref score* 8) "98")
+  (score-scenario Tests/ map10 plmt9 (list-ref score* 9) "109")
+  (score-scenario Tests/ map11 plmt10 (list-ref score* 10) "1110")
+
+  (define Local '[])
+  ;; not a run of like-tiles or colors and not a Q !! 
+  (score-scenario Local special-map+green-circle-at--2-2++ place-orange-circle-at--2-2 7 "not run")
+  
+  (score-scenario Local map10 plmt9 (list-ref score* 9) "Q bonus missing")
+  (score-scenario Local (legal special-state special-placements) special-placements 10 "2 segments"))
+              
+
+(module+ test ;; scoring tests
   (for ([m+ (list map1 map2 map3 map4 map5 map6 map7 map8 map9 map10 map11)]
         [pp (list plmt0 plmt1 plmt2 plmt3 plmt4 plmt5 plmt6 plmt7 plmt8 plmt9 plmt10)]
         [sc score*]
         [ii (in-naturals)])
     (check-equal? (score m+ pp) sc (~a "scoring map " (+ ii 1))))
 
-  ;; not a run of like-tiles or colors and not a Q !! 
-  (check-equal? (score special-map+green-circle-at--2-2++ place-orange-circle-at--2-2) 7 "not run")
-  
-  (check-equal? (score map10 plmt9) (list-ref score* 9) "Q bonus missing")
-  (check-equal? (score (legal special-state special-placements) special-placements) 10 "2 segments"))
+  (define (check-score l)
+    (match-define [list game-map placement expected msg] l)
+    (check-equal? (score game-map placement) expected msg))
+
+  (for-each check-score Local)
+  (for-each check-score ForStudents/)
+  (for-each check-score Tests/))
 
 ;                                            
 ;                            ;               
