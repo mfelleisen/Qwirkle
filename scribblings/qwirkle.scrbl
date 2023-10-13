@@ -145,9 +145,9 @@ When granted a turn, a player may take one of the following three actions:
   
 ]
 @; -----------------------------------------------------------------------------
-The referee eliminates any player that violates any rules during a
-turn. @purple{The eliminated player's tiles get appended to the referee's
-tiles.} 
+The referee eliminates any player that violates any rules during a turn. 
+@purple{The tiles in the hand of the eliminated player get appended to the
+referee's tiles.} 
 
 @bold{Scoring a Turn} A player that passes or exchanges its tiles receives no
 points. 
