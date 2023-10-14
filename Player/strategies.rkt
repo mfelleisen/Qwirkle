@@ -63,8 +63,9 @@
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
-  (require (submod Qwirkle/Referee/ref-state examples))
-  (require (submod Qwirkle/Common/game-state examples))
+  (require (except-in (submod Qwirkle/Referee/ref-state examples) Tests/ ForStudents/))
+  #;
+  (require (except-in (submod Qwirkle/Common/game-state examples) Tests/ ForStudents/))
   (require rackunit))
 
 ;                                                                        
@@ -154,6 +155,47 @@
   (for*/first ([t (in-list mine)] [cs (in-value (find-candidates gmap t))] #:unless (set-empty? cs))
     (list t cs)))
 
+
+;                                                                                      
+;                                                                                      
+;                                                      ;                    ;          
+;                                                      ;                    ;          
+;    ;;;    ;;;    ;;;   ; ;;                  ;;;   ;;;;;   ;;;;  ;;;;   ;;;;;        
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;                ;   ;    ;     ;;  ;     ;    ;          
+;   ;      ;      ;   ;; ;   ;                ;        ;     ;         ;    ;          
+;    ;;;   ;      ;;;;;; ;   ;                 ;;;     ;     ;      ;;;;    ;          
+;       ;  ;      ;      ;   ;                    ;    ;     ;     ;   ;    ;          
+;   ;   ;  ;;     ;      ;   ;   ;;           ;   ;    ;     ;     ;   ;    ;     ;;   
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;            ;;;     ;;;   ;      ;;;;    ;;;   ;;   
+;                                                                                      
+;                                                                                      
+;                                                                                      
+
+(module+ examples
+
+  (provide ForStudents/ Tests/)
+
+  (define ForStudents/ '[])
+  (define Tests/ '[])
+
+  #; {BelongsTo PubKnowledge Strategy:String Action String -> Void}
+  (define-syntax-rule (strategy-scenario kind game-state strategy expected msg)
+    (set! kind (append kind (list (list game-state strategy expected msg)))))
+  
+  (strategy-scenario ForStudents/ info-special-state dag-strategy the-special-place "dag special")
+  (strategy-scenario ForStudents/ info-bad-state dag-strategy PASS "dag pass")
+
+  (strategy-scenario Tests/ info-bad-state ldasg-strategy PASS "ldasg bad")
+  (strategy-scenario Tests/ info-+starter-state ldasg-strategy ref-place "ldasg +starte-place")
+  (strategy-scenario Tests/ info-special-state ldasg-strategy constrained-special "ldasg special")
+  (strategy-scenario Tests/ info-starter-state ldasg-strategy REPLACEMENT "ldasg replacement")
+  (strategy-scenario Tests/ info-starter-state dag-strategy REPLACEMENT "dag replacement"))
+
+(module+ test
+  (for-each (λ (l) (check-equal? ([second l] [first l]) (third l) (fourth l))) ForStudents/)
+  (for-each (λ (l) (check-equal? ([second l] [first l]) (third l) (fourth l))) Tests/))
+
+
 ;                                                   
 ;                                                   
 ;      ;     ;                           ;          
@@ -211,7 +253,7 @@
   (provide DAG LDASG
            strategy->jsexpr
            jsexpr->strategy)
-           
+  
   (require json)
 
   (define DAG "dag")
@@ -229,6 +271,6 @@
       [(== LDASG) ldasg-strategy]
       [_
        (define str (jsexpr->string/ j))
-       (eprintf "~a object does not match schema\n ~a\n" 'jsexpr->strategy str)
+       (eprintf "~a : value does not match schema\n ~a\n" 'jsexpr->strategy str)
        #false])))
       
