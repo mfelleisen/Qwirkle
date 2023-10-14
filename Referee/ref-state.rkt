@@ -248,7 +248,7 @@
   (define ForStudents/ '[])
   (define Tests/ '[])
 
-  #; {Map [Listof Placement] Option<Map> String -> Void}
+  #; {BelongsTo Map [Listof Placement] Option<Map> String -> Void}
   (define-syntax-rule (legal-scenario kind gmap pp expected msg)
     (begin
       (define tiles*  (map placement-tile pp))

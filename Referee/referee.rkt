@@ -135,7 +135,7 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/game-state examples))
-  (require (submod Qwirkle/Referee/ref-state examples))
+  (require (except-in (submod Qwirkle/Referee/ref-state examples) ForStudents/ Tests/))
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Referee/observer)
