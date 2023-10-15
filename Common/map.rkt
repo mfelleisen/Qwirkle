@@ -119,6 +119,7 @@
   (require (submod ".." json))
   (require (submod Qwirkle/Common/coordinates examples))
   (require (submod Qwirkle/Common/tiles examples))
+  (require SwDev/Lib/should-be-racket)
   (require rackunit))
 
 ;                                                                 
@@ -617,11 +618,11 @@
     [(list (and row (list (? integer?) (list (? integer?) (app jsexpr->tile (? tile? t*))) ...)) ...)
      (let/ec return
        (when (ormap empty? t*)
-         (eprintf "jsexpr->map object does not match schema: empty array of tiles encountered")
+         (eprintf "jsexpr->map object does not match schema: empty array of tiles encountered\n")
          (return #false))
        (for/fold ([h (hash)]) ([r row])
          (unless (is-a-set 'row (map first row))
-           (eprintf "jsexpr->map object does not match schema: row index CONSTRAINT violated")
+           (eprintf "jsexpr->map object does not match schema: row index CONSTRAINT violated\n")
            (return #false))
          (match-define (list ri cell ...) r)
          ; this doesn't necessarily hold 
@@ -642,8 +643,8 @@
   #;
   (for/list ([gmap (list special-map map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)])
     (map->jsexpr gmap))
-
-  (check-equal? (jsexpr->map '[[-1] [0]]) #false)
+  
+  (check-equal? (dev/null (jsexpr->map '[[-1] [0]])) #false)
   
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
   (check-equal? (jsexpr->map (map->jsexpr map1)) map1)
