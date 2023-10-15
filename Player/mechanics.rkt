@@ -73,6 +73,7 @@
 ;                     ;                                    
                                                                  
 (require Qwirkle/Common/player-interface)
+(require (except-in (submod Qwirkle/Common/game-state examples) Tests/ ForStudents/))
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/tiles)
@@ -89,8 +90,8 @@
 
 (module+ test
   (require (submod ".."))
-  (require (submod Qwirkle/Common/game-state examples))
-  (require (submod Qwirkle/Referee/ref-state examples))
+  (require (except-in (submod Qwirkle/Common/game-state examples) Tests/ ForStudents/))
+  (require (except-in (submod Qwirkle/Referee/ref-state examples) Tests/ ForStudents/))
   (require Qwirkle/Referee/ref-state)
   (require Qwirkle/Lib/check-message)
   (define cep current-error-port)

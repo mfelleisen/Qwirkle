@@ -65,7 +65,7 @@
   
   (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Player/strategies examples))
-  (require (submod Qwirkle/Referee/ref-state examples))
+  (require (except-in (submod Qwirkle/Referee/ref-state examples) ForStudents/ Tests/))
   
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)

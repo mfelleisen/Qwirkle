@@ -64,8 +64,6 @@
   (require (submod ".."))
   (require (submod ".." examples))
   (require (except-in (submod Qwirkle/Referee/ref-state examples) Tests/ ForStudents/))
-  #;
-  (require (except-in (submod Qwirkle/Common/game-state examples) Tests/ ForStudents/))
   (require rackunit))
 
 ;                                                                        
