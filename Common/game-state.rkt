@@ -36,7 +36,11 @@
   [active-sop-finished? (->* (state?) [(listof tile?)] boolean?)]
   [active-sop-hand      (-> state? (listof tile?) state?)]
   [active-sop-tiles     (-> state? (listof tile?))]
-  
+
+  [apply-action
+   ;; apply a one-tile placement to the state 
+   (-> state? placement? state?)]
+
   [legal
    ;; is the series of placements legale in this state; if so compute the new map 
    (-> state? (listof placement?) (or/c #false map?))]
@@ -49,6 +53,7 @@
    ;; --> introduce score+ function that determines by itself whether this is true??? 
    (->* (map? (listof placement?)) (#:finishing natural?) natural?)]))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; these are all referee states with tiles and all
   (provide Tests/ ForStudents/ Local)
   
@@ -301,10 +306,6 @@
 
 #; {PubKnowledge Placement -> PubKnowledge}
 
-(provide
- (contract-out
-  [apply-action (-> state? placement? state?)]))
-
 (define (apply-action pk 1placement)
   (define new-map (add-tile (state-map pk) 1placement))
   (let* ([pk (active-sop-tiles-- pk (list (placement-tile 1placement)))]
@@ -400,19 +401,51 @@
 ;                                     
 
 #; {Map Placements -> Natural}
+
+#| Working through an example:
+
+   - a player places 3 tiles x
+   - they are all in the same row 
+
+      +-+
+      |o|
+      +-+
+      +-+              +-+
+      |o|	       |o|
+      +-+              +-+ 
+   +-++-++-++-+  +-++-++-+
+   |x||x||o||o|	 |o||o||x|
+   +-++-++-++-+	 +-++-++-+
+   +-+                 +-+
+   |o|		       |o|
+   +-+		       +-+
+
+   scoring works most easily as follows:
+   - determine the line (row or column) to which the tiles were adeded
+   - find all segments in this line and award points for those
+   - find all segments that are orthogonal to this line where a tile was added 
+   - for the last two, add Q bonus if applicable 
+|#
 (define (score gmap placements #:finishing (finishing-bonus 0))
   (define coord (map placement-coordinate placements))
   (define line  (create-line gmap coord))
-  (+ (length placements)                             ;; task 1 
-     finishing-bonus                                 ;; task 2 
-     (score-same-line-segments gmap line placements) ;; task 3 
-     (score-orthoginal-lines gmap line placements))) ;; task 4
+  (+ (length placements)                     ;; task 1 
+     finishing-bonus                         ;; task 2 
+     (score-segments gmap line placements))) ;; tasks 3 and 4        
 
 #; {Map Line [Listof Coordinate] -> Natural}
-;; lengths for all segments of the placement line that contain a new placement, plus bonus 
+;; score the segments on the line plus all segments orthonal to the at addition points 
+(define (score-segments gmap line placements)
+  (+ (score-same-line-segments gmap line placements) ;; task 3 
+     (score-orthoginal-lines gmap line placements))) ;; task 3
+
+;; ---------------------------------------------------------------------------------------------------
+#; {Map Line [Listof Coordinate] -> Natural}
+;; lengths for all segments of the placement line that contain a new placement,
+;; plus Q bonus if applicable 
 (define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
-  (for/sum ([1segment segment*])
+  (for/sum ([1segment segment*]) 
     (q-bonus (map placement-tile 1segment) (contains-1-placement 1segment placements))))
 
 #;{Segment [Listof Placement] -> [Option Natural]}
@@ -421,8 +454,10 @@
   (for/first ([p 1segment] #:when (member p placements))
     (length 1segment)))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {Map [Listof Placements] -> Natural}
-;; lengths for all lines orthogonal to the placement line that contain one new placement, plus bonus
+;; lengths for all lines orthogonal to the placement line that contain one new placement,
+;; plus Q bonus if applicable 
 (define (score-orthoginal-lines gmap line placements)
   (define coord* (map placement-coordinate placements))
   (define walk   (if (row? line) walk-column-orthogonally walk-row-orthogonally))
@@ -430,16 +465,20 @@
     (define continuous-run (walk gmap cord))
     (q-bonus continuous-run (length continuous-run))))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Tile] [Option Natural] -> Natural}
-;; complete scoring and add bonus, if applicable 
-;; a player receives 6 bonus points for completing a Q, which is a contiguous sequence of tiles
-;; that contains all shapes or all colors and nothing else
+;; add bonus to score, if applicable 
+;; a player receives bonus points for completing a Q,
 (define (q-bonus tile* count-if-newly-completed)
-  (if (and count-if-newly-completed (or (all-colors? tile*) (all-shapes? tile*)))
+  (if (and count-if-newly-completed (is-q? tile*))
       (+ [Q-BONUS] count-if-newly-completed)
       (or count-if-newly-completed 0)))
 
-(module+ test
+#; {[Listof Tile] -> Boolean}
+(define (is-q? tile*)
+  (or (all-colors? tile*) (all-shapes? tile*)))
+
+(module+ test ;; for just Q bonus 
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) 0) [Q-BONUS])
   (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) #false) 0)
   (check-equal? (q-bonus duplicate-tiles 0) 0)
@@ -468,7 +507,7 @@
   (score-scenario ForStudents/ map1 plmt0 (list-ref score* 0) "10")
   (score-scenario ForStudents/ map2 plmt1 (list-ref score* 1) "21")
   (score-scenario ForStudents/ map4 plmt3 (list-ref score* 3) "43")
-
+  
   (define Tests/ '[])
   (score-scenario Tests/ map3 plmt2 (list-ref score* 2) "32")
   (score-scenario Tests/ map8 plmt7 (list-ref score* 7) "87")
@@ -498,6 +537,13 @@
   (for-each check-score Local)
   (for-each check-score ForStudents/)
   (for-each check-score Tests/))
+
+(module+ test
+  (define (show-scenario s)
+    (match-define [list game-map placement expected msg] s)
+    (list (render-map game-map) placement))
+
+  (map show-scenario ForStudents/))
 
 ;                                            
 ;                            ;               
