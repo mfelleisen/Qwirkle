@@ -17,42 +17,106 @@ Here is a rough overview of the layers:
         | - name           |
         + ---------------- +
         
-        + ---------------- +          + ---------------- +          
-        | game-state       |          | state-of-players |         
-        + ---------------- +          + ---------------- +         
-        | players          |          | score	    |
-        | tiles       	   |          | tiles 	    |
-        | legal       	   |          | payload	    |
-        | score      	   |          + ---------------- +
-        | active-*    	   |
-        + ---------------- +
-          
+        + ---------------- +    *     + ---------------- +          
+        | game-state       | -------> | state-of-players | 
+        + ---------------- + ---+     + ---------------- +         
+        | players          |    |     | score            |
+        | tiles            |    |     | tiles            |
+        | legal            |    |     | payload          |
+        | score            |    |     + ---------------- +
+        | active-*         |    |
+        + ---------------- +    |
+                                |
         ---------------------------------------------------------------------------------------------------
- BASIC CONCEPTS 
-
-                                        + ------------ +
-                                        | map          |
-                                        + ------------ +
-                                        | graph	       |
-					| extend       |
-                                        + ------------ +
-
-                                        + ------------ +
-                                        | tiles        |
-                                        + ------------ +
-                                        | color        |
-                                        | shape	       |
-                                        + ------------ +
-
-                                        + ------------ +          
-                                        | coordinates  |          
-                                	+ ------------ +          
-                                	| row relative |
-                                	| col relative |
-                                	| ordering     |
-                                	+ ------------ +          
+                                |
+ BASIC CONCEPTS                 |
+                                |
+                                +-----> + ------------ + ------+
+                                        | map          | ---+  |
+                                        + ------------ +    |  |
+                                        | graph        |    |  |
+                                        | extend       |    |  |
+                                        + ------------ +    |  |
+                                                            |  |
+                                        + ------------ +    |  |
+                                        | tiles        | <--+  |  +------------+
+                                        + ------------ +       |  | color      |
+                                        | color        |       |  +------------+
+                                        | shape        |       |  | is-color?  |
+                                        + ------------ +       |  | allColors? |
+                                                               |  +------------+
+                                        + ------------ +       |  
+                                        | Coordinates  | <-----+  
+                                        + ------------ +          +------------+
+                                        | row relative |          | shape      |
+                                        | col relative |          +------------+
+                                        | ordering     |          | is-shape?  |
+                                        + ------------ +          | allShapes? |
+                                                                  +------------+
 ```
 
+
+### Generic Game State and Interaction Protocol 
+
+```
+
+  [apply-action
+   ;; apply a one-tile placement to the state 
+   (-> state? placement? state?)]
+
+  [active-sop-finished?
+   ;; did the active player just finish the game?
+   (->* (state?) [(listof tile?)] boolean?)]
+
+  [legal
+   ;; is the series of placements legale in this state; if so compute the new map 
+   (-> state? (listof placement?) (or/c #false map?))]
+  
+  [score
+   ;; legal confirmed, new map evaluated with placements that produced it 
+   ;; referee must add bonus for finish
+   ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
+   ;; the ref must consult the state and determine whether the active player has placed all tiles
+   ;; --> introduce score+ function that determines by itself whether this is true??? 
+   (->* (map? (listof placement?)) (#:finishing natural?) natural?)]
+
+  [state-handouts
+   #; (state-handouts s n) ; produce the tiles to be handed to the actual player and a revised state
+   ;; -- if n is #false, use the tiles in possession of the player representation
+   ;; -- otherwise, ; takes away at most n tiles from the current pile
+   (-> state? (or/c #false natural?) (values (listof tile?) state?))]
+
+  [state-rotate
+   ;; make the first player the last one 
+   (-> state? state?)]
+
+-----------------------------------------------------------------------------
+
+   game-state                     referee                         player (p_1) 
+        |                            |                                | 
+        |                            |   take-turn(PublicState)       | 
+        |                            | -----------------------------> | 
+        |                            |     seq[Placement]             | 
+        | legal(seq[Placement])      | <============================  | 
+        | <------------------------- |                                |
+        |       m:Map                |                                |
+        | =========================> |                                |
+        |                            |                                |
+        | score(m:Map,seq[Placement])|                                |
+        | <------------------------- |                                |
+        |       s:Natural            |                                |
+        | =========================> |                                |
+        |                            |                                |
+        |                            |                                |
+        |                            |                                | 
+        |                            |     new-tiles(set[Tile])       | 
+        |                            | -----------------------------> |
+        | state-handouts(h:set[Tile])|                                |
+        | <------------------------- |                                |
+        | state-rotate()             |                                |
+        | <------------------------- |                                |
+        | 
+```
 
 ### The Remote Protocol
 
@@ -264,5 +328,6 @@ referee                        player (p_1) . . . player (p_n)
 | [map.rkt](map.rkt) | data representation of a Q map | 
 | [placement.rkt](placement.rkt) | a data representation for player actions, esp. placements | 
 | [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
+| [q-rule.rkt](q-rule.rkt) | the Q specific rule for fitting a tile into a space | 
 | [state-of-player.rkt](state-of-player.rkt) | a data representation of the state of a Q player | 
 | [tiles.rkt](tiles.rkt) | data representation of tiles, shapes, and colors | 

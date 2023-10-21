@@ -1,0 +1,57 @@
+
+  [apply-action
+   ;; apply a one-tile placement to the state 
+   (-> state? placement? state?)]
+
+  [active-sop-finished?
+   ;; did the active player just finish the game?
+   (->* (state?) [(listof tile?)] boolean?)]
+
+  [legal
+   ;; is the series of placements legale in this state; if so compute the new map 
+   (-> state? (listof placement?) (or/c #false map?))]
+  
+  [score
+   ;; legal confirmed, new map evaluated with placements that produced it 
+   ;; referee must add bonus for finish
+   ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
+   ;; the ref must consult the state and determine whether the active player has placed all tiles
+   ;; --> introduce score+ function that determines by itself whether this is true??? 
+   (->* (map? (listof placement?)) (#:finishing natural?) natural?)]
+
+  [state-handouts
+   #; (state-handouts s n) ; produce the tiles to be handed to the actual player and a revised state
+   ;; -- if n is #false, use the tiles in possession of the player representation
+   ;; -- otherwise, ; takes away at most n tiles from the current pile
+   (-> state? (or/c #false natural?) (values (listof tile?) state?))]
+
+  [state-rotate
+   ;; make the first player the last one 
+   (-> state? state?)]
+
+-----------------------------------------------------------------------------
+
+   game-state                     referee                         player (p_1) 
+        |                            |                                | 
+        |                            |   take-turn(PublicState)       | 
+        |                            | -----------------------------> | 
+        |                            |     seq[Placement]             | 
+        | legal(seq[Placement])      | <============================  | 
+        | <------------------------- |                                |
+        |       m:Map                |                                |
+        | =========================> |                                |
+        |                            |                                |
+        | score(m:Map,seq[Placement])|                                |
+        | <------------------------- |                                |
+        |       s:Natural            |                                |
+        | =========================> |                                |
+        |                            |                                |
+        |                            |                                |
+        |                            |                                | 
+        |                            |     new-tiles(set[Tile])       | 
+        |                            | -----------------------------> |
+        | state-handouts(h:set[Tile])|                                |
+        | <------------------------- |                                |
+        | state-rotate()             |                                |
+        | <------------------------- |                                |
+        | 

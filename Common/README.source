@@ -17,42 +17,48 @@ Here is a rough overview of the layers:
         | - name           |
         + ---------------- +
         
-        + ---------------- +          + ---------------- +          
-        | game-state       |          | state-of-players |         
-        + ---------------- +          + ---------------- +         
-        | players          |          | score	    |
-        | tiles       	   |          | tiles 	    |
-        | legal       	   |          | payload	    |
-        | score      	   |          + ---------------- +
-        | active-*    	   |
-        + ---------------- +
-          
+        + ---------------- +    *     + ---------------- +          
+        | game-state       | -------> | state-of-players | 
+        + ---------------- + ---+     + ---------------- +         
+        | players          |    |     | score            |
+        | tiles            |    |     | tiles            |
+        | legal            |    |     | payload          |
+        | score            |    |     + ---------------- +
+        | active-*         |    |
+        + ---------------- +    |
+                                |
         ---------------------------------------------------------------------------------------------------
- BASIC CONCEPTS 
-
-                                        + ------------ +
-                                        | map          |
-                                        + ------------ +
-                                        | graph	       |
-					| extend       |
-                                        + ------------ +
-
-                                        + ------------ +
-                                        | tiles        |
-                                        + ------------ +
-                                        | color        |
-                                        | shape	       |
-                                        + ------------ +
-
-                                        + ------------ +          
-                                        | coordinates  |          
-                                	+ ------------ +          
-                                	| row relative |
-                                	| col relative |
-                                	| ordering     |
-                                	+ ------------ +          
+                                |
+ BASIC CONCEPTS                 |
+                                |
+                                +-----> + ------------ + ------+
+                                        | map          | ---+  |
+                                        + ------------ +    |  |
+                                        | graph        |    |  |
+                                        | extend       |    |  |
+                                        + ------------ +    |  |
+                                                            |  |
+                                        + ------------ +    |  |
+                                        | tiles        | <--+  |  +------------+
+                                        + ------------ +       |  | color      |
+                                        | color        |       |  +------------+
+                                        | shape        |       |  | is-color?  |
+                                        + ------------ +       |  | allColors? |
+                                                               |  +------------+
+                                        + ------------ +       |  
+                                        | Coordinates  | <-----+  
+                                        + ------------ +          +------------+
+                                        | row relative |          | shape      |
+                                        | col relative |          +------------+
+                                        | ordering     |          | is-shape?  |
+                                        + ------------ +          | allShapes? |
+                                                                  +------------+
 ```
 
+
+### Generic Game State and Interaction Protocol 
+
+@@include(../Common/interacting-with-game-state.txt)
 
 ### The Remote Protocol
 
