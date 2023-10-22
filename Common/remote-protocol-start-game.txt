@@ -4,7 +4,7 @@
 referee                       proxy_player (p_*) //    proxy_ref (p_*)   player p_*
   |                               |              //      |                | 
   |                               |              //      |                | 
-  |  setup(s:State,t:Tiles)       |              //      |                | 
+  |  setup(s:State,t:bagOTiles)   |              //      |                | 
   | ----------------------------> |              //      |                |   
   |                               |  (s,t):JSON  //      |                | 
   |                               | ~~~~~~~~~~~~ // ~~~> |                | 

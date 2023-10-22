@@ -37,7 +37,7 @@ referee                         player (p_1) . . . player (p_n)
   IF: the player asks for REPLACE or EXTENSIONS, the referee completes the turn: 
 
   |                                |                 |
-  |     new-tiles(setOfTiles)      |                 | % the player is handed
+  |     new-tiles(bagOfTiles)      |                 | % the player is handed
   | -----------------------------> |                 | % a new set of tiles 
 
 
