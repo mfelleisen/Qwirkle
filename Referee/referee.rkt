@@ -28,7 +28,7 @@
     (or (unit-test-mode)
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
-(define config/c (hash-carrier/c (list STATE0 QUIET OBSERVE PER-TURN QBO FBO)))
+(define referee-config/c (hash-carrier/c (list STATE0 QUIET OBSERVE PER-TURN QBO FBO)))
 
 (provide
  #; {type Configuration = [Hashtable Options]}
@@ -38,11 +38,11 @@
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe procedure?) config/c)]
+   (->* (state?) (#:observe procedure?) referee-config/c)]
 
   [set-bonus
    #; (set-bonus c Q-BONUS FINISH-BONUS)
-   (-> config/c natural? natural? config/c)]
+   (-> referee-config/c natural? natural? referee-config/c)]
   
   [referee/config
    ;; runs a game from the given configuration, which contains a ref state plus the above options
@@ -55,7 +55,7 @@
    ;; (1) failed (as above) (2) PASS (3) LEGAL REPLACEMENT (4) LEGAL PLACEMENTS (5) ILLEGAL Requests
    ;; It throws out players when (1) or (5) happens. 
    ;;
-   (->i ([config config/c] [players (listof player/c)])
+   (->i ([config referee-config/c] [players (listof player/c)])
         #:pre/name (players) "players must have distince names"
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (config players) "matching number of players"

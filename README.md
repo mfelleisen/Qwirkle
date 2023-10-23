@@ -137,14 +137,14 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 |
   |                                |                 |
-  |     setup(map,setOfTiles)      |                 | % the initial map for this game
+  |     setup(map,bagOfTiles)      |                 | % the initial map for this game
   | -----------------------------> |                 | % a set of tiles for this player
   |                                |                 | 
   .                                .                 .
   .                                .                 . % repeat for descending age
   .                                .                 . 
   |                                |                 |
-  |     setup(map,setOfTiles)      |                 | 
+  |     setup(map,bagOfTiles)      |                 | 
   | -----------------------------------------------> |
   |                                |                 |
 ```
@@ -191,7 +191,7 @@ referee                         player (p_1) . . . player (p_n)
   IF: the player asks for REPLACE or EXTENSIONS, the referee completes the turn: 
 
   |                                |                 |
-  |     new-tiles(setOfTiles)      |                 | % the player is handed
+  |     new-tiles(bagOfTiles)      |                 | % the player is handed
   | -----------------------------> |                 | % a new set of tiles 
 
 

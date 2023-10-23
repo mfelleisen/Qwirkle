@@ -437,7 +437,7 @@
 ;; score the segments on the line plus all segments orthonal to the at addition points 
 (define (score-segments gmap line placements)
   (+ (score-same-line-segments gmap line placements) ;; task 3 
-     (score-orthoginal-lines gmap line placements))) ;; task 3
+     (score-orthogonal-lines gmap line placements))) ;; task 3
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Map Line [Listof Coordinate] -> Natural}
@@ -458,7 +458,7 @@
 #; {Map [Listof Placements] -> Natural}
 ;; lengths for all lines orthogonal to the placement line that contain one new placement,
 ;; plus Q bonus if applicable 
-(define (score-orthoginal-lines gmap line placements)
+(define (score-orthogonal-lines gmap line placements)
   (define coord* (map placement-coordinate placements))
   (define walk   (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([cord coord*])
