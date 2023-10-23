@@ -12,6 +12,7 @@
 (define QUIET           'quiet)
 
 (define options (list PORT SERVER-TRIES SERVER-WAIT WAIT-FOR-SIGNUP REF-SPEC QUIET))
+(define server-config/c (hash-carrier/c options))
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide
@@ -34,7 +35,7 @@
    ;;   (a production server would have a "wait in line" queue for late comers; and it would restart.)
    ;; 
    ;; runs a referee on the players that signed up properly port# plus the house players (if any) 
-   (->i ([confg    (hash-carrier/c options)])
+   (->i ([confg    server-config/c])
         ([ordering (-> list? list?)]
          [plyrs    list?]
          #:result (return-results-or-void (-> list? any/c)))
