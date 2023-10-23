@@ -3,6 +3,11 @@
 ;; a data representation of the referee's knowledge about the game
 ;; ---------------------------------------------------------------------------------------------------
 
+(require SwDev/Lib/hash-contract)
+(define QBO      'q-bonus)
+(define FBO      'finish-bonus)
+(define state-config/c (hash-carrier/c (list QBO FBO)))
+
 (provide
  ;; from Qwirkle/Common/game-state
  state?
@@ -34,7 +39,14 @@
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
  ;; the referee knows the state of every player and the sequence of tiles it is handing out 
 
+ #; {type StateConfig}
+ state-config/c
+
  (contract-out
+  [DEFAULT-CONFIG-S state-config/c]
+  [install-state-config (-> state-config/c any/c)]
+  [set-bonus (-> natural? natural? state-config/c)]
+  
   [create-ref-state
    (->i ([gmap map?] [player-specs [listof [list/c [listof tile?] any/c]]])
         (#:tiles0 (tiles (listof tile?)))
@@ -162,6 +174,37 @@
   (require (submod Qwirkle/Common/placement examples))
   (require (submod Qwirkle/Common/tiles examples))
   (require rackunit))
+
+;                                            
+;                           ;;               
+;                          ;       ;         
+;                          ;                 
+;    ;;;    ;;;   ; ;;   ;;;;;   ;;;    ;;;; 
+;   ;;  ;  ;; ;;  ;;  ;    ;       ;   ;;  ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ; 
+;   ;;     ;; ;;  ;   ;    ;       ;   ;; ;; 
+;    ;;;;   ;;;   ;   ;    ;     ;;;;;  ;;;; 
+;                                          ; 
+;                                       ;  ; 
+;                                        ;;  
+
+(define DEFAULT-CONFIG-S
+  (hash
+   QBO Q-BONUS-7
+   FBO FINISH-BONUS-7))
+
+#; {Natural Natural -> Configuration}
+(define (set-bonus QB FB)
+  (dict-set (dict-set DEFAULT-CONFIG-S FBO FB) QBO QB))
+
+#; {StateConfig -> Void}
+(define (install-state-config cs)
+  [Q-BONUS      (dict-ref cs QBO)]
+  [FINISH-BONUS (dict-ref cs FBO)])
+  
+
 
 ;                                            
 ;                                            

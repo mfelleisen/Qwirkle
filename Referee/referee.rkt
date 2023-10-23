@@ -15,8 +15,7 @@
 (define OBSERVE  'observe)
 
 (define STATE0   'initial-state)
-(define QBO      'q-bonus)
-(define FBO      'finish-bonus)
+(define CONFIG-S 'state-specific-config)
 
 (define unit-test-mode [make-parameter #false])
 
@@ -28,7 +27,7 @@
     (or (unit-test-mode)
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
 
-(define referee-config/c (hash-carrier/c (list STATE0 QUIET OBSERVE PER-TURN QBO FBO)))
+(define referee-config/c (hash-carrier/c (list STATE0 QUIET OBSERVE PER-TURN CONFIG-S)))
 
 (provide
  #; {type Configuration = [Hashtable Options]}
@@ -38,11 +37,7 @@
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe procedure?) referee-config/c)]
-
-  [set-bonus
-   #; (set-bonus c Q-BONUS FINISH-BONUS)
-   (-> referee-config/c natural? natural? referee-config/c)]
+   (->* (state?) (#:observe procedure? #:config state-config/c) referee-config/c)]
   
   [referee/config
    ;; runs a game from the given configuration, which contains a ref state plus the above options
@@ -169,8 +164,7 @@
   (hash
    OBSERVE  void
    QUIET    #true
-   QBO      Q-BONUS-7
-   FBO      FINISH-BONUS-7
+   CONFIG-S DEFAULT-CONFIG-S
    PER-TURN [time-out-limit]))
 
 #; {-> Void}
@@ -180,15 +174,12 @@
   (time-out-limit (dict-ref DEFAULT-CONFIG PER-TURN)))
 
 #; {State -> Configuration}
-(define (create-config s0 #:observe (o void))
+(define (create-config s0 #:observe (ob void) #:config (cs DEFAULT-CONFIG-S))
   (let* ([c DEFAULT-CONFIG]
-         [c (dict-set c OBSERVE o)]
-         [c (dict-set c STATE0 s0)])
+         [c (dict-set c CONFIG-S cs)]
+         [c (dict-set c OBSERVE  ob)]
+         [c (dict-set c STATE0   s0)])
     c))
-
-#; {Configuration Natural Natural -> Configuration}
-(define (set-bonus config QB FB)
-  (dict-set (dict-set config FBO FB) QBO QB))
 
 ;                                                          
 ;                    ;;                                    
@@ -209,7 +200,7 @@
 ;; the first list contains the name of winning players, sorted in lexicographic (string<?) order
 ;; the second is the list of misbehaving players, in the order in which they dropped out 
 
-(define DEFAULT-RESULT '[[] []]) 
+(define DEFAULT-RESULT '[[] []])
 
 #; {Configuration [Listof [Instanceof Player]] -> Result}
 ;; `c` must be defined at STATE0
@@ -217,19 +208,19 @@
 (define (referee/config c lo-players)
   (install-default-config)
   (define s0 (set-ref-state-players (dict-ref c STATE0) lo-players))
+  (define cs (dict-ref c CONFIG-S))
   (define wo (dict-ref c OBSERVE))
   (define qq (dict-ref c QUIET quiet))
   (parameterize* ([current-error-port (if qq (open-output-string) (current-error-port))]
-                  [time-out-limit (dict-ref c PER-TURN [time-out-limit])]
-                  [Q-BONUS            (dict-ref c QBO Q-BONUS-7)]
-                  [FINISH-BONUS       (dict-ref c FBO FINISH-BONUS-7)])
-    (dynamic-wind (setup-observer wo) (referee/state s0) (unset-observer wo))))
+                  [time-out-limit (dict-ref c PER-TURN [time-out-limit])])
+    (dynamic-wind (setup-observer wo) (referee/state s0 cs) (unset-observer wo))))
 
-#; {State {#:with-obs (U False Observer)} -> Result}
+#; {State StateConfig -> Result}
 ;; This is the workhorse of REFEREES.
 ;; ASSUME the given state is not finished (at least one player, no winner)
 #; {State -> Result}
-(define [(referee/state s0)]
+(define [(referee/state s0 cs)]
+  (install-state-config cs)
   (let*-values ({[s out]              (setup s0)}
                 {[winners+losers out] (if (false? s) (values DEFAULT-RESULT out) (rounds s out))}
                 ([winners0 losers0]   (apply values winners+losers))
@@ -771,9 +762,12 @@
            (set! kind (cons name kind)))]))
   
   (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
-    [define specs   (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
-    [define state   (create-ref-state map0 specs #:tiles0 tiles0)]
-    [define config (set-bonus (dict-set (create-config state #:observe observer) QUIET quiet) qb fb)]
+    [define specs  (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
+    [define state0 (create-ref-state map0 specs #:tiles0 tiles0)]
+    (define config
+      (let* ([c (create-config state0 #:observe observer #:config (set-bonus qb fb))]
+             [c (dict-set c QUIET quiet)])
+        c))
     
     ;; the Racket integration test
 
@@ -797,7 +791,7 @@
 
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
-      (define jsexpr-inputs [list (state->jsexpr state) (player*->jsexpr externals)])
+      (define jsexpr-inputs [list (state->jsexpr state0) (player*->jsexpr externals)])
       (parameterize ([unit-test-mode #false])
         (r-check-equal? main jsexpr-inputs `[,expect] descr)))
   
@@ -1298,7 +1292,12 @@
   ;; this test just ensures that the jsexpr entry point is run in a dummy way
   (define (plain-main-jsexpr . x) (write-json/ `[["A"] []]) (newline))
   (define expected  #; "because this succeeds, not because it's correct"  `{["A"] []})
+
+  'for-7
+
   (for-each (λ (test) [test plain-main-jsexpr expected]) for-students-7)
+
+  'for-8
 
   ;; this test just ensures that the server/client entry point works 
   (for-each (λ (test) (test list 1 2)) for-students-9))
