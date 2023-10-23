@@ -445,8 +445,9 @@
 ;; plus Q bonus if applicable 
 (define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
-  (for/sum ([1segment segment*]) 
-    (q-bonus (map placement-tile 1segment) (contains-1-placement 1segment placements))))
+  (for/sum ([1segment segment*])
+    (define n (contains-1-placement 1segment placements))
+    (q-bonus (map placement-tile 1segment) n))) ;; task 4 
 
 #;{Segment [Listof Placement] -> [Option Natural]}
 ;; lengt of segment if it contain one placement; 0 otherwise 
@@ -463,7 +464,7 @@
   (define walk   (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([cord coord*])
     (define continuous-run (walk gmap cord))
-    (q-bonus continuous-run (length continuous-run))))
+    (q-bonus continuous-run (length continuous-run)))) ;; task 4 
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Tile] [Option Natural] -> Natural}
