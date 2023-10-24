@@ -433,57 +433,48 @@
      finishing-bonus                         ;; task 2 
      (score-segments gmap line placements))) ;; tasks 3 and 4        
 
-#; {Map Line [Listof Coordinate] -> Natural}
+#; {Map Line [Listof Placement] -> Natural}
 ;; score the segments on the line plus all segments orthonal to the at addition points 
 (define (score-segments gmap line placements)
-  (+ (score-same-line-segments gmap line placements) ;; task 3 
-     (score-orthogonal-lines gmap line placements))) ;; task 3
+  (+ (score-same-line-segments gmap line placements) ;; task 3 & 4 
+     (score-orthogonal-lines gmap line placements))) ;; task 3 & 4 
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {Map Line [Listof Coordinate] -> Natural}
+#; {Map Line [Listof Placement] -> Natural}
 ;; lengths for all segments of the placement line that contain a new placement,
-;; plus Q bonus if applicable 
 (define (score-same-line-segments gmap line placements)
   (define segment* (if (row? line) (all-row-segments gmap line) (all-column-segments gmap line)))
-  (for/sum ([1segment segment*])
-    (define n (contains-1-placement 1segment placements))
-    (q-bonus (map placement-tile 1segment) n))) ;; task 4 
+  (for/sum ([1segment segment*] #:when (contains-1-placement 1segment placements))
+    (score-1-segment (map placement-tile 1segment))))
 
-#;{Segment [Listof Placement] -> [Option Natural]}
+#; {Segment [Listof Placement] -> [Option Segment]}
 ;; lengt of segment if it contain one placement; 0 otherwise 
 (define (contains-1-placement 1segment placements)
   (for/first ([p 1segment] #:when (member p placements))
-    (length 1segment)))
+    1segment))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Map [Listof Placements] -> Natural}
 ;; lengths for all lines orthogonal to the placement line that contain one new placement,
-;; plus Q bonus if applicable 
 (define (score-orthogonal-lines gmap line placements)
   (define coord* (map placement-coordinate placements))
   (define walk   (if (row? line) walk-column-orthogonally walk-row-orthogonally))
   (for/sum ([cord coord*])
-    (define continuous-run (walk gmap cord))
-    (q-bonus continuous-run (length continuous-run)))) ;; task 4 
+    (score-1-segment (walk gmap cord))))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Listof Tile] [Option Natural] -> Natural}
-;; add bonus to score, if applicable 
-;; a player receives bonus points for completing a Q,
-(define (q-bonus tile* count-if-newly-completed)
-  (if (and count-if-newly-completed (is-q? tile*))
-      (+ [Q-BONUS] count-if-newly-completed)
-      (or count-if-newly-completed 0)))
+#; {[Listof Tile] -> Natural}
+(define (score-1-segment s)
+  (+ (length s) (q-bonus-2 s)))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Tile] -> Natural}
+(define (q-bonus-2 tile*) ;; task 4 
+  (if (is-q? tile*) [Q-BONUS] 0))
 
 #; {[Listof Tile] -> Boolean}
 (define (is-q? tile*)
   (or (all-colors? tile*) (all-shapes? tile*)))
-
-(module+ test ;; for just Q bonus 
-  (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) 0) [Q-BONUS])
-  (check-equal? (q-bonus (take ALL-SHAPE-COLOR-COMBOS 6) #false) 0)
-  (check-equal? (q-bonus duplicate-tiles 0) 0)
-  (check-equal? (q-bonus duplicate-tiles #false) 0))
 
 ;                                                                               
 ;                                                                               
