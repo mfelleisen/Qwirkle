@@ -32,7 +32,7 @@
 (provide
  #; {type Configuration = [Hashtable Options]}
  ;; config options
- QUIET OBSERVE PER-TURN
+ QUIET OBSERVE CONFIG-S PER-TURN 
  
  (contract-out
   [create-config
