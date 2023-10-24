@@ -111,7 +111,8 @@
 
 (module+ json
   (require (submod Qwirkle/Common/tiles json))
-  (require Qwirkle/Lib/parse-json))
+  (require Qwirkle/Lib/parse-json)
+  (require SwDev/Contracts/unique))
 
 (module+ test
   (require (submod ".."))
@@ -621,18 +622,19 @@
          (eprintf "jsexpr->map object does not match schema: empty array of tiles encountered\n")
          (return #false))
        (for/fold ([h (hash)]) ([r row])
-         (unless (is-a-set 'row (map first row))
+         (unless (is-a-set-covering-of-interval 'row (map first row))
            (eprintf "jsexpr->map object does not match schema: row index CONSTRAINT violated\n")
            (return #false))
          (match-define (list ri cell ...) r)
-         ; this doesn't necessarily hold 
-         ; (is-a-set 'column (map first cell))
+         (unless (distinct? (map first cell))
+           (eprintf "jsexpr->map object does not match schema: column index CONSTRAINT violated\n")
+           (return #false))
          (for/fold ([h h]) ([c cell])
            (match-define [list ci ti] c)
            (hash-set h (coordinate ri ci) (jsexpr->tile ti)))))])
-
+  
   #; {[Listof N] -> Boolean}
-  (define (is-a-set tag l)
+  (define (is-a-set-covering-of-interval tag l)
     (define left  (apply min l))
     (define right (apply max l))
     (cond
@@ -643,7 +645,21 @@
   #;
   (for/list ([gmap (list special-map map1 map2 map3 map4 map5 map6 map7 map8 map9 map10)])
     (map->jsexpr gmap))
+
+  (require (submod Qwirkle/Common/tiles json))
+
+  (define red  #s(tile square red))
+  (define blue #s(tile square blue))
+
+  (define j-red-square  (tile->jsexpr red))
+  (define j-blue-square (tile->jsexpr blue))
+
+  (define bad-2-col-coord `[[-1 [0 ,j-red-square] [0 ,j-blue-square]]])
+  (check-equal? (dev/null (jsexpr->map bad-2-col-coord)) #false)
   
+  (define okay-2-col-coord `[[-1 [0 ,j-red-square]] [0 [0 ,j-blue-square]]])
+  (check-equal? (jsexpr->map okay-2-col-coord) (hash #s(coordinate -1 0) red #s(coordinate 0 0) blue))
+
   (check-equal? (dev/null (jsexpr->map '[[-1] [0]])) #false)
   
   (check-equal? (jsexpr->map (map->jsexpr map0)) map0)
