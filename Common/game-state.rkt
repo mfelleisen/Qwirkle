@@ -465,16 +465,23 @@
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Tile] -> Natural}
 (define (score-1-segment s)
-  (+ (length s) (q-bonus-2 s)))
+  (+ (length s) (q-bonus s)))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Tile] -> Natural}
-(define (q-bonus-2 tile*) ;; task 4 
+(define (q-bonus tile*) ;; task 4 
   (if (is-q? tile*) [Q-BONUS] 0))
 
 #; {[Listof Tile] -> Boolean}
 (define (is-q? tile*)
-  (or (all-colors? tile*) (all-shapes? tile*)))
+  (or (and (all-colors? tile*) (= (length tile*) COLORS#))
+      (and (all-shapes? tile*) (= (length tile*) SHAPES#))))
+
+(module+ test ;; for just Q bonus
+  (check-equal? (q-bonus exactly-all-colors) [Q-BONUS] "exactly all colors")
+  (check-equal? (q-bonus duplicate-red-all-colors) 0 "an extra red, but all colors")
+  (check-equal? (q-bonus exactly-all-shapes) [Q-BONUS] "exactly all shapes")
+  (check-equal? (q-bonus duplicate-star-all-shapes) 0 "an extra star, but all shapes"))
 
 ;                                                                               
 ;                                                                               
@@ -507,6 +514,28 @@
   (score-scenario Tests/ map10 plmt9 (list-ref score* 9) "109")
   (score-scenario Tests/ map11 plmt10 (list-ref score* 10) "1110")
 
+  ;; -----------------------------------------------------------------------------
+  ;; bug
+  (provide Ilyas/)
+  (require (submod Qwirkle/Common/map json))
+  (require (submod Qwirkle/Common/placement json))
+  (define Ilyas/ '[])
+  (score-scenario Ilyas/
+                  (jsexpr->map 
+                   '[(0 (0 #hasheq((color . "red")    (shape . "star"))))
+                     (1 (0 #hasheq((color . "blue")   (shape . "star"))))
+                     (2 (0 #hasheq((color . "green")  (shape . "star"))))
+                     (3 (0 #hasheq((color . "yellow") (shape . "star"))))
+                     (4 (0 #hasheq((color . "purple") (shape . "star"))))
+                     (5 (0 #hasheq((color . "orange") (shape . "star"))))
+                     (6 (0 #hasheq((color . "orange") (shape . "square"))))])
+                  (jsexpr->placements 
+                   '[#hasheq((1tile . #hasheq((color . "orange") (shape . "square")))
+                             (coordinate . #hasheq((column . 0) (row . 6))))])
+                  8
+                  "Ilyas's witness to my failure")
+  ;; -----------------------------------------------------------------------------
+
   (define Local '[])
   ;; not a run of like-tiles or colors and not a Q !! 
   (score-scenario Local special-map+green-circle-at--2-2++ place-orange-circle-at--2-2 7 "not run")
@@ -528,7 +557,8 @@
 
   (for-each check-score Local)
   (for-each check-score ForStudents/)
-  (for-each check-score Tests/))
+  (for-each check-score Tests/)
+  (for-each check-score Ilyas/))
 
 (module+ test
   (define (show-scenario s)

@@ -36,7 +36,11 @@
  shape?
 
  #; {Any -> Boolean : ColorSymbol}
- color?)
+ color?
+
+ #; Natural 
+ COLORS#
+ SHAPES#)
 
 (provide ;; for documentation 
  #; {-> [Pair [Listof name-of-color:String]
@@ -55,7 +59,11 @@
   (provide
    +starter-tile
 
-   duplicate-tiles
+   duplicate-red-all-colors
+   duplicate-star-all-shapes
+   
+   exactly-all-colors
+   exactly-all-shapes
 
    starter-tile
    starter-tile*
@@ -205,11 +213,14 @@
 
   (define qwirkle-tile* [build-list 6 (λ _ 8-green)])
 
-  (define duplicate-tiles
-    (let* ([s (take ALL-SHAPE-COLOR-COMBOS SHAPES#)]
-           [s (rest s)]
-           [s (cons (first s) s)])
-      s))
+  (define exactly-all-colors
+    (take ALL-SHAPE-COLOR-COMBOS COLORS#))
+  (define duplicate-red-all-colors (cons (first exactly-all-colors) exactly-all-colors))
+
+  (define exactly-all-shapes
+    (for/list ([i (in-range 0 (* SHAPES# SHAPES#) SHAPES#)])
+      [list-ref ALL-SHAPE-COLOR-COMBOS i]))
+  (define duplicate-star-all-shapes (cons (first exactly-all-shapes) exactly-all-shapes))
   
   (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
   (define tiles1 (list #s(tile circle blue)))
@@ -297,8 +308,11 @@
   (check-false (all-colors? (cons (tile 'square (second ALL-COLORS)) (rest c-all))) "with duplicate"))
 
 (module+ test 
-  (check-false (all-colors? duplicate-tiles))
-  (check-false (all-shapes? duplicate-tiles)))
+  (check-true (all-colors? duplicate-red-all-colors) "duplicate red (star)")
+  (check-false (all-shapes? duplicate-red-all-colors) "no it contains only stars")
+
+  (check-true (all-shapes? duplicate-star-all-shapes) "duplicate (red) star")
+  (check-false (all-colors? duplicate-star-all-shapes) "no it contains only red"))
 
 ;                                            
 ;                            ;               
