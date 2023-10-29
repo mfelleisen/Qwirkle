@@ -8,7 +8,6 @@
 (require Qwirkle/Lib/json)
 
 (require SwDev/Contracts/unique)
-(require SwDev/Lib/hash-contract)
 
 (define unit-test-mode [make-parameter #false])
 
@@ -28,7 +27,7 @@
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe procedure? #:config state-config/c) referee-config/c)]
+   (->* (state?) (#:observe procedure? #:config ref-state-config/c) referee-config/c)]
   
   [referee/config
    ;; runs a game from the given configuration, which contains a ref state plus the above options
@@ -114,7 +113,6 @@
   (require SwDev/Lib/should-be-racket)
   (require SwDev/Testing/check-values)
   (require SwDev/Testing/testing)
-  ; (require json) 
   (require rackunit)
   (require (for-syntax syntax/parse)))
 
@@ -752,9 +750,7 @@
                    [expect [list (list winners ...) (list drop-outs ...)]])
                (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
-
-  (require json)
-
+  
   (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
     [define specs (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
     [define s0    (create-ref-state map0 specs #:tiles0 tiles0)]
