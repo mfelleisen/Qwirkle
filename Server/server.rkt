@@ -49,7 +49,6 @@
 
 (require Qwirkle/Lib/configuration)
 
-(require SwDev/Lib/hash-contract)
 (require SwDev/Testing/communication)
 
 (module+ examples
