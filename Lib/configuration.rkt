@@ -29,16 +29,20 @@
      #:with name/c       (format-id stx "~a-config/c" n #:source #'name #:props stx)
      #:with default-name (format-id stx "default-~a-config" n #:source #'name #:props stx)
      #:with set-name     (format-id stx "set-~a-config" n #:source #'name #:props stx)
-     #:with name->jsexpr (format-id stx "~a->jsexpr" n #:source #'name #:props stx)
+     #:with name->jsexpr (format-id stx "~a-config->jsexpr" n #:source #'name #:props stx)
      #'(begin
          (define key (gensym 'key)) ...
          (define name-options [list key ...])
-         (define name/c [hash-carrier/c name-options])
          (define default-name
            (let* ([h (hash)]
                   [h (dict-set h key value0)]
                   ...)
              h))
+
+         #; {Contract}
+         (define name/c [hash-carrier/c name-options])
+         
+         #; {(set-name c Key1 Value1 ... KeyN ValueN) : Void}
          (define (set-name config . key-value-pairs)
            (let loop ([key-value-pairs key-value-pairs] [h config])
              (match key-value-pairs
@@ -46,6 +50,8 @@
                [(list x) (error 'set-name "key-value pair expected; given ~a" key-value-pairs)]
                [(list* k v key-value-pairs)
                 (loop key-value-pairs (dict-set h k v))])))
+
+         #; {(name->jsexpr c) :: JSexpr}
          (define [name->jsexpr c]
            (let* ([h (hash)]
                   [h (dict-set h 'key (to (dict-ref c key)))] ...)
@@ -70,7 +76,8 @@
   [check-equal? (dict-ref default-server-config REF-SPEC) 4]
   [check-equal? (dict-ref (set-server-config default-server-config PORT 1 REF-SPEC 17) REF-SPEC) 17]
 
-  (check-true (jsexpr? (server->jsexpr (set-server-config default-server-config PORT 1 REF-SPEC 17))))
+  (check-true
+   (jsexpr? (server-config->jsexpr (set-server-config default-server-config PORT 1 REF-SPEC 17))))
 
   [check-exn #px"key-value pair" (λ () (set-server-config default-server-config PORT 1 REF-SPEC))])
 
