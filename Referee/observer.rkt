@@ -2,22 +2,9 @@
 
 ;; a primitive observer that saves all images in Tmp/ and allows users to view game developments
 
-(provide
- FLUSH SHOW
- 
- #; {type Command
-          = (U False          ;; end of game
-               FLUSH          ;; get ready for next game 
-               SHOW           ;; open a window so that a user can view and inspect the game states 
-               RefereeState)} ;; record state 
- 
- #; {μf.Command -> (U f Void)}
- ;; collect game states for viewing and inspection after the game is complete 
- ;; <--    previous state
- ;; -->    next state
- ;; blank  save current state as JSON via file dialog
- ;; EXTRA "s" save current state as image via file dialog 
- observer)
+(require Qwirkle/Referee/observer-interface)
+
+(provide-observer-interface observer)
 
 ;                                                                  
 ;                                                                  
@@ -60,9 +47,6 @@
 ;                                                                  
 ;                                                                  
 ;                                                                  
-
-(define FLUSH (gensym 'flush))
-(define SHOW  (gensym 'show))
 
 (define *complete   #false) ;; (when *complete .. the game is over ..)
 (define *live-list '[])     ;; a sequence of referee states 
