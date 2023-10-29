@@ -3,11 +3,6 @@
 ;; a data representation of the referee's knowledge about the game
 ;; ---------------------------------------------------------------------------------------------------
 
-(require SwDev/Lib/hash-contract)
-(define QBO      'q-bonus)
-(define FBO      'finish-bonus)
-(define state-config/c (hash-carrier/c (list QBO FBO)))
-
 (provide
  ;; from Qwirkle/Common/game-state
  state?
@@ -40,12 +35,12 @@
  ;; the referee knows the state of every player and the sequence of tiles it is handing out 
 
  #; {type StateConfig}
- state-config/c
+ ref-state-config/c
 
  (contract-out
-  [DEFAULT-CONFIG-S state-config/c]
-  [install-state-config (-> state-config/c any/c)]
-  [set-bonus (-> natural? natural? state-config/c)]
+  [DEFAULT-CONFIG-S ref-state-config/c]
+  [install-state-config (-> ref-state-config/c any/c)]
+  [set-bonus (-> natural? natural? ref-state-config/c)]
   
   [create-ref-state
    (->i ([gmap map?] [player-specs [listof [list/c [listof tile?] any/c]]])
@@ -190,14 +185,17 @@
 ;                                       ;  ; 
 ;                                        ;;  
 
-(define DEFAULT-CONFIG-S
-  (hash
-   QBO Q-BONUS-7
-   FBO FINISH-BONUS-7))
+(require Qwirkle/Lib/configuration)
+
+(define DEFAULT-CONFIG-S default-ref-state-config)
+
+(define-configuration ref-state
+  [QBO Q-BONUS-7]
+  [FBO FINISH-BONUS-7])
 
 #; {Natural Natural -> Configuration}
 (define (set-bonus QB FB)
-  (dict-set (dict-set DEFAULT-CONFIG-S FBO FB) QBO QB))
+  (set-ref-state-config default-ref-state-config FBO FB QBO QB))
 
 #; {StateConfig -> Void}
 (define (install-state-config cs)
