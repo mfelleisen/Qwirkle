@@ -4,26 +4,13 @@
 
 (require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 
-(define PORT            'port)
-(define SERVER-TRIES    'server-tries)
-(define SERVER-WAIT     'server-wait)
-(define WAIT-FOR-SIGNUP 'wait-for-signup)
-(define REF-SPEC        'referee-specific)
-(define QUIET           'quiet)
-
-(define options (list PORT SERVER-TRIES SERVER-WAIT WAIT-FOR-SIGNUP REF-SPEC QUIET))
-(define server-config/c (hash-carrier/c options))
-
 ;; ---------------------------------------------------------------------------------------------------
 (provide
- ;; server options 
- PORT SERVER-TRIES SERVER-WAIT WAIT-FOR-SIGNUP REF-SPEC QUIET
-
  ascending-by-age
  descending-by-age
  
  (contract-out
-  (DEFAULT-CONFIG (hash-carrier/c options))
+  (default-server-config server-config/c)
   
   [server
    ;; returns the list of winners and cheaters/failures
@@ -59,6 +46,8 @@
 (require Qwirkle/Common/player-interface) ;; type Player 
 (require Qwirkle/Server/player)
 (require Qwirkle/Referee/referee)
+
+(require Qwirkle/Lib/configuration)
 
 (require SwDev/Lib/hash-contract)
 (require SwDev/Testing/communication)
@@ -108,20 +97,13 @@
 
 (define PORT0 45678)
 
-(define DEFAULT-CONFIG
-  (hash
-   PORT        PORT0
-   SERVER-WAIT    20
-   WAIT-FOR-SIGNUP 2
-   SERVER-TRIES    1
-   ;; a lit of optional keyword arguments:
-   ;; `REF-SPEC` is a keyword-dicionary that is turned into arguments to the referee
-   ;; that way the server is parametric wrt to the referee's domain 
-   REF-SPEC      '[]
-   QUIET          #true))
-
-(define (set-verbose c) (dict-set c QUIET #false))
-(define (set-port c p) (dict-set c PORT p))
+(define-configuration server
+  (PORT            PORT0)
+  (SERVER-TRIES    1)
+  (SERVER-WAIT     20)
+  (WAIT-FOR-SIGNUP 2)
+  (REF-SPEC        4 #:jsexpr (λ (x) 0))
+  (QUIET           #true))
 
 ;                                            
 ;                                            
@@ -254,7 +236,6 @@
 
 ;; these tests are entirely independent of the game that's run
 
-#;
 (module+ test ;; timing
   
   #; {Port-Number (U False n:N) -> (U False [Listof 0]: (=/c (length) n))}
@@ -264,8 +245,8 @@
     [define custodian (make-custodian)]
     [define result    (make-channel)]
     [define err-p     (open-output-string)]
-    (define th
-      (launch-server-with-clients (set-port DEFAULT-CONFIG port) custodian result err-p port k d n))
+    [define sconfig   (set-server-config default-server-config PORT port)]
+    (define th        (launch-server-with-clients sconfig custodian result err-p port k d n))
     (begin0
       (cond
         [(or (not k) (< k MIN-PLAYERS))
@@ -290,7 +271,7 @@
       (for ([i how-many])
         (define-values (_ out) (tcp-connect LOCAL port))
         (when (and delay-this-one-s-name-submission (= delay-this-one-s-name-submission i))
-          (sleep (+ (dict-ref DEFAULT-CONFIG WAIT-FOR-SIGNUP) .1)))
+          (sleep (+ (dict-ref default-server-config WAIT-FOR-SIGNUP) .1)))
         (if (and this-one-sends-number (= this-one-sends-number i))
             (send-message 42 out)
             (send-message "a" out)))))
@@ -323,22 +304,22 @@
   
   #; {[Listof Player] RefState String -> Void}
   (define ((test-server-client-plus msg  #:quiet (quiet #true)  #:extras (bad-clients '[]))
-           rconfig0 players expected)
+           rconfig0 players expected msg2)
 
     ;; WARNING -----------------------------------------------------------------
     ;; reverse so that they sign up in the order in which they are in the state
     ;; for external integration tests, this must be moved to the `expected` part
     ;; WARNING -----------------------------------------------------------------
 
-    (define rconfig (dict-set rconfig0 PER-TURN PER-TURN-s))
+    (define rconfig  (dict-set rconfig0 PER-TURN PER-TURN-s))
     (define rconfig+ (dict-set rconfig QUIET quiet))
-    (define sconfig+ (dict-set DEFAULT-CONFIG QUIET quiet))
+    (define sconfig+ (set-server-config default-server-config QUIET quiet))
     (check-equal? (run-server-client players rconfig+ sconfig+ bad-clients) expected msg))
   
   (define (run-server-client players rconfig sconfig bad-clients)
     (define PORT# 45674)
     (parameterize ([current-custodian (make-custodian)])
-      (define sconfig+ (adjust-server-configuration sconfig rconfig PORT#))
+      (define sconfig+ (set-server-config sconfig PORT PORT# REF-SPEC rconfig))
       (define quiet    (dict-ref sconfig+ QUIET #true))
       (define client   (launch-clients players PORT# quiet bad-clients))
       (define result   (launch-server sconfig+ quiet))
@@ -366,10 +347,7 @@
 
   #; {ServerConfiguration RefereeConfiguration PortNumber -> ServerConfiguration}
   (define (adjust-server-configuration sconfig0 rconfig port#)
-    (let* ([config sconfig0]
-           [config (dict-set config PORT port#)]
-           [config (dict-set config REF-SPEC rconfig)])
-      config)))
+    (set-server-config sconfig0 PORT port# REF-SPEC rconfig)))
 
 (module+ test ;; tests with broken players 
   (require (submod Qwirkle/Referee/referee examples))
