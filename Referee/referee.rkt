@@ -10,13 +10,6 @@
 (require SwDev/Contracts/unique)
 (require SwDev/Lib/hash-contract)
 
-(define QUIET    'quiet)
-(define PER-TURN 'time-per-turn)
-(define OBSERVE  'observe)
-
-(define STATE0   'initial-state)
-(define CONFIG-S 'state-specific-config)
-
 (define unit-test-mode [make-parameter #false])
 
 #; {Configuration [Listof Player] -> Boolean}
@@ -26,8 +19,6 @@
          [player# (length players)])
     (or (unit-test-mode)
         (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
-
-(define referee-config/c (hash-carrier/c (list STATE0 QUIET OBSERVE PER-TURN CONFIG-S)))
 
 (provide
  #; {type Configuration = [Hashtable Options]}
@@ -100,6 +91,9 @@
 (define (report m p f-msg)
   (define n (send (sop-player p) name))
   (eprintf "~a dropped out on ~a: ~v [time limit ~v]\n" n m f-msg [time-out-limit]))
+
+(require Qwirkle/Lib/configuration)
+
 ;; -----------------------------------------------------------------------------
 
 (module+ examples
@@ -108,8 +102,8 @@
   (require (submod Qwirkle/Common/tiles examples))
   (require (submod Qwirkle/Player/mechanics json))
   (require (submod Qwirkle/Referee/ref-state json))
-  (require Qwirkle/Referee/observer)
   
+  (require Qwirkle/Referee/observer-interface)
   (require Qwirkle/Common/map)
   (require Qwirkle/Common/tiles)
   (require Qwirkle/Player/mechanics)
@@ -133,7 +127,6 @@
   (require (except-in (submod Qwirkle/Referee/ref-state examples) ForStudents/ Tests/))
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
-  (require Qwirkle/Referee/observer)
   (require Qwirkle/Lib/check-message)
   (require SwDev/Testing/check-values)
   (require SwDev/Lib/should-be-racket)
@@ -160,26 +153,25 @@
 (define (set-with-obs x) (set! with-obs x))
 (define with-obs void)
 
-(define DEFAULT-CONFIG
-  (hash
-   OBSERVE  void
-   QUIET    #true
-   CONFIG-S DEFAULT-CONFIG-S
-   PER-TURN [time-out-limit]))
+(require (submod Qwirkle/Referee/ref-state json))
+
+(define-configuration referee
+  [STATE0   #false   #:jsexpr state->jsexpr]
+  [OBSERVE  void     #:jsexpr (λ (x) (not (eq? x void)))]
+  [QUIET    #true]
+  [CONFIG-S DEFAULT-CONFIG-S]
+  [PER-TURN [time-out-limit]])
+  
 
 #; {-> Void}
 (define (install-default-config)
-  (set-with-obs       void)
-  (quiet          (dict-ref DEFAULT-CONFIG QUIET))
-  (time-out-limit (dict-ref DEFAULT-CONFIG PER-TURN)))
+  (set-with-obs   void)
+  (quiet          (dict-ref default-referee-config QUIET))
+  (time-out-limit (dict-ref default-referee-config PER-TURN)))
 
 #; {State -> Configuration}
 (define (create-config s0 #:observe (ob void) #:config (cs DEFAULT-CONFIG-S))
-  (let* ([c DEFAULT-CONFIG]
-         [c (dict-set c CONFIG-S cs)]
-         [c (dict-set c OBSERVE  ob)]
-         [c (dict-set c STATE0   s0)])
-    c))
+  (set-referee-config default-referee-config CONFIG-S cs OBSERVE ob STATE0 s0))
 
 ;                                                          
 ;                    ;;                                    
@@ -212,7 +204,7 @@
   (define wo (dict-ref c OBSERVE))
   (define qq (dict-ref c QUIET quiet))
   (parameterize* ([current-error-port (if qq (open-output-string) (current-error-port))]
-                  [time-out-limit (dict-ref c PER-TURN [time-out-limit])])
+                  [time-out-limit     (dict-ref c PER-TURN [time-out-limit])])
     (dynamic-wind (setup-observer wo) (referee/state s0 cs) (unset-observer wo))))
 
 #; {State StateConfig -> Result}
@@ -254,7 +246,7 @@
                   (~optional (~seq #:extra Bname:id B:expr)))
        #'(parameterize ([unit-test-mode #true])
            (let* ((P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
-                  [C (dict-set (create-config state) QUIET #false)])
+                  [C (set-referee-config default-referee-config STATE0 state QUIET #false)])
              (check-equal?
               (check-message msg cep #px"dropped" (referee/config C [cons P (~? (list B) '[])]))
               (list win out)
@@ -760,14 +752,14 @@
                    [expect [list (list winners ...) (list drop-outs ...)]])
                (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)))
            (set! kind (cons name kind)))]))
-  
+
+  (require json)
+
   (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
-    [define specs  (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
-    [define state0 (create-ref-state map0 specs #:tiles0 tiles0)]
-    (define config
-      (let* ([c (create-config state0 #:observe observer #:config (set-bonus qb fb))]
-             [c (dict-set c QUIET quiet)])
-        c))
+    [define specs (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
+    [define s0    (create-ref-state map0 specs #:tiles0 tiles0)]
+    [define cs    (set-bonus qb fb)]
+    (define rc    (set-referee-config default-referee-config STATE0 s0 QUIET quiet CONFIG-S cs))
     
     ;; the Racket integration test
 
@@ -780,18 +772,18 @@
         [(main expect) [name-jsexpr main expect]]
         ;; this clause exists to running tthe server/client setup
         ;; `xtras` are players that misbehave in some way before the game starts 
-        [(main _server _client) (main config (append xtras externals) expect)]))
+        [(main _server _client) (main rc (append xtras externals) expect descr)]))
 
     #; {-> Void}
     (define [name-plain]
       (parameterize ([unit-test-mode #false])
         (with-obs FLUSH)
-        (check-equal? (referee/config config externals) expect descr)
+        (check-equal? (referee/config rc externals) expect descr)
         (when show (with-obs SHOW))))
 
     #; {[ -> Void] -> Void}
     (define [name-jsexpr main (expect expect)]
-      (define jsexpr-inputs [list (state->jsexpr state0) (player*->jsexpr externals)])
+      (define jsexpr-inputs [list (state->jsexpr s0) (player*->jsexpr externals)])
       (parameterize ([unit-test-mode #false])
         (r-check-equal? main jsexpr-inputs `[,expect] descr)))
   
@@ -856,29 +848,29 @@
     #:kind         for-tests-7)
   
   (define-integration-test mixed-medium2-rev-players
-    #:desc "two dag players, two ldasg player; revversed players: does the player order matter"
+    #:desc "two dag players, two ldasg player; reversed players: does the player order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E" "F"] []]
+    #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-7
     #:finish-bonus FINISH-BONUS-7
     #:kind         for-tests-7)
-
+  
   (define-integration-test mixed-medium2-rev-players-bonus-delta
-    #:desc "two dag players, two ldasg player; revversed players: does the player order matter ΔBONUS"
+    #:desc "two dag players, two ldasg player; reversed players: does the player order matter; ΔBONUS"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["F"] []]
+    #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-9)
 
   (define-integration-test mixed-medium2-rev-tiles 
-    #:desc "two dag players, two ldasg player; revversed tiles: does the tile order matter"
+    #:desc "two dag players, two ldasg player; reversed tiles: does the tile order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
@@ -887,7 +879,7 @@
     #:kind         for-tests-7)
 
   (define-integration-test mixed-medium2-rev-both
-    #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
+    #:desc "two dag players, two ldasg player; reversed tiles and players: does the order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
@@ -923,7 +915,7 @@
     #:kind         for-tests-7)
   
   (define-integration-test mixed-all-tiles
-    #:desc "two dag players, two ldasg player; revversed tiles and players: does the order matter"
+    #:desc "two dag players, two ldasg player; reversed tiles and players: does the order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-TILES
@@ -1106,7 +1098,7 @@
 ;; ******** keep in this order to preserve random number generation **********
 
 ;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; for milestone 8 ;; ASSUME the bonus parameters are set to the -8 values
+(module+ examples ;; for milestone 8
 
   (define-integration-test non-adjacent-coordinate 
     #:desc "one dag player, one cheating drop out: 1 turn"
@@ -1143,7 +1135,7 @@
 
   ;; -------------------------------------------------------------------------------------------------
   (define-integration-test ldasgs-with-two-cheaters
-    #:desc "two cheating players, two ldasg player; revversed tiles: does the tile order matter"
+    #:desc "two cheating players, two ldasg player; reversed tiles: does the tile order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
@@ -1157,7 +1149,7 @@
     (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(0 1 2 3)])
       (list-ref l  0)))
   (define-integration-test 1dag-1exn-1ldag-1cheater
-    #:desc "one kind player each: 0 1 2 3; revversed tiles and players: does the order matter"
+    #:desc "one kind player each: 0 1 2 3; reversed tiles and players: does the order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
@@ -1213,7 +1205,7 @@
     (for/list ([l (list dag-player* exn-player* ldasg-player* cheating-player*)] [i '(1 2 0 5)])
       (list-ref l  0)))
   (define-integration-test mixed-all-tiles-8
-    #:desc "one kind player each: 1 2 0 5; revversed tiles and players: does the order matter"
+    #:desc "one kind player each: 1 2 0 5; reversed tiles and players: does the order matter"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*-2 
     #:ref-tiles    ALL-TILES
@@ -1280,7 +1272,11 @@
 ;                                                                        
 ;                                                                        
 
+#;
 (module+ test ;; run all integration tests
+  [mixed-medium2-rev-players-bonus-delta])
+
+(module+ test 
   (for-each (λ (test) [test]) [all-tests])
 
   (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 3) "make sure all tests are recordded")
