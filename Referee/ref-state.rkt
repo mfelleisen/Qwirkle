@@ -187,11 +187,11 @@
 
 (require Qwirkle/Lib/configuration)
 
-(define DEFAULT-CONFIG-S default-ref-state-config)
-
 (define-configuration ref-state
   [QBO Q-BONUS-7]
   [FBO FINISH-BONUS-7])
+
+(define DEFAULT-CONFIG-S default-ref-state-config)
 
 #; {Natural Natural -> Configuration}
 (define (set-bonus QB FB)
