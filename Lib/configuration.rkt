@@ -4,7 +4,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-(provide 
+(provide
  ;; SYNTAX
  #; (define-configuration name [key value] ...)
  ;; creates configurations as dictionaries 
@@ -13,7 +13,9 @@
  ;; -- a domain-contract named name-config/c ensuring that the domain consists of just the keys
  ;; -- a configure-set function named set-name-config
  #;    (set-name-config c KEY VALUE ...)
- define-configuration)
+ define-configuration
+
+ is-list-of-key-value-pairs)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require SwDev/Lib/hash-contract)
@@ -43,13 +45,15 @@
          (define name/c [hash-carrier/c name-options])
          
          #; {(set-name c Key1 Value1 ... KeyN ValueN) : Void}
-         (define (set-name config . key-value-pairs)
-           (let loop ([key-value-pairs key-value-pairs] [h config])
-             (match key-value-pairs
-               [(list) h]
-               [(list x) (error 'set-name "key-value pair expected; given ~a" key-value-pairs)]
-               [(list* k v key-value-pairs)
-                (loop key-value-pairs (dict-set h k v))])))
+         (define (set-name config . key-value-pairs0)
+           (define key-value-pairs (is-list-of-key-value-pairs key-value-pairs0))
+           (cond
+             [(false? key-value-pairs)
+              (error 'set-name "key-value pair expected; given ~a" key-value-pairs0)]
+             [else 
+              (for/fold ([h config]) ([kv-pair key-value-pairs])
+                (match-define [list k v] kv-pair)
+                (dict-set h k v))]))
 
          #; {(name->jsexpr c) :: JSexpr}
          (define [name->jsexpr c]
@@ -58,18 +62,26 @@
              h))
          )]))
 
-(define-configuration server
-  (PORT            0)
-  (SERVER-TRIES    1)
-  (SERVER-WAIT     2)
-  (WAIT-FOR-SIGNUP 3)
-  (REF-SPEC        4 #:jsexpr (λ (x) 0))
-  (QUIET           5))
+#; {[Listof Any] -> [Option [Listof [List Symbol Any]]]}
+(define (is-list-of-key-value-pairs key-value-pairs)
+  (let loop ([key-value-pairs key-value-pairs] [h '()])
+    (match key-value-pairs
+      [(list) (reverse h)]
+      [(list x) #false]
+      [(list* k v key-value-pairs) (loop key-value-pairs (cons [list k v] h))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
   (require rackunit)
   (require json)
+
+  (define-configuration server
+    (PORT            0)
+    (SERVER-TRIES    1)
+    (SERVER-WAIT     2)
+    (WAIT-FOR-SIGNUP 3)
+    (REF-SPEC        4 #:jsexpr (λ (x) 0))
+    (QUIET           5))
 
   (check-equal? [length server-options] 6)
   [check-equal? [contract? server-config/c] #true]

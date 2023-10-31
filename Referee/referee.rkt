@@ -22,12 +22,17 @@
 (provide
  #; {type Configuration = [Hashtable Options]}
  ;; config options
- QUIET OBSERVE CONFIG-S PER-TURN 
+ QUIET OBSERVE CONFIG-S PER-TURN
  
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
    (->* (state?) (#:observe procedure? #:config ref-state-config/c) referee-config/c)]
+
+  [set-referee-config
+   #; (set-referee-config rc Key1 Value1 ... KeyN ValueN)
+   ;; functionally updates rc at Key1 .. KeyN with Value1 .. ValueN, left to right 
+   (->i ([rc referee-config/c]) #:rest [kv is-list-of-key-value-pairs] (result referee-config/c))]
   
   [referee/config
    ;; runs a game from the given configuration, which contains a ref state plus the above options

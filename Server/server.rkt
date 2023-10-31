@@ -28,6 +28,8 @@
          #:result (return-results-or-void (-> list? any/c)))
         (result any/c))]))
 
+(module+ examples)
+
 ;                                                          
 ;                                                          
 ;                                  ;                       
@@ -51,6 +53,7 @@
 
 (require SwDev/Testing/communication)
 
+#;
 (module+ examples
   (require (submod ".."))
   (require Qwirkle/Client/client)
@@ -62,18 +65,9 @@
   (require rackunit))
 
 (module+ test
-
-  (require Qwirkle/Client/client)
-  (require (prefix-in i: Qwirkle/Common/state-of-player))
-  (require Qwirkle/Player/mechanics)
-  (require Qwirkle/Player/strategies)
-  (require (submod Qwirkle/Referee/referee examples))
-  (require (submod Qwirkle/Referee/ref-state json))
-  
   (require (submod ".."))
-  (require (submod ".." examples))
+  (require Qwirkle/Client/client)
   (require (submod Qwirkle/Referee/referee examples))
-  (require SwDev/Lib/list)
   (require rackunit))
 
 ;                                                          
@@ -310,31 +304,35 @@
     ;; for external integration tests, this must be moved to the `expected` part
     ;; WARNING -----------------------------------------------------------------
 
-    (define rconfig  (dict-set rconfig0 PER-TURN PER-TURN-s))
-    (define rconfig+ (dict-set rconfig QUIET quiet))
-    (define sconfig+ (set-server-config default-server-config QUIET quiet))
-    (check-equal? (run-server-client players rconfig+ sconfig+ bad-clients) expected msg))
-  
-  (define (run-server-client players rconfig sconfig bad-clients)
     (define PORT# 45674)
+
+    (define rc (set-referee-config rconfig0 PER-TURN PER-TURN-s QUIET quiet))
+    (define sc (set-server-config default-server-config QUIET quiet PORT PORT# REF-SPEC rc))
+    
+    (check-equal? (run-server-client sc players bad-clients) expected (~a msg ": " msg2))
+
+    (list sc players bad-clients expected))
+  
+  (define (run-server-client sconfig players bad-clients)
     (parameterize ([current-custodian (make-custodian)])
-      (define sconfig+ (set-server-config sconfig PORT PORT# REF-SPEC rconfig))
-      (define quiet    (dict-ref sconfig+ QUIET #true))
-      (define client   (launch-clients players PORT# quiet bad-clients))
-      (define result   (launch-server sconfig+ quiet))
+      (define client   (launch-clients sconfig players bad-clients))
+      (define result   (launch-server sconfig))
       (begin0
         result
         (sync client)
         (custodian-shutdown-all (current-custodian)))))
 
-  #; {ServerConfiguration Boolean -> Result}
-  (define (launch-server sconfig quiet)
+  #; {ServerConfiguration -> Result}
+  (define (launch-server sconfig)
+    (define quiet (dict-ref sconfig QUIET))
     (define err-out (if quiet (open-output-string) (current-error-port)))
     (parameterize ([current-error-port err-out])
       (server sconfig descending-by-age #:result values)))
 
-  #; {[Listof Player] PortNo Boolean -> Thread}
-  (define (launch-clients players port# quiet bad-clients)
+  #; {ServerConfiguration [Listof Player] [Listof Player] -> Thread}
+  (define (launch-clients sconfig players bad-clients)
+    (define port# (dict-ref sconfig PORT))
+    (define quiet (dict-ref sconfig QUIET))
     (define err-out (if quiet (open-output-string) (current-error-port)))
     (thread
      (λ ()
@@ -342,19 +340,18 @@
          ;; for failuers before the threads are launched
          ;; `quiet` is passed along so that thrreads can quiet the proxy refs
          (define baddies (map (λ (f) (f port#)) bad-clients))
-         (clients players port# #:quiet quiet #:baddies baddies)))))
-
-  #; {ServerConfiguration RefereeConfiguration PortNumber -> ServerConfiguration}
-  (define (adjust-server-configuration sconfig0 rconfig port#)
-    (set-server-config sconfig0 PORT port# REF-SPEC rconfig)))
+         (clients players port# #:quiet quiet #:baddies baddies))))))
 
 (module+ test ;; tests with broken players 
   (require (submod Qwirkle/Referee/referee examples))
+  (require (submod Qwirkle/Player/mechanics json))
 
   'for-tests-7
-  (for ([t for-tests-7] [i (in-naturals)])
+  (for/list ([t for-tests-7] [i (in-naturals)])
     (define k (test-server-client-plus (~a "7: " i) #:quiet 'yes!))
-    (t k 1 2))
+    (match-define [list sc players bad-clients expected] (t k 1 2))
+    (list (server-config->jsexpr sc) (map player->jsexpr players) expected))
+    
 
   'for-tests-8
   (for ([t for-tests-9] [i (in-naturals)])
