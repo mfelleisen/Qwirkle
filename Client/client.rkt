@@ -8,20 +8,24 @@
 (require (only-in SwDev/Testing/make-client port/c))
 
 (provide
+ ;; for homework
+ PLAYERS PORT HOST WAIT QUIET
  WAIT-BETWEEN-THREADS ;; s between launching threads
-
+ client-config->definition
+ 
  (contract-out
 
+  [default-client-config client-config/c]
+
+  [set-client-config (-> client-config/c any/c ... client-config/c)]
+  
   [clients 
    #; (client players ip port# wait? #:quiet q #:remote remote-manager #:baddies lo-bad-clients)
    ;; runs each p in `players` as a client that connects to a server at `ip` on `port#`
    ;; if `wait?` the main thread waits for all of clients -- NEEDED FOR INDEPENDENT RUNS
    ;; of `clients` in a shell process  (why?)
-   (->i ([players (listof player/c)])       ;; BY DEFAULT: 
-        ([port# port/c]                     ;; `port#` is a common port
-         [wait? boolean?]                   ;; `wait?` is #false
-         [ip string?]                       ;; `ip` is LOCALHOST
-         #:quiet [quiet any/c]              ;; `quiet` is #true
+   (->i ([config  client-config/c])         ;; BY DEFAULT: 
+        ([wait? boolean?]                   ;; `wait?` is #false
          #:remote [rm any/c]                ;; `rm` is `make-remote-manager`
          #:baddies [b (listof procedure?)]) ;; `b` is '[]
         (r any/c))]
@@ -50,8 +54,35 @@
 ;                     ;                                    
 
 (require Qwirkle/Client/referee)
+(require Qwirkle/Lib/configuration)
 (require (except-in SwDev/Testing/make-client port/c))
 (require SwDev/Testing/communication)
+
+;                                                                                             
+;                           ;;                                                                
+;                          ;       ;                                 ;       ;                
+;                          ;                                         ;                        
+;    ;;;    ;;;   ; ;;   ;;;;;   ;;;    ;;;;  ;   ;   ;;;;  ;;;;   ;;;;;   ;;;    ;;;   ; ;;  
+;   ;;  ;  ;; ;;  ;;  ;    ;       ;   ;;  ;  ;   ;   ;;  ;     ;    ;       ;   ;; ;;  ;;  ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ;  ;   ;   ;         ;    ;       ;   ;   ;  ;   ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ;  ;   ;   ;      ;;;;    ;       ;   ;   ;  ;   ; 
+;   ;      ;   ;  ;   ;    ;       ;   ;   ;  ;   ;   ;     ;   ;    ;       ;   ;   ;  ;   ; 
+;   ;;     ;; ;;  ;   ;    ;       ;   ;; ;;  ;   ;   ;     ;   ;    ;       ;   ;; ;;  ;   ; 
+;    ;;;;   ;;;   ;   ;    ;     ;;;;;  ;;;;   ;;;;   ;      ;;;;    ;;;   ;;;;;  ;;;   ;   ; 
+;                                          ;                                                  
+;                                       ;  ;                                                  
+;                                        ;;                                                   
+
+(define LOCAL "127.0.0.1")
+(define PORT0 45678)
+(define WAIT-BETWEEN-THREADS 3)
+
+(define-configuration client
+  [PLAYERS '() #:is-a "JActorsB"]
+  [PORT PORT0 #:is-a "Natural" "between 10000 and 60000"] ;; `port#` is a common port
+  [HOST LOCAL #:is-a "String" "either an IP address or a domain name"] ;; `ip` is LOCALHOST
+  [WAIT WAIT-BETWEEN-THREADS #:is-a "Natural" "less than 10s"]
+  [QUIET #true #:is-a "Boolean"])
 
 ;                                                  
 ;                                                  
@@ -70,14 +101,12 @@
 ;                                                  
 ;                                                  
 
-(define LOCAL "127.0.0.1")
-(define PORT0 45678)
-(define WAIT-BETWEEN-THREADS 3)
+(define (clients cc (wait? #f) #:remote  (rm make-remote-manager) #:baddies [bad-clients '()])
+  (define players (dict-ref players PLAYERS))
+  (define ip (dict-ref cc HOST))
+  (define p# (dict-ref cc PORT))
+  (define quiet (dict-ref cc QUIET))
 
-(define (clients players (p# PORT0) (wait? #false) (ip LOCAL)
-                 #:quiet   (quiet #true)
-                 #:remote  (rm make-remote-manager)
-                 #:baddies [bad-clients '()])
   (define clients-for-players (map (make-client-for-player p# ip quiet rm) players))
   (define running-clients     (launch-clients (append clients-for-players bad-clients)))
   (when wait?

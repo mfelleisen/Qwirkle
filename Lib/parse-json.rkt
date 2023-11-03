@@ -85,7 +85,7 @@
              [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string/ j))
                 #false])))]))
 
-(define (jsexpr->id x) x)
+(define (jsexpr->id x) x) ;; is made up by `with` clause 
 
 ;; ---------------------------------------------------------------------------------------------------
 ; natural? 

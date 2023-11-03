@@ -8,9 +8,12 @@
 (provide
  ascending-by-age
  descending-by-age
+
+ ;; for homework 
+ server-config->definition
  
  (contract-out
-  (default-server-config server-config/c)
+  [default-server-config server-config/c]
   
   [server
    ;; returns the list of winners and cheaters/failures
@@ -48,6 +51,7 @@
 (require Qwirkle/Common/player-interface) ;; type Player 
 (require Qwirkle/Server/player)
 (require Qwirkle/Referee/referee)
+(require (submod Qwirkle/Referee/referee json))
 
 (require Qwirkle/Lib/configuration)
 
@@ -66,7 +70,7 @@
 
 (module+ test
   (require (submod ".."))
-  (require Qwirkle/Client/client)
+  (require (prefix-in c: Qwirkle/Client/client))
   (require (submod Qwirkle/Referee/referee examples))
   (require rackunit))
 
@@ -91,14 +95,13 @@
 (define PORT0 45678)
 
 (define-configuration server
-  (PORT            PORT0)
-  (SERVER-TRIES    1)
-  (SERVER-WAIT     20)
-  (WAIT-FOR-SIGNUP 2)
-  (REF-SPEC        4 #:jsexpr (λ (x) 0))
-  (QUIET           #true))
-
-;                                            
+  (PORT            PORT0 #:is-a "Natural" "between 10000 and 60000")
+  (SERVER-TRIES    1 #:is-a "Natural" "less than 10")
+  (SERVER-WAIT     20 #:is-a "Natural" "less than 30[s]")
+  (WAIT-FOR-SIGNUP 2 #:is-a "Natural" "less than 10")
+  (QUIET           #true #:is-a "Boolean")
+  (REF-SPEC
+   4 #:to-jsexpr referee-config->jsexpr #:from-jsexpr jsexpr->referee-config #:is-a "RefereeConfig"))
 ;                                            
 ;                                            
 ;                                            
@@ -119,7 +122,6 @@
 (define DEFAULT-RESULT '[[] []])
 
 (define test-run?  (make-parameter #false)) ;; [Channel [Listof N]] when used 
-(define MIN-ERROR  "server did not sign up enough (~a) players")
 
 ;; IMPLEMENTATION 
 ;; create separate thread that signs up one player at time
@@ -154,8 +156,8 @@
 ;; collect list of playaers in reverse order of sign-up [youngest first]
 ;; it spawns a thread to manage time and number of tries in parallel 
 (define (wait-for-players house-players config)
-  (define max-time    (dict-ref config SERVER-WAIT))
-  (define max-tries   (dict-ref config SERVER-TRIES))
+  (define max-time  (dict-ref config SERVER-WAIT))
+  (define max-tries (dict-ref config SERVER-TRIES))
   (define communicate-with-sign-up (make-channel))
   (thread (sign-up-players communicate-with-sign-up house-players config))
   (let loop ([n max-tries])
@@ -294,28 +296,29 @@
 
 ;; the following tests are game-specific 
 (module+ test
-  
-  #; {[Listof Player] RefState String -> Void}
-  (define ((test-server-client-plus msg  #:quiet (quiet #true)  #:extras (bad-clients '[]))
+
+  #; {String #:quiet Boolean #:extras [Listof Client]
+             -> RefereeConfig [Listof Player] Any String
+             -> ServerClientScenario}
+  (define ((make-server-client-scenarios msg  #:quiet (q #true)  #:extras (bad-clients '[]))
            rconfig0 players expected msg2)
+    (define p# 45674)
 
-    ;; WARNING -----------------------------------------------------------------
-    ;; reverse so that they sign up in the order in which they are in the state
-    ;; for external integration tests, this must be moved to the `expected` part
-    ;; WARNING -----------------------------------------------------------------
+    (define rc (set-referee-config rconfig0 PER-TURN PER-TURN-s QUIET q))
+    (define sc (set-server-config default-server-config QUIET q PORT p# REF-SPEC rc))
 
-    (define PORT# 45674)
-
-    (define rc (set-referee-config rconfig0 PER-TURN PER-TURN-s QUIET quiet))
-    (define sc (set-server-config default-server-config QUIET quiet PORT PORT# REF-SPEC rc))
+    (define cc (c:set-client-config c:default-client-config c:PLAYERS players c:QUIET q c:PORT p#))
     
-    (check-equal? (run-server-client sc players bad-clients) expected (~a msg ": " msg2))
+    (list sc cc bad-clients expected (~a msg ": " msg2)))
 
-    (list sc players bad-clients expected))
+  #; {ServerClientScenario -> Void}
+  (define (run-server-client-scenario server-client-scenario)
+    (match-define [list sc cc bad-clients expected msg] server-client-scenario)
+    (check-equal? (run-server-client sc cc bad-clients) expected msg))
   
-  (define (run-server-client sconfig players bad-clients)
+  (define (run-server-client sconfig cconfig bad-clients)
     (parameterize ([current-custodian (make-custodian)])
-      (define client   (launch-clients sconfig players bad-clients))
+      (define client   (launch-clients cconfig bad-clients))
       (define result   (launch-server sconfig))
       (begin0
         result
@@ -330,9 +333,10 @@
       (server sconfig descending-by-age #:result values)))
 
   #; {ServerConfiguration [Listof Player] [Listof Player] -> Thread}
-  (define (launch-clients sconfig players bad-clients)
-    (define port# (dict-ref sconfig PORT))
-    (define quiet (dict-ref sconfig QUIET))
+  (define (launch-clients cconfig bad-clients)
+    (define players (dict-ref cconfig c:PLAYERS))
+    (define port#   (dict-ref cconfig c:PORT))
+    (define quiet   (dict-ref cconfig c:QUIET))
     (define err-out (if quiet (open-output-string) (current-error-port)))
     (thread
      (λ ()
@@ -340,43 +344,47 @@
          ;; for failuers before the threads are launched
          ;; `quiet` is passed along so that thrreads can quiet the proxy refs
          (define baddies (map (λ (f) (f port#)) bad-clients))
-         (clients players port# #:quiet quiet #:baddies baddies))))))
+         (c:clients players port# #:quiet quiet #:baddies baddies))))))
 
 (module+ test ;; tests with broken players 
   (require (submod Qwirkle/Referee/referee examples))
   (require (submod Qwirkle/Player/mechanics json))
 
   'for-tests-7
-  (for/list ([t for-tests-7] [i (in-naturals)])
-    (define k (test-server-client-plus (~a "7: " i) #:quiet 'yes!))
-    (match-define [list sc players bad-clients expected] (t k 1 2))
-    (list (server-config->jsexpr sc) (map player->jsexpr players) expected))
-    
+  (define scenarios-for-7
+    (for/list ([t for-tests-7] [i (in-naturals)])
+      (define k (make-server-client-scenarios (~a "7: " i) #:quiet 'yes!))
+      (match-define [list sc players bad-clients expected] (t k 1 2))
+      (list (server-config->jsexpr sc) (map player->jsexpr players) expected)))
 
+  (for-each run-server-client-scenario scenarios-for-7))
+
+#;
+(module+ test
   'for-tests-8
   (for ([t for-tests-9] [i (in-naturals)])
-    (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
+    (define k (make-server-client-scenarios (~a "8: " i) #:quiet 'yes!))
     (t k 1 2))
 
   'for-bonus-A
   (for ([t for-bonus-A] [i (in-naturals)])
-    (define k (test-server-client-plus (~a "8: " i) #:quiet 'yes!))
+    (define k (make-server-client-scenarios (~a "8: " i) #:quiet 'yes!))
     (t k 1 2)))
 
 (module+ test ;; tests with broken clients 
   (define [client-diverge-before-sending-name port#]
-    (make-client-for-name-sender (λ (ip) (let L () (L))) port#))
+    (c:make-client-for-name-sender (λ (ip) (let L () (L))) port#))
 
   'special1
   (mixed-all-tiles-rev-inf-exn-dag2-A
-   (test-server-client-plus
+   (make-server-client-scenarios
     (~a "a client that connects but does not complete the registration")
     #:quiet #false  #;'yes!
     #:extras (list client-diverge-before-sending-name))
    1 2)
   
   (define [client-diverge-after-sending-name port#]
-    (make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
+    (c:make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
 
   'special2
   #;

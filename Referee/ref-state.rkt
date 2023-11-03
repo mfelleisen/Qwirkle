@@ -11,6 +11,9 @@
  active-sop-hand)
 
 (provide
+ refereeState-config->definition
+
+
  ;; SYNTAX 
  legal-pass
  #; (legal-pass)
@@ -35,12 +38,12 @@
  ;; the referee knows the state of every player and the sequence of tiles it is handing out 
 
  #; {type StateConfig}
- ref-state-config/c
+ refereeState-config/c
 
  (contract-out
-  [DEFAULT-CONFIG-S ref-state-config/c]
-  [install-state-config (-> ref-state-config/c any/c)]
-  [set-bonus (-> natural? natural? ref-state-config/c)]
+  [DEFAULT-CONFIG-S refereeState-config/c]
+  [install-state-config (-> refereeState-config/c any/c)]
+  [set-bonus (-> natural? natural? refereeState-config/c)]
   
   [create-ref-state
    (->i ([gmap map?] [player-specs [listof [list/c [listof tile?] any/c]]])
@@ -187,15 +190,15 @@
 
 (require Qwirkle/Lib/configuration)
 
-(define-configuration ref-state
-  [QBO Q-BONUS-7]
-  [FBO FINISH-BONUS-7])
+(define-configuration refereeState
+  [QBO Q-BONUS-7       #:is-a "Natural" "less or equal to 10"]
+  [FBO FINISH-BONUS-7  #:is-a "Natural" "less or equal to 10"])
 
-(define DEFAULT-CONFIG-S default-ref-state-config)
+(define DEFAULT-CONFIG-S default-refereeState-config)
 
 #; {Natural Natural -> Configuration}
 (define (set-bonus QB FB)
-  (set-ref-state-config default-ref-state-config FBO FB QBO QB))
+  (set-refereeState-config default-refereeState-config FBO FB QBO QB))
 
 #; {StateConfig -> Void}
 (define (install-state-config cs)

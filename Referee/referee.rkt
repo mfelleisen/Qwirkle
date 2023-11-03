@@ -23,11 +23,14 @@
  #; {type Configuration = [Hashtable Options]}
  ;; config options
  QUIET OBSERVE CONFIG-S PER-TURN
+
+ ;; for homework 
+ referee-config->definition
  
  (contract-out
   [create-config
    ;; create a default configuration from a referee state 
-   (->* (state?) (#:observe procedure? #:config ref-state-config/c) referee-config/c)]
+   (->* (state?) (#:observe procedure? #:config refereeState-config/c) referee-config/c)]
 
   [set-referee-config
    #; (set-referee-config rc Key1 Value1 ... KeyN ValueN)
@@ -62,6 +65,11 @@
    #; {[Listof ->]}
    all-tests))
 
+(module+ json
+  (provide
+   jsexpr->referee-config
+   referee-config->jsexpr))
+
 ;                                                          
 ;                                                          
 ;                                  ;                       
@@ -79,6 +87,7 @@
 
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Referee/ref-state)
+(require (submod Qwirkle/Referee/ref-state json))
 
 ;; -----------------------------------------------------------------------------
 (require Qwirkle/Lib/xsend)
@@ -156,15 +165,12 @@
 (define (set-with-obs x) (set! with-obs x))
 (define with-obs void)
 
-(require (submod Qwirkle/Referee/ref-state json))
-
 (define-configuration referee
-  [STATE0   #false   #:jsexpr state->jsexpr]
-  [OBSERVE  void     #:jsexpr (λ (x) (not (eq? x void)))]
-  [QUIET    #true]
-  [CONFIG-S DEFAULT-CONFIG-S]
-  [PER-TURN [time-out-limit]])
-  
+  [STATE0   #false   #:to-jsexpr state->jsexpr #:from-jsexpr jsexpr->state  #:is-a "JState"]
+  [OBSERVE  void     #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr not #:is-a "Boolean"]
+  [QUIET    #true #:is-a "Boolean"]
+  [CONFIG-S DEFAULT-CONFIG-S #:is-a "RefereeStateConfig"]
+  [PER-TURN [time-out-limit] #:is-a "Natural" "less than 6"])
 
 #; {-> Void}
 (define (install-default-config)
