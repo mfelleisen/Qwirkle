@@ -11,8 +11,12 @@
  ;; for homework
  PLAYERS PORT HOST WAIT QUIET
  WAIT-BETWEEN-THREADS ;; s between launching threads
- client-config->definition
  
+ client-config->definition
+
+ client-config->jsexpr
+ jsexpr->client-config
+
  (contract-out
 
   [default-client-config client-config/c]
@@ -102,7 +106,7 @@
 ;                                                  
 
 (define (clients cc (wait? #f) #:remote  (rm make-remote-manager) #:baddies [bad-clients '()])
-  (define players (dict-ref players PLAYERS))
+  (define players (dict-ref cc PLAYERS))
   (define ip (dict-ref cc HOST))
   (define p# (dict-ref cc PORT))
   (define quiet (dict-ref cc QUIET))
