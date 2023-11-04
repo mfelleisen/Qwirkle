@@ -11,6 +11,11 @@
 
  ;; for homework 
  server-config->definition
+ set-server-config
+ REF-SPEC PORT 
+ 
+ jsexpr->server-config
+ server-config->jsexpr
  
  (contract-out
   [default-server-config server-config/c]
@@ -50,28 +55,29 @@
 
 (require Qwirkle/Common/player-interface) ;; type Player 
 (require Qwirkle/Server/player)
-(require Qwirkle/Referee/referee)
+(require (except-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN))
 (require (submod Qwirkle/Referee/referee json))
 
 (require Qwirkle/Lib/configuration)
 
 (require SwDev/Testing/communication)
+(require (only-in SwDev/Lib/should-be-racket all-but-last))
 
-#;
 (module+ examples
   (require (submod ".."))
-  (require Qwirkle/Client/client)
-  (require (prefix-in i: Qwirkle/Common/state-of-player))
-  (require Qwirkle/Player/mechanics)
-  (require Qwirkle/Player/strategies)
+  (require
+    (prefix-in
+     c: (only-in
+         Qwirkle/Client/client
+         make-client-for-name-sender default-client-config set-client-config QUIET PORT PLAYERS)))
   (require (submod Qwirkle/Referee/referee examples))
-  (require (submod Qwirkle/Referee/ref-state json))
-  (require rackunit))
+  (require (prefix-in r: (only-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN)))
+  (require (except-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN)))
 
 (module+ test
   (require (submod ".."))
+  (require (submod ".." examples))
   (require (prefix-in c: Qwirkle/Client/client))
-  (require (submod Qwirkle/Referee/referee examples))
   (require rackunit))
 
 ;                                                          
@@ -101,7 +107,8 @@
   (WAIT-FOR-SIGNUP 2 #:is-a "Natural" "less than 10")
   (QUIET           #true #:is-a "Boolean")
   (REF-SPEC
-   4 #:to-jsexpr referee-config->jsexpr #:from-jsexpr jsexpr->referee-config #:is-a "RefereeConfig"))
+   default-referee-config
+   #:to-jsexpr referee-config->jsexpr #:from-jsexpr jsexpr->referee-config #:is-a "RefereeConfig"))
 ;                                            
 ;                                            
 ;                                            
@@ -137,6 +144,7 @@
   ;; set up custodian so `server` can clean up all threads, TCP ports, etc. -- in case it is re-used
   (parameterize ([current-custodian (make-custodian)])
     (define players (wait-for-players house-players config))
+    (eprintf "signed up: ~a\n" players)
     (begin0
       (cond
         [(empty? players) (send-message DEFAULT-RESULT) (show DEFAULT-RESULT)]
@@ -147,7 +155,11 @@
 #; {[Listof Player] ImmutableHash -> [List [Listof Player] [Listof Player]]}
 (define (configure-and-run-referee players config optionally-return-result)
   (define result
-    (with-handlers ([exn:fail? (λ (n) (eprintf "ref failed: ~a\n" (exn-message n)) DEFAULT-RESULT)])
+    (with-handlers ([exn:fail?
+                     (λ (n)
+                       (eprintf "server reports referee failure\n")
+                       (eprintf "~a\n" (exn-message n))
+                       DEFAULT-RESULT)])
       (referee/config (dict-ref config REF-SPEC '[]) players)))
   (send-message result)
   (optionally-return-result result))
@@ -231,6 +243,7 @@
 
 ;; these tests are entirely independent of the game that's run
 
+#;
 (module+ test ;; timing
   
   #; {Port-Number (U False n:N) -> (U False [Listof 0]: (=/c (length) n))}
@@ -279,39 +292,121 @@
   (check-equal? (run-server-test 45676 1) "" "sign up too few players"))
 
 ;                                                                 
-;      ;;                                                         
-;     ;           ;;;    ;;;             ;                    ;   
-;     ;             ;      ;             ;                    ;   
-;   ;;;;;  ;   ;    ;      ;           ;;;;;   ;;;    ;;;   ;;;;; 
-;     ;    ;   ;    ;      ;             ;    ;;  ;  ;   ;    ;   
-;     ;    ;   ;    ;      ;             ;    ;   ;; ;        ;   
-;     ;    ;   ;    ;      ;             ;    ;;;;;;  ;;;     ;   
-;     ;    ;   ;    ;      ;             ;    ;          ;    ;   
-;     ;    ;   ;    ;      ;             ;    ;      ;   ;    ;   
-;     ;     ;;;;     ;;     ;;           ;;;   ;;;;   ;;;     ;;; 
+;                                                                 
+;                                                ;                
+;                                                                 
+;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
 ;                                                                 
 ;                                                                 
 ;                                                                 
 
+(module+ examples
+  
+  (provide
+   scenarios-for-7
+   scenarios-for-8
+   scenarios-for-9
+   scenarios-for-A)
 
-;; the following tests are game-specific 
-(module+ test
+  (provide
+   scenario-special-1
+   scenario-special-2)
+  
+  #; {type ServerClientScenario =
+           [List ServerConfiguration ClientConfiguration [Listof Clients] Any String]}
+
+  #; {Natural [Listof RefereeScenario] -> [Listof ServerClientScenario]}
+  (define (scenario* n ref-scenario* #:quiet (quiet 'yes!) #:extras (client* '[]))
+    (for/list ([ref-scenario ref-scenario*] [i (in-naturals)])
+      (define K (server-client-scenario (~a n ": " i) #:quiet quiet #:extras client*))
+      (ref-scenario K "dummy arg 1" "dummy arg 2")))
 
   #; {String #:quiet Boolean #:extras [Listof Client]
+             #:drop  (-> [Listof Player] [Listof Player])
+             #:expected (-> Result Result)
              -> RefereeConfig [Listof Player] Any String
              -> ServerClientScenario}
-  (define ((make-server-client-scenarios msg  #:quiet (q #true)  #:extras (bad-clients '[]))
-           rconfig0 players expected msg2)
-    (define p# 45674)
+  ;; set up basics, then: 
+  ;; create a server-clinet secnarior from a referee scenario, which contains
+  ;; (1) a referee configuration, (2) a list of players, (3) expected value; (4) a test message
+  (define p# 45674)
+  (define ((server-client-scenario
+            msg
+            #:expected (result identity)
+            #:drop     (drop identity)
+            #:quiet    (q #true)
+            #:extras   (client* '[]))
+           rc0 player* expected msg2)
 
-    (define rc (set-referee-config rconfig0 PER-TURN PER-TURN-s QUIET q))
+    (set! p# (+ p# 1))
+    
+    (define rc (set-referee-config rc0 r:PER-TURN PER-TURN-s r:QUIET q))
     (define sc (set-server-config default-server-config QUIET q PORT p# REF-SPEC rc))
 
-    (define cc (c:set-client-config c:default-client-config c:PLAYERS players c:QUIET q c:PORT p#))
-    
-    (list sc cc bad-clients expected (~a msg ": " msg2)))
+    (define nu-players (drop player*))
+    (define cc (c:set-client-config c:default-client-config c:PLAYERS nu-players c:QUIET q c:PORT p#))
 
+    (define nu-expected (result expected))
+    (list sc cc client* nu-expected (~a msg ": " msg2)))
+
+  
+  (define scenarios-for-7 (scenario* 7 for-tests-7))
+  (define scenarios-for-8 (scenario* 8 for-tests-8)) ;  #:quiet #false
+  (define scenarios-for-9 (scenario* 9 for-tests-9))
+  (define scenarios-for-A (scenario* 'A for-bonus-A))
+
+  ;; - - - 
+  (define [client-diverge-before-sending-name port#]
+    (c:make-client-for-name-sender (λ (ip) (let L () (L))) port#))
+  
+  (define scenario-special-1
+    (mixed-all-tiles-rev-inf-exn-dag2-A
+     (server-client-scenario
+      (~a "a client that connects but does not complete the registration")
+      #:extras (list client-diverge-before-sending-name))
+     "dummy one"
+     "dummy two"))
+
+  ;; - - -
+  (define name-cd  "sendnameloop")
+  (define [client-diverge-after-sending-name port#]
+    (c:make-client-for-name-sender (λ (ip) (send-message name-cd ip) (let L () (L))) port#))
+
+  (define scenario-special-2
+    (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
+     (server-client-scenario 
+      (~a "a client that connects but does not complete the registration")
+      #:drop all-but-last
+      #:expected (λ (x) (list (first x) (cons name-cd (reverse (rest (second x))))))
+      #:quiet 'yes!
+      #:extras (list client-diverge-after-sending-name))
+     "dummy one"
+     "dummy two")))
+
+;                                                                        
+;      ;;                                                                
+;     ;           ;;;    ;;;             ;                    ;          
+;     ;             ;      ;             ;                    ;          
+;   ;;;;;  ;   ;    ;      ;           ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;   ;    ;      ;             ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;    ;      ;             ;    ;   ;; ;        ;    ;     
+;     ;    ;   ;    ;      ;             ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;   ;    ;      ;             ;    ;          ;    ;        ; 
+;     ;    ;   ;    ;      ;             ;    ;      ;   ;    ;    ;   ; 
+;     ;     ;;;;     ;;     ;;           ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                                                        
+;                                                                        
+;                                                                        
+
+(module+ test ;; how to run scenarios as unit tests 
   #; {ServerClientScenario -> Void}
+  ;; start a server; start regular clients then bad clients; test
   (define (run-server-client-scenario server-client-scenario)
     (match-define [list sc cc bad-clients expected msg] server-client-scenario)
     (check-equal? (run-server-client sc cc bad-clients) expected msg))
@@ -334,7 +429,6 @@
 
   #; {ServerConfiguration [Listof Player] [Listof Player] -> Thread}
   (define (launch-clients cconfig bad-clients)
-    (define players (dict-ref cconfig c:PLAYERS))
     (define port#   (dict-ref cconfig c:PORT))
     (define quiet   (dict-ref cconfig c:QUIET))
     (define err-out (if quiet (open-output-string) (current-error-port)))
@@ -344,53 +438,21 @@
          ;; for failuers before the threads are launched
          ;; `quiet` is passed along so that thrreads can quiet the proxy refs
          (define baddies (map (λ (f) (f port#)) bad-clients))
-         (c:clients players port# #:quiet quiet #:baddies baddies))))))
+         (c:clients cconfig #:baddies baddies))))))
 
-(module+ test ;; tests with broken players 
-  (require (submod Qwirkle/Referee/referee examples))
-  (require (submod Qwirkle/Player/mechanics json))
+(module+ test ;; running scenarios as unit tests
+  7
+  (for-each run-server-client-scenario scenarios-for-7)
+  8
+  (for-each run-server-client-scenario scenarios-for-8)
+  9
+  (for-each run-server-client-scenario scenarios-for-9)
+  'A
+  (for-each run-server-client-scenario scenarios-for-A))
 
-  'for-tests-7
-  (define scenarios-for-7
-    (for/list ([t for-tests-7] [i (in-naturals)])
-      (define k (make-server-client-scenarios (~a "7: " i) #:quiet 'yes!))
-      (match-define [list sc players bad-clients expected] (t k 1 2))
-      (list (server-config->jsexpr sc) (map player->jsexpr players) expected)))
-
-  (for-each run-server-client-scenario scenarios-for-7))
-
-#;
 (module+ test
-  'for-tests-8
-  (for ([t for-tests-9] [i (in-naturals)])
-    (define k (make-server-client-scenarios (~a "8: " i) #:quiet 'yes!))
-    (t k 1 2))
+  'special-2
+  (run-server-client-scenario scenario-special-2)
+  'special-1
+  (run-server-client-scenario scenario-special-1))
 
-  'for-bonus-A
-  (for ([t for-bonus-A] [i (in-naturals)])
-    (define k (make-server-client-scenarios (~a "8: " i) #:quiet 'yes!))
-    (t k 1 2)))
-
-(module+ test ;; tests with broken clients 
-  (define [client-diverge-before-sending-name port#]
-    (c:make-client-for-name-sender (λ (ip) (let L () (L))) port#))
-
-  'special1
-  (mixed-all-tiles-rev-inf-exn-dag2-A
-   (make-server-client-scenarios
-    (~a "a client that connects but does not complete the registration")
-    #:quiet #false  #;'yes!
-    #:extras (list client-diverge-before-sending-name))
-   1 2)
-  
-  (define [client-diverge-after-sending-name port#]
-    (c:make-client-for-name-sender (λ (ip) (send-message "a" ip)) (let L () (L))) port#)
-
-  'special2
-  #;
-  (mixed-all-tiles-rev-inf-exn-dag2-A
-   (test-server-client-plus
-    (~a "a client that connects but does not complete the registration")
-    #:quiet #false  #;'yes!
-    #:extras (list client-diverge-after-sending-name))
-   1 2))
