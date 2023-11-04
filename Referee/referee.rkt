@@ -16,13 +16,20 @@
   (let* ([state0  (dict-ref config STATE0)]
          [sop#    (and state0 (player-count state0))]
          [player# (length players)])
-    (or (unit-test-mode)
-        (and (= sop# player#) (<= MIN-PLAYERS sop# MAX-PLAYERS)))))
-
+    (cond
+      [(unit-test-mode) #true]
+      [(not (= sop# player#))
+       (eprintf "player counts dont match:\n in state:   ~a\n in players: ~a\n" sop# player#)
+       #false]
+      [(not (<= MIN-PLAYERS sop# MAX-PLAYERS))
+       (eprintf "player count doesn't match Q rules: ~a\n" sop#)]
+      [else #true])))
+       
 (provide
  #; {type Configuration = [Hashtable Options]}
  ;; config options
- QUIET OBSERVE CONFIG-S PER-TURN
+ QUIET OBSERVE CONFIG-S PER-TURN STATE0
+ default-referee-config
 
  ;; for homework 
  referee-config->definition
@@ -167,10 +174,12 @@
 
 (define-configuration referee
   [STATE0   #false   #:to-jsexpr state->jsexpr #:from-jsexpr jsexpr->state  #:is-a "JState"]
-  [OBSERVE  void     #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr not #:is-a "Boolean"]
   [QUIET    #true #:is-a "Boolean"]
   [CONFIG-S DEFAULT-CONFIG-S #:is-a "RefereeStateConfig"]
-  [PER-TURN [time-out-limit] #:is-a "Natural" "less than 6"])
+  [PER-TURN [time-out-limit] #:is-a "Natural" "less than 6"]
+  [OBSERVE
+   void
+   #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr (λ (x) (if x #t void)) #:is-a "Boolean"])
 
 #; {-> Void}
 (define (install-default-config)
@@ -704,7 +713,7 @@
   (define (from-8 name) (retrieve-factory name factory-table-8))
   (define cheating-player*
     (map (λ (name method) (create-player name ldasg-strategy #:bad (from-8 method)))
-         (map (λ (x) (~a "ch" (substring x 0 5))) (map first factory-table-8))
+         (map (λ (x) (~a "ch" (substring (regexp-replace* "-" x "") 0 5))) (map car factory-table-8))
          (map first factory-table-8)))
   
   (define (from-9 name) (retrieve-factory name factory-table-9))
@@ -904,7 +913,7 @@
     #:kind         for-tests-7)
 
   (define-integration-test bad-all-1
-    #:desc "surprise: one survuves"
+    #:desc "surprise: one survives"
     #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
     #:externals    exn-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
@@ -913,7 +922,7 @@
     #:kind         for-tests-7)
 
   (define-integration-test bad-all-tiles-bad-players
-    #:desc "surprise: one survuves"
+    #:desc "bad all tiles, bad players surprise: one survives" 
     #:player-tiles (list tiles1 tiles1 tiles1 tiles1)
     #:externals    exn-player*
     #:ref-tiles    ALL-TILES
@@ -1065,6 +1074,7 @@
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-9)
 
+  (provide mixed-all-tiles-rev-inf-exn-dag)
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag
     #:desc "one dag, one exn, two infs"
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
@@ -1113,7 +1123,7 @@
     #:externals    (append (take dag-player* 1) `[,(first cheating-player*)])
     #:ref-tiles    starter-tile*
     #:ref-map      map0
-    #:expected     [["A"] ["chnon-a"]]
+    #:expected     [["A"] ["chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -1124,7 +1134,7 @@
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E"] ["chnon-a" "chtile-"]]
+    #:expected     [["E"] ["chnonad" "chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -1135,7 +1145,7 @@
     #:externals    (reverse (append (take cheating-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E"] ["chtile-" "chnon-a"]]
+    #:expected     [["E"] ["chtilen" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -1147,7 +1157,7 @@
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["F"] ["chnon-a" "chtile-"]]
+    #:expected     [["F"] ["chnonad" "chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1161,7 +1171,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1172,7 +1182,7 @@
     #:externals    (take cheating-player* MAX-PLAYERS)
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [[] ["chnon-a" "chtile-" "chnot-a" "chbad-a"]]
+    #:expected     [[] ["chnonad" "chtilen" "chnotal" "chbadas"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1183,7 +1193,7 @@
     #:externals    (take (reverse cheating-player*) MAX-PLAYERS)
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [[] ["chno-fi" "chtile-" "chnot-a" "chbad-a"]]
+    #:expected     [[] ["chnofit" "chtilen" "chnotal" "chbadas"]]
     #:kind         for-tests-8)
   
   (define-integration-test bad-all-cheating-tiles-1
@@ -1192,7 +1202,7 @@
     #:externals    (rest cheating-player*)
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [["chnot-a"] ["chtile-"]]
+    #:expected     [["chnotal"] ["chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1203,7 +1213,7 @@
     #:externals    (rest (reverse cheating-player*))
     #:ref-tiles    ALL-TILES
     #:ref-map      map0
-    #:expected     [["chbad-a"] []]
+    #:expected     [["chbadas"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1217,7 +1227,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*-2 
     #:ref-tiles    ALL-TILES
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E"] ["xnX" "chnon-a"]]
+    #:expected     [["E"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1231,7 +1241,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*-3
     #:ref-tiles    ALL-TILES-PERM
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1245,7 +1255,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*-4
     #:ref-tiles    ALL-TILES-PERM
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
@@ -1259,7 +1269,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*-5
     #:ref-tiles    ALL-TILES-PERM
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["xnX" "chnon-a"]]
+    #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8))
