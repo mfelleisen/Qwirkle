@@ -633,7 +633,7 @@
 
   (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
-      [(list* (? string? name) (app jsexpr->strategy (? procedure? s)) remainder)
+      [(list* (? jname? name) (app jsexpr->strategy (? procedure? s)) remainder)
        (define check-then-create [check-then-create/curried j name s])
        (match remainder
          ['()
@@ -651,7 +651,7 @@
   (define (jname? j)
     (cond
       [(not (string? j)) (err "name not a string" j)]
-      [(not (regexp-match (pregexp PLAYER-NAME) j)) (err "name not alphanumeric" j)]
+      [(not (regexp-match (pregexp PLAYER-NAME) j)) (err "name not alphanumeric or too short" j)]
       [(not (<= (string-length j) MAX-PLAYER-NAME)) (err "name too long" j)]
       [else j]))
 
