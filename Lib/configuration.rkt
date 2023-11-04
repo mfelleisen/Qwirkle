@@ -47,7 +47,7 @@
      #'(begin
          (define key (gensym 'key)) ...
          (define name-options [list key ...])
-         (define default-name (add-to (hash) [list [list key value0] ...] "impossible" name-options))
+         (define default-name (add-to 'default (hash) [list [list key value0] ...] "" name-options))
 
          #; {Contract}
          (define name/c [hash-carrier/c name-options])
@@ -55,19 +55,20 @@
          #; {(set-name c Key1 Value1 ... KeyN ValueN) : Void}
          (define (set-name config . key-value-pairs0)
            (define key-value-pairs (is-list-of-key-value-pairs key-value-pairs0))
-           (add-to config key-value-pairs key-value-pairs0 name-options))
+           (add-to 'set-name config key-value-pairs key-value-pairs0 name-options))
            
          #; {Configuration -> JSexpr}
-         (define key* `[,(normalize 'key) ...])
+         (define key*   `[,(normalize 'key) ...])
          (define g-key* `[,key ...])
-         (define [name->jsexpr c] (config->jsexpr c key* g-key*))
+         (define to*    `[,to ...])
+         (define [name->jsexpr c] (config->jsexpr c key* g-key* to*))
 
          #; {JSexpr -> [Option Configuration]}
          (define [jsexpr->name j]
            (match j
              [(hash-table
                [(? (curry eq? (normalize 'key))) (app from (? (compose not false?) keyv))] ...)
-              (add-to (hash) [list [list key keyv] ...] "can't happen" name-options)]
+              (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
              [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string/ j))
                 #false]))
 
@@ -89,16 +90,16 @@
       [(list x) #false]
       [(list* k v key-value-pairs) (loop key-value-pairs (cons [list k v] h))])))
 
-#; {Configuration [Listof [List Symbol Any]] [Listof Any] [Listof Symbol] -> Congiguration}
-(define (add-to config key-value-pairs key-value-pairs0 name-options)
+#; {Symbol Configuration [Listof [List Symbol Any]] [Listof Any] [Listof Symbol] -> Congiguration}
+(define (add-to tag config key-value-pairs key-value-pairs0 name-options)
   (cond
     [(false? key-value-pairs)
-     (error 'set-name "key-value pair expected; given ~a" key-value-pairs0)]
+     (error tag "key-value pair expected; given ~a" key-value-pairs0)]
     [else 
      (for/fold ([h config]) ([kv-pair key-value-pairs])
        (match-define [list k v] kv-pair)
        (unless (member k name-options)
-         (error 'set-name "configuration key expected, given ~a" k))
+         (error tag "configuration key expected, given ~a" k))
        (dict-set h k v))]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -106,16 +107,16 @@
 
 (module json racket
   (provide
-   #; {Configuration [Listof Symbol] [Listof Symbol] -> JSexpr}
+   #; {Configuration [Listof Symbol] [Listof Symbol] [Listof (Any -> JSexpr)] -> JSexpr}
    config->jsexpr
    
    jsexpr->string/)
 
   (require (prefix-in old: json))
   
-  (define (config->jsexpr c key* g-key*)
-    (for/fold ([h (hash)]) ([k key*] [g-key g-key*])
-      (dict-set h k (dict-ref c g-key))))
+  (define (config->jsexpr c key* g-key* to*)
+    (for/fold ([h (hash)]) ([k key*] [g-key g-key*] [to to*])
+      (dict-set h k (to (dict-ref c g-key)))))
   
   (define (jsexpr->string/ content)
   (define r (regexp-match #px"8.10\\." (version)))
@@ -186,7 +187,7 @@
     (SERVER-TRIES    1 #:is-a "Natural")
     (SERVER-WAIT     2 #:is-a "PositiveReal")
     (WAIT-FOR-SIGNUP 3 #:is-a "Natural")
-    (REF-SPEC        4 #:to-jsexpr (λ (x) 0) #:from-jsexpr (λ (x) x) #:is-a "RefSpec")
+    (REF-SPEC        4 #:to-jsexpr (λ (x) x) #:from-jsexpr (λ (x) x) #:is-a "RefSpec")
     (QUIET           5 #:is-a "Boolean" ))
   
   (check-equal? [length server-options] 6)
