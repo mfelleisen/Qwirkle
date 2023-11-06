@@ -175,7 +175,11 @@
 (define-configuration referee
   [STATE0   #false   #:to-jsexpr state->jsexpr #:from-jsexpr jsexpr->state  #:is-a "JState"]
   [QUIET    #true #:is-a "Boolean"]
-  [CONFIG-S DEFAULT-CONFIG-S #:is-a "RefereeStateConfig"]
+  [CONFIG-S
+   DEFAULT-CONFIG-S
+    #:to-jsexpr refereeState-config->jsexpr
+    #:from-jsexpr jsexpr->refereeState-config
+    #:is-a "RefereeStateConfig"]
   [PER-TURN [time-out-limit] #:is-a "Natural" "less than 6"]
   [OBSERVE
    void

@@ -41,8 +41,8 @@
 
 (module+ json
   (provide
-   #; {type JPlayer = Natural || { SCORE : Natural, TILES : [Listof JTile]}}
-   TILES SCORE
+   #; {type JPlayer = Natural || { NAME : String, SCORE : Natural, TILES : [Listof JTile]}}
+   TILES SCORE NAME
    
    players->jsexpr
    ;; inverse depends on kind of state 
@@ -149,7 +149,7 @@
       (set! tiles-owned (remove placed tiles-owned)))))
 
 (module+ test
-  (define the-starter-player (apply sop 0 [list starter-tile* 'player1]))
+  (define the-starter-player (apply sop 0 [list starter-tile* "player1"]))
   (check-true (player-owns-tiles the-starter-player starter-tile*) "it owns lshaped")
   (check-true (player-owns-tiles (sop 0 (cons +starter-tile tiles1) 'p) tiles1) "owns, 1"))
 
@@ -208,15 +208,18 @@
 
   (define SCORE 'score)
   (define TILES 'tile*)
+  (define NAME 'name)
 
   (define (players->jsexpr p*) (map 1player->jsexpr p*))
 
   #; {(U SoPlayer Natural) -> JPlayer}
   (define (1player->jsexpr 1player)
-    (match 1player [(sop/m score tiles _) (hasheq SCORE score TILES (map tile->jsexpr tiles))]))
+    (match 1player [(sop/m score tiles x)
+                    (define name (if (or (symbol? x) (string? x)) (~a x) (send x name)))
+                    (hasheq SCORE score TILES (map tile->jsexpr tiles) NAME name)]))
 
   (define (jsexpr->1player j #:name (name "a name"))
     (def/jsexpr-> 1player
-      #:object {[SCORE (? natural? s)] [TILES tiles (list t ...)]}
-      (sop s t name))
+      #:object {[NAME (? string? n)] [SCORE (? natural? s)] [TILES tiles (list t ...)]}
+      (sop s t n))
     (jsexpr->1player j)))

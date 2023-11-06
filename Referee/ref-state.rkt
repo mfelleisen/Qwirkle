@@ -11,7 +11,9 @@
  active-sop-hand)
 
 (provide
+ jsexpr->refereeState-config
  refereeState-config->definition
+ refereeState-config->jsexpr
 
 
  ;; SYNTAX 
@@ -254,9 +256,9 @@
   (provide handouts)
   (define handouts (make-list 6 #s(tile diamond green)))
   (provide starter-players)
-  (define starter-players [list [list starter-tile* 'player1] [list qwirkle-tile* 'player2]])
+  (define starter-players [list [list starter-tile* "player1"] [list qwirkle-tile* "player2"]])
   (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))
-  (define starter-players-handout [list [list '() 'player1] [list qwirkle-tile* 'player2]])
+  (define starter-players-handout [list [list '() "player1"] [list qwirkle-tile* "player2"]])
   (define ref-starter-state-handout (create-ref-state starter-map starter-players-handout)))
 
 (module+ examples ;; states and successor states
@@ -284,7 +286,7 @@
 
 (module+ examples
   (provide state1-with) 
-  (define state1-with (create-ref-state map0 `[(,tiles1 player1) ([,(tile 'square 'green)] extra)])))
+  (define state1-with (create-ref-state map0 `[(,tiles1 "player1") ([,(tile 'square 'green)] extra)])))
 
 (module+ examples
   (require (submod Qwirkle/Common/placement examples))
@@ -618,7 +620,7 @@
     (jsexpr->pk j)))
 
 (module+ test
-  (check-equal? (jsexpr->pk (pk->jsexpr info-starter-state) #:name 'player1) info-starter-state)
+  (check-equal? (jsexpr->pk (pk->jsexpr info-starter-state) #:name "player1") info-starter-state)
 
-  (define P '[player1 player2]) ;; artificial .. for easy testing 
+  (define P '["player1" "player2"]) ;; artificial .. for easy testing 
   (check-equal? (jsexpr->state (state->jsexpr ref-starter-state) #:names P) ref-starter-state))

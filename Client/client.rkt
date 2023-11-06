@@ -58,6 +58,7 @@
 ;                     ;                                    
 
 (require Qwirkle/Client/referee)
+(require (submod Qwirkle/Player/mechanics json))
 (require Qwirkle/Lib/configuration)
 (require (except-in SwDev/Testing/make-client port/c))
 (require SwDev/Testing/communication)
@@ -82,11 +83,11 @@
 (define WAIT-BETWEEN-THREADS 3)
 
 (define-configuration client
-  [PLAYERS '() #:is-a "JActorsB"]
   [PORT PORT0 #:is-a "Natural" "between 10000 and 60000"] ;; `port#` is a common port
   [HOST LOCAL #:is-a "String" "either an IP address or a domain name"] ;; `ip` is LOCALHOST
   [WAIT WAIT-BETWEEN-THREADS #:is-a "Natural" "less than 10s"]
-  [QUIET #true #:is-a "Boolean"])
+  [QUIET #true #:is-a "Boolean"]
+  [PLAYERS '() #:to-jsexpr player*->jsexpr #:from-jsexpr jsexpr->player* #:is-a "JActorsB"])
 
 ;                                                  
 ;                                                  
