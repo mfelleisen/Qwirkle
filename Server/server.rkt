@@ -102,7 +102,7 @@
 
 (define-configuration server
   (PORT            PORT0 #:is-a "Natural" "between 10000 and 60000")
-  (SERVER-TRIES    1 #:is-a "Natural" "less than 10")
+  (SERVER-TRIES    2 #:is-a "Natural" "less than 10")
   (SERVER-WAIT     20 #:is-a "Natural" "less than 30[s]")
   (WAIT-FOR-SIGNUP 2 #:is-a "Natural" "less than 10")
   (QUIET           #true #:is-a "Boolean")
@@ -144,7 +144,6 @@
   ;; set up custodian so `server` can clean up all threads, TCP ports, etc. -- in case it is re-used
   (parameterize ([current-custodian (make-custodian)])
     (define players (wait-for-players house-players config))
-    (eprintf "signed up: ~a\n" players)
     (begin0
       (cond
         [(empty? players) (send-message DEFAULT-RESULT) (show DEFAULT-RESULT)]
@@ -322,7 +321,7 @@
            [List ServerConfiguration ClientConfiguration [Listof Clients] Any String]}
 
   #; {Natural [Listof RefereeScenario] -> [Listof ServerClientScenario]}
-  (define (scenario* n ref-scenario* #:quiet (quiet 'yes!) #:extras (client* '[]))
+  (define (scenario* n ref-scenario* #:quiet (quiet #true) #:extras (client* '[]))
     (for/list ([ref-scenario ref-scenario*] [i (in-naturals)])
       (define K (server-client-scenario (~a n ": " i) #:quiet quiet #:extras client*))
       (ref-scenario K "dummy arg 1" "dummy arg 2")))
@@ -384,7 +383,7 @@
       (~a "a client that connects but does not complete the registration")
       #:drop all-but-last
       #:expected (λ (x) (list (first x) (cons name-cd (reverse (rest (second x))))))
-      #:quiet 'yes!
+      #:quiet #true
       #:extras (list client-diverge-after-sending-name))
      "dummy one"
      "dummy two")))
