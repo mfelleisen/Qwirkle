@@ -266,7 +266,7 @@
     (syntax-parse stx
       [(test-case msg:string name:string factory:id state:expr [win out]
                   (~optional (~seq #:extra Bname:id B:expr)))
-       #'(parameterize ([unit-test-mode #true])
+       #'(parameterize ([unit-test-mode #true] [dont-double-check-names #true])
            (let* ((P (create-player "A" dag-strategy #:bad (retrieve-factory name factory)))
                   [C (set-referee-config default-referee-config STATE0 state QUIET #false)])
              (check-equal?
@@ -341,7 +341,7 @@
                   (~seq #:extra Bname:id Bplayer:expr))
        #:with S (datum->syntax #'test-case 'S #'test-case #'test-case)
        #:with A (datum->syntax #'test-case 'A #'test-case #'test-case)
-       #'(parameterize ([unit-test-mode #true])
+       #'(parameterize ([unit-test-mode #true] [dont-double-check-names #true])
            (let* ((A (create-player (~a "A-" title) dag-strategy #:bad (retrieve-factory n factory)))
                   [Bname Bplayer]
                   [S (set-ref-state-players state [list A Bname])])
@@ -398,7 +398,7 @@
                   [[winners losers] out]
                   (~optional (~seq #:extra Bname:id B:expr)))
        #:with A (datum->syntax #'test-case 'A #'test-case #'test-case)
-       #'(parameterize ([unit-test-mode #true])
+       #'(parameterize ([unit-test-mode #true] [dont-double-check-names #true])
            (let (~? ([Bname B]) ())
              (let* ([F (retrieve-factory n factory)]
                     [T state]
@@ -477,7 +477,7 @@
                    (~optional (~seq #:state? ok #;symbol) #:defaults ([ok #'#true]))
                    (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))]
                   (~optional (~seq #:extra Bname:id B:expr)))
-       #'(parameterize ([unit-test-mode #true])
+       #'(parameterize ([unit-test-mode #true] [dont-double-check-names #true])
            (let (~? ([Bname B]) ())
              (let ([F (retrieve-factory name factory)]
                    [T state]
@@ -585,7 +585,7 @@
                    (~optional (~seq #:passed? ps #;symbol) #:defaults ([ps #'#false]))
                    (~optional (~seq #:dropped? dr #;symbol) #:defaults ([dr #'#false]))]
                   (~optional (~seq #:extra Bname:id B:expr)))
-       #'(parameterize ([unit-test-mode #true])
+       #'(parameterize ([unit-test-mode #true] [dont-double-check-names #true])
            (let* ([F (retrieve-factory name factory)]
                   [T state]
                   [C (~? (list B) '[])]

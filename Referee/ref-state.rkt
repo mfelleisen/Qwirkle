@@ -10,6 +10,7 @@
  active-sop-finished? 
  active-sop-hand)
 
+;; ---------------------------------------------------------------------------------------------------
 (provide
  jsexpr->refereeState-config
  refereeState-config->definition
@@ -35,8 +36,11 @@
  ;; and binds them to `tiles-to-replaced`
  legal-re-placement)
 
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof StatePlayer] [Listof Player] -> Boolean}
 (define (same-order-of-names splayers lop)
   (cond
+    [(dont-double-check-names) #true]
     [(equal? (map sop-player splayers) (map (λ (p) (send p name)) lop))
      #true]
     [else
@@ -44,6 +48,8 @@
      (eprintf " state players ~a\n" (map sop-player splayers))
      (eprintf " given players ~a\n" (map (λ (p) (send p name)) lop))
      #false]))
+
+(define dont-double-check-names (make-parameter #false))
      
 (provide
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
@@ -63,6 +69,7 @@
         #:pre/name (player-specs) "distinct internal names" (distinct? (map second player-specs))
         (r state?))]
 
+  [dont-double-check-names  (parameter/c boolean?)]
   [set-ref-state-players
    ;; sets the external players in order 
    (->i ([s state?] [lop (listof player/c)])
@@ -113,6 +120,7 @@
   [render-ref-state (-> state? 2:image?)]
   [render-info-state (-> state? 2:image?)]))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide ForStudents/ Tests/)
 
