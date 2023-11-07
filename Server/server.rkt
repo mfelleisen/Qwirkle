@@ -36,7 +36,9 @@
          #:result (return-results-or-void (-> list? any/c)))
         (result any/c))]))
 
-(module+ examples)
+(module+ examples
+  (require Qwirkle/Referee/ref-state))
+
 
 ;                                                          
 ;                                                          
@@ -55,7 +57,7 @@
 
 (require Qwirkle/Common/player-interface) ;; type Player 
 (require Qwirkle/Server/player)
-(require (except-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN))
+(require (except-in Qwirkle/Referee/referee STATE0 QUIET OBSERVE CONFIG-S PER-TURN))
 (require (submod Qwirkle/Referee/referee json))
 
 (require Qwirkle/Lib/configuration)
@@ -159,7 +161,7 @@
                        (eprintf "server reports referee failure\n")
                        (eprintf "~a\n" (exn-message n))
                        DEFAULT-RESULT)])
-      (referee/config (dict-ref config REF-SPEC '[]) players)))
+      (referee/config (dict-ref config REF-SPEC (hash)) players)))
   (send-message result)
   (optionally-return-result result))
 
@@ -340,17 +342,26 @@
             #:expected (result identity)
             #:drop     (drop identity)
             #:quiet    (q #true)
-            #:extras   (client* '[]))
+            #:extras   (client* '[])
+            ;; the update function injects the actual players into the game state to
+            ;; circumvent the naming conflict 
+            #:update-state-players (update #false) #; (-> [Listof Player] [Listof Player]))
            rc0 player* expected msg2)
 
     (set! p# (+ p# 1))
-    
-    (define rc (set-referee-config rc0 r:PER-TURN PER-TURN-s r:QUIET q))
-    (define sc (set-server-config default-server-config QUIET q PORT p# REF-SPEC rc))
 
     (define nu-players (drop player*))
     (define cc (c:set-client-config c:default-client-config c:PLAYERS nu-players c:QUIET q c:PORT p#))
-
+    
+    (define rc
+      (cond
+        [(not update) (set-referee-config rc0 r:PER-TURN PER-TURN-s r:QUIET q)]
+        [else ;; this is a kludge to accommodate special2, which may not be needed
+         (parameterize ([dont-double-check-names #true])
+           (define state (dict-ref rc0 STATE0))
+           (set-referee-config rc0 STATE0 (set-ref-state-players state (update nu-players))))]))
+    (define sc (set-server-config default-server-config QUIET q PORT p# REF-SPEC rc))
+    
     (define nu-expected (result expected))
     (list sc cc client* nu-expected (~a msg ": " msg2)))
 
@@ -373,17 +384,21 @@
      "dummy two"))
 
   ;; - - -
+  ;; this should be observationally equivalent to a player that goes infinite in the setup method
+
   (define name-cd  "sendnameloop")
   (define [client-diverge-after-sending-name port#]
     (c:make-client-for-name-sender (λ (ip) (send-message name-cd ip) (let L () (L))) port#))
+  (define remote-player-for-client
+    (make-remote-player name-cd (current-input-port) (current-output-port)))
 
   (define scenario-special-2
     (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
      (server-client-scenario 
       (~a "a client that connects but does not complete the registration")
       #:drop all-but-last
+      #:update-state-players (λ (given) (append given [list remote-player-for-client]))
       #:expected (λ (x) (list (first x) (cons name-cd (reverse (rest (second x))))))
-      #:quiet #true
       #:extras (list client-diverge-after-sending-name))
      "dummy one"
      "dummy two")))
@@ -408,6 +423,9 @@
   ;; start a server; start regular clients then bad clients; test
   (define (run-server-client-scenario server-client-scenario)
     (match-define [list sc cc bad-clients expected msg] server-client-scenario)
+
+    (run-server-client sc cc bad-clients)
+
     (check-equal? (run-server-client sc cc bad-clients) expected msg))
   
   (define (run-server-client sconfig cconfig bad-clients)
@@ -438,6 +456,8 @@
          ;; `quiet` is passed along so that thrreads can quiet the proxy refs
          (define baddies (map (λ (f) (f port#)) bad-clients))
          (c:clients cconfig #:baddies baddies))))))
+
+;; ---------------------------------------------------------------------------------------------------
 
 (module+ test ;; running scenarios as unit tests
   7
