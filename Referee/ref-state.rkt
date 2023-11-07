@@ -35,6 +35,16 @@
  ;; and binds them to `tiles-to-replaced`
  legal-re-placement)
 
+(define (same-order-of-names splayers lop)
+  (cond
+    [(equal? (map sop-player splayers) (map (λ (p) (send p name)) lop))
+     #true]
+    [else
+     (eprintf "names differ:\n")
+     (eprintf " state players ~a\n" (map sop-player splayers))
+     (eprintf " given players ~a\n" (map (λ (p) (send p name)) lop))
+     #false]))
+     
 (provide
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
  ;; the referee knows the state of every player and the sequence of tiles it is handing out 
@@ -58,7 +68,10 @@
    (->i ([s state?] [lop (listof player/c)])
         #:pre/name (s lop) "same number of player representations and player objects expected"
         (= (length (state-players s)) (length lop))
-        #:pre/name (lop) "distinct external names" (distinct? (map (λ (p) (send p name)) lop))
+        #:pre/name (lop) "distinct external names"
+        (distinct? (map (λ (p) (send p name)) lop))
+        #:pre/name (s lop) "same order of names"
+        (same-order-of-names (state-players s) lop)
         (r state?))]
 
   [ref-state-to-info-state
@@ -286,7 +299,8 @@
 
 (module+ examples
   (provide state1-with) 
-  (define state1-with (create-ref-state map0 `[(,tiles1 "player1") ([,(tile 'square 'green)] extra)])))
+  (define state1-with
+    (create-ref-state map0 `[(,tiles1 "player1") ([,(tile 'square 'green)] extra)])))
 
 (module+ examples
   (require (submod Qwirkle/Common/placement examples))
