@@ -776,7 +776,7 @@
            (set! kind (cons name kind)))]))
   
   (define (setup-tsts descr player-tiles externals xtras tiles0 map0 expect quiet show qb fb)
-    [define specs (map list player-tiles (take '["xnX" "xnY" "xnZ" "xnW"] (length player-tiles)))]
+    [define specs (map list player-tiles (map (λ (p) (send p name)) externals))]
     [define s0    (create-ref-state map0 specs #:tiles0 tiles0)]
     [define cs    (set-bonus qb fb)]
     (define rc    (set-referee-config default-referee-config STATE0 s0 QUIET quiet CONFIG-S cs))
@@ -1297,7 +1297,8 @@
 (module+ test ;; run all integration tests
   [mixed-medium2-rev-players-bonus-delta])
 
-(module+ test 
+(module+ test
+  '---all 
   (for-each (λ (test) [test]) [all-tests])
 
   (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 3) "make sure all tests are recordded")
