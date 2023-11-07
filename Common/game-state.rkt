@@ -213,15 +213,15 @@
   (define (create-1player-state map0 active-player-spec #:score (score 0) #:more-sops (more-sops '()))
     (state map0 (cons (apply sop score active-player-spec) more-sops) '[]))
   
-  (define +starter-state (create-1player-state starter-map (list (list +starter-tile) 'p12)))
+  (define +starter-state (create-1player-state starter-map (list (list +starter-tile) "p12")))
   
   (provide +atop-state) ;; local testing only 
-  (define +atop-state (create-1player-state map0 (list (list #s(tile circle red)) 'p12)))
+  (define +atop-state (create-1player-state map0 (list (list #s(tile circle red)) "p12")))
 
   (provide +starter-tile)
 
   (define special-tiles (map placement-tile special-placements))
-  (define special-state (create-1player-state special-map (list special-tiles 'ps)))
+  (define special-state (create-1player-state special-map (list special-tiles "ps")))
   
   (define special-state+green-circle-at--2-2
     (create-1player-state special-map+green-circle-at--2-2 `[[#s(tile circle orange)] ppp]))
@@ -323,7 +323,7 @@
              (#s(coordinate 0 1) . #s(tile circle green))
              (#s(coordinate -4 0) . #s(tile clover red))
              (#s(coordinate -1 0) . #s(tile diamond red)))
-       (#s(sop 0 (#s(tile star green)) ps))
+       (#s(sop 0 (#s(tile star green)) "ps"))
        []))
   
   (check-equal? (apply-action special-state (first special-placements))
