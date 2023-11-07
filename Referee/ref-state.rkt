@@ -38,15 +38,15 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof StatePlayer] [Listof Player] -> Boolean}
-(define (same-order-of-names splayers lop)
+(define (same-order-of-names losp lop-given-players)
+  (define statePlayers (map (λ (q) (let ([p (sop-player q)]) (if (object? p) (send p name) p))) losp))
+  (define givenPlayers (map (λ (p) (send p name)) lop-given-players))
   (cond
-    [(dont-double-check-names) #true]
-    [(equal? (map sop-player splayers) (map (λ (p) (send p name)) lop))
-     #true]
+    [(equal? statePlayers givenPlayers) #true]
     [else
      (eprintf "names differ:\n")
-     (eprintf " state players ~a\n" (map sop-player splayers))
-     (eprintf " given players ~a\n" (map (λ (p) (send p name)) lop))
+     (eprintf " state players ~a\n" statePlayers)
+     (eprintf " given players ~a\n" givenPlayers)
      #false]))
 
 (define dont-double-check-names (make-parameter #false))
@@ -78,7 +78,7 @@
         #:pre/name (lop) "distinct external names"
         (distinct? (map (λ (p) (send p name)) lop))
         #:pre/name (s lop) "same order of names"
-        (same-order-of-names (state-players s) lop)
+        (or (dont-double-check-names) (same-order-of-names (state-players s) lop))
         (r state?))]
 
   [ref-state-to-info-state
