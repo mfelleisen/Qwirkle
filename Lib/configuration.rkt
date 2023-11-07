@@ -67,7 +67,7 @@
          (define [jsexpr->name j]
            (match j
              [(hash-table
-               [(? (curry eq? (normalize 'key))) (app from (? (compose not false?) keyv))] ...)
+               [(? (curry eq? (normalize 'key))) (app from keyv)] ...)
               (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
              [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string/ j))
                 #false]))
