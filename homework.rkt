@@ -31,7 +31,7 @@
 (req->prov Qwirkle/Referee/ref-state)
 
 (req->prov Qwirkle/Server/server)
-(req->prov Qwirkle/Client/client)
+(req->prov (prefix-in client: Qwirkle/Client/client))
 
 ; (req->prov Qwirkle/Lib/colors)
 
