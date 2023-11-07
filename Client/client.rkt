@@ -80,7 +80,7 @@
 
 (define LOCAL "127.0.0.1")
 (define PORT0 45678)
-(define WAIT-BETWEEN-THREADS 3)
+(define WAIT-BETWEEN-THREADS 2)
 
 (define-configuration client
   [PORT PORT0 #:is-a "Natural" "between 10000 and 60000"] ;; `port#` is a common port
