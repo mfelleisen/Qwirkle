@@ -22,7 +22,8 @@
        (eprintf "player counts dont match:\n in state:   ~a\n in players: ~a\n" sop# player#)
        #false]
       [(not (<= MIN-PLAYERS sop# MAX-PLAYERS))
-       (eprintf "player count doesn't match Q rules: ~a\n" sop#)]
+       (eprintf "player count doesn't match Q rules: ~a\n" sop#)
+       #false]
       [else #true])))
        
 (provide
