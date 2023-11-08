@@ -87,7 +87,11 @@
   [HOST LOCAL #:is-a "String" "either an IP address or a domain name"] ;; `ip` is LOCALHOST
   [WAIT WAIT-BETWEEN-THREADS #:is-a "Natural" "less than 10s"]
   [QUIET #true #:is-a "Boolean"]
-  [PLAYERS '() #:to-jsexpr player*->jsexpr #:from-jsexpr jsexpr->player* #:is-a "JActorsB"])
+  [PLAYERS
+   '()
+   #:to-jsexpr   player*->jsexpr
+   #:from-jsexpr (λ (x) (jsexpr->player* x #:loops #true #:cheating #true))
+   #:is-a        "JActorsB"])
 
 ;                                                  
 ;                                                  
