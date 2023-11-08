@@ -210,17 +210,21 @@
 ;                                                   
 
 #; {Strategy PubKnowledge -> (U PASS REPLACE [Listof Placement])}
+;; legally iterate strategy `s` starting in the (public) state `pk0`
 (define (iterate-strategy s pk0)
-  (let until ([so-far '()] [pk pk0])
-    (define action (s pk))
-    (cond
-      [(or (equal? PASS action) (equal? REPLACEMENT action))
-       (if (empty? so-far) action so-far)]
-      [else
-       (define so-far+ (append so-far (list action)))
-       (if (false? (legal pk0 so-far+))
-           so-far 
-           (until so-far+ (apply-action pk action)))])))
+  #; {[Listof Placement] PubKn -> (U PASS REPLACE [Listof Placement])}
+  ;; generate new state until `s` can no longer add placements
+  ;; or acts illegally with respect to the accumulated placements 
+  (define (iterate/accu placements pk)
+    (match (s pk)
+      [(== PASS)        (if (empty? placements) PASS placements)]
+      [(== REPLACEMENT) (if (empty? placements) REPLACEMENT placements)]
+      [action
+       (define placements-so-far+ (append placements (list action)))
+       (if (false? (legal pk0 placements-so-far+))
+           placements 
+           (iterate/accu placements-so-far+ (apply-action pk action)))]))
+  (iterate/accu '[] pk0))
 
 (module+ test
   ;; these have tiles that don't fit 
