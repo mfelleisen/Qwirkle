@@ -52,6 +52,7 @@
   (provide
    ACHEAT ;; for homework 
    (contract-out
+    [lax-names-okay? (parameter/c boolean?)]
     [player->jsexpr  (-> player/c jsexpr?)]
     [jsexpr->player  (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false player/c))]
     [jsexpr->player* (->* (jsexpr?) (#:loops any/c #:cheating any/c) (or/c #false (listof player/c)))]
@@ -621,6 +622,8 @@
 ;    ;;                        
 
 (module+ json
+  (define lax-names-okay? (make-parameter #false))
+
   (define (player*->jsexpr p*) (map player->jsexpr p*))
 
   (define (player->jsexpr p) (send p description))
@@ -651,6 +654,7 @@
   (define (jname? j)
     (cond
       [(not (string? j)) (err "name not a string" j)]
+      [(lax-names-okay?) j]
       [(not (regexp-match (pregexp PLAYER-NAME) j)) (err "name not alphanumeric or too short" j)]
       [(not (<= (string-length j) MAX-PLAYER-NAME)) (err "name too long" j)]
       [else j]))
