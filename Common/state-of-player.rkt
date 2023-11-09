@@ -65,6 +65,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
+(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
 (require Qwirkle/Common/tiles)
 (require (prefix-in 2: 2htdp/image))
 (require (for-syntax syntax/parse))
@@ -220,6 +221,6 @@
 
   (define (jsexpr->1player j #:name (name "a name"))
     (def/jsexpr-> 1player
-      #:object {[NAME (? string? n)] [SCORE (? natural? s)] [TILES tiles (list t ...)]}
+      #:object {[NAME (? string? n)] [SCORE (? tile#? s)] [TILES tiles (list t ...)]}
       (sop s t n))
     (jsexpr->1player j)))

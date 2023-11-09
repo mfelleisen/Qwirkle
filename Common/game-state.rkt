@@ -638,6 +638,6 @@
     (def/jsexpr-> state
       #:object {[MAP     map     (? hash? gmap)]
                 [PLAYERS players (cons (? sop? first) p)]
-                [TILES   tiles   (? identity t)]} ;; not #false 
+                [TILES   tiles   (? tile#? t)]} ;; not #false 
       (state gmap (cons first p) t))
     (jsexpr->state j)))

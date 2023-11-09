@@ -36,6 +36,9 @@
    (define Tmp/ "Tmp/")
    (define PNG ".png")
 
+   (require (only-in racket/math natural?))
+   (define TILE# 1080)
+   (define (tile#? x) (and (natural? x) (<= x TILE#)))	
    )
 
 @(require 'spec)
