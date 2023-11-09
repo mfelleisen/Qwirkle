@@ -356,7 +356,7 @@
                    #:extra B (create-player "B" dag-strategy))
 
   (setup-test-case "players drops out during setup" "setup" factory-table-7 ref-starter-state
-                   [(state-kick S #:from-active #t) `(,A)]
+                   [(state-kick S #:from-active #true) `(,A)]
                    #:dropped "dropped"
                    #:extra C (create-player "C" dag-strategy)))
 
@@ -540,7 +540,7 @@
   (with-obs s)
   (xsend+ ap take-turn (ref-state-to-info-state s)
           [[failed ;; communication 
-            (values (state-kick s) (cons ap out))] 
+            (values (state-kick s #:from-active #true) (cons ap out))]
            [(legal-pass)
             (values (state-rotate s) out)]
            [(legal-placement s s+ tiles-placed)
@@ -556,13 +556,13 @@
             (hand-tiles-now ap s++ handouts out ap-ends-game)]
            [_illegal-request_
             (report 'take-turn ap "illegal placement or re-placement request")
-            (values (state-kick s) (cons ap out))]]))
+            (values (state-kick s #:from-active #true) (cons ap out))]]))
 
 #; {SoPlayer State [Listof Tile] [Listof SoPlayer] -> OneTurn}
 (define (hand-tiles-now ap s+ handouts out ap-ends-game)
   (xsend+ ap new-tiles handouts
           [[failed
-            (define s++ (state-kick s+))
+            (define s++ (state-kick s+ #:from-active #true))
             (if s++ (values s++ (cons ap out)) (ap-ends-game #false #true (cons ap out)))]
            [_ (values (state-rotate (active-sop-hand s+ handouts)) out)]]))
 
@@ -1139,7 +1139,7 @@
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["E"] ["chnonad" "chtilen"]]
+    #:expected     [["F"] ["chnonad" "chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
@@ -1176,7 +1176,7 @@
     #:externals    1dag-1exn-1ldag-1cheater-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      (start-map #s(tile clover yellow))
-    #:expected     [["A"] ["xnX" "chnonad"]]
+    #:expected     [["E"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8)
