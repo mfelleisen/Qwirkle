@@ -36,13 +36,14 @@
    ;; methods that raise exceptions after a specified number of calls 
    factory-table]
 
-  [factory-table-9
-   ;; methods that go into infinite loops after a specified number of calls 
-   factory-table]
-
   [factory-table-8
    ;; methods that return a type-correct, but logically incorrect result 
    factory-table]
+
+  [factory-table-9
+   ;; methods that go into infinite loops after a specified number of calls, but at most Count# 
+   factory-table]
+  [Count# natural?]
 
   [factory-all factory-table]))
 
