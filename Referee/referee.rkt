@@ -1113,6 +1113,7 @@
     #:kind         for-tests-9)
 
   (provide mixed-all-tiles-rev-inf-exn-dag2-A)
+  (define __ '[]) ;; usesd for special scenarios 
 
   (define t-mixed-all-tiles-rev-inf-exn-dag2-A (pick-fixed-permutation (reverse ALL-TILES)))
   (define-integration-test mixed-all-tiles-rev-inf-exn-dag2-A
@@ -1124,7 +1125,7 @@
     #:expected     [[] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:kind         for-bonus-A))
+    #:kind         __))
 
 ;; ******** keep in this order to preserve random number generation **********
 
