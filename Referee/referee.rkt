@@ -717,9 +717,11 @@
 
   (define (from-8 name) (retrieve-factory name factory-table-8))
   (define cheating-player*
-    (map (λ (name method) (create-player name ldasg-strategy #:bad (from-8 method)))
-         (map (λ (x) (~a "ch" (substring (regexp-replace* "-" x "") 0 5))) (map car factory-table-8))
-         (map first factory-table-8)))
+    (let* ([kind*  (map car factory-table-8)]
+           [sub    (λ (s) (substring s 0 (if (>= (string-length s) 5) 5 4)))]
+           [name*  (map (λ (x) (~a "ch" (sub (regexp-replace* "-" x "")))) kind*)]
+           [index* (map first factory-table-8)])
+      (map (λ (name method) (create-player name ldasg-strategy #:bad (from-8 method))) name* index*)))
   
   (define (from-9 name) (retrieve-factory name factory-table-9))
   (define inf-player*
@@ -734,8 +736,9 @@
   (define badly-named-player*
     (let* ([f (retrieve-factory "good" factory-base)]
            [A (create-player "ouch ouch" dag-strategy #:bad f)]
-           [B (create-player "ouchouchouchouchouchouchouchouchouch" dag-strategy #:bad f)])
-      (list A B)))
+           [B (create-player "ouchouchouchouchouchouchouchouchouch" dag-strategy #:bad f)]
+           [C (create-player "λ" dag-strategy #:bad f)])
+      (list A B C)))
     
   (define for-students-7 '[])
   (define for-tests-7    '[])
@@ -828,7 +831,7 @@
     #:ref-tiles    tiles0
     #:ref-map      map0
     #:expected     [["A"] []]
-    #:extras       badly-named-player*
+    #:extras       (take badly-named-player* 2)
     #:kind         for-bonus-A)
 
   (define-integration-test bad-setup 
@@ -998,7 +1001,7 @@
     #:expected     [["G"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
-    #:extras       badly-named-player*
+    #:extras       (take badly-named-player* 2)
     #:kind         for-bonus-A)
   
   (define-integration-test bad-all-tiles-ldasg-player*
@@ -1279,6 +1282,22 @@
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-tests-8))
 
+;; ---------------------------------------------------------------------------------------------------
+;; more bonus secenarios
+
+(module+ examples
+  (define-integration-test bad-all-tiles-bad-players-8-lsdag-B
+    #:desc "reminder: plain tests are fair game (ldasg), plus extras"
+    #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
+    #:externals    (take ldasg-player* MAX-PLAYERS)
+    #:ref-tiles    ALL-TILES
+    #:ref-map      map0
+    #:expected     [["G"] []]
+    #:q-bonus      Q-BONUS-8 
+    #:finish-bonus FINISH-BONUS-8
+    #:extras       (take (reverse badly-named-player*) 2)
+    #:kind         for-bonus-A))
+
 ;                                                                        
 ;                                                                        
 ;      ;            ;                    ;                    ;          
@@ -1302,7 +1321,7 @@
   '---all 
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 3) "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 4) "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
   (check-equal? (length for-students-9) 3 "8: students get three tests -- expected to fail")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
