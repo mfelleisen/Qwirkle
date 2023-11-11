@@ -117,7 +117,7 @@
 (def-and-add-rm make-nonSetup       #true  #:setup     non-json-void)
 (def-and-add-rm make-illTT          #true  #:take-turn ill-formed-action)
 (def-and-add-rm make-invTTBadString #true  #:take-turn invalid-action-bad-string)
-(def-and-add-rm make-non-nt         #true  #:new-tiles non-json-void)
+(def-and-add-rm make-nonNewTiles    #true  #:new-tiles non-json-void)
 (def-and-add-rm make-nonWin         #true  #:win       non-json-void)
 
 (define (ill-formed-action->jsexpr x)
