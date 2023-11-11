@@ -39,6 +39,12 @@
    (require (only-in racket/math natural?))
    (define TILE# 1080)
    (define (tile#? x) (and (natural? x) (<= x TILE#)))	
+  
+   (define (jsexpr->tiles# x)
+     (if (tile#? x)
+         x
+	 (begin (eprintf "jsexpr->tile# : value does not satisfy tiles#?: ~a\n" x) #f)))
+
    )
 
 @(require 'spec)
