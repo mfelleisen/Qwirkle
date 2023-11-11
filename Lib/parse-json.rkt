@@ -71,18 +71,18 @@
          (λ (j)
            (match j
              [pat body ...]
-             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string/ j))
+             [_ (eprintf "~a object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
                 #false])))]
     
     [(_ to #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
-     #:with jsexpr-parser  (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
+     #:with name  (format-id stx "jsexpr->~a" #'to #:source #'to #:props stx)
      #:do [(define plist (syntax->list #'(parse ...)))]
      #:with (jsexpr-> ...) (map (λ (u) (format-id u "jsexpr->~a" u #:source u #:props u)) plist)
-     #'(define jsexpr-parser
+     #'(define name
          (λ (j)
            (match j
              [(hash-table [(? (curry eq? key)) (app jsexpr-> pat)] ...) body ...]
-             [_ (eprintf "~a object does not match schema\n ~a\n" 'name (jsexpr->string/ j))
+             [_ (eprintf "~a object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
                 #false])))]))
 
 (define (jsexpr->id x) x) ;; is made up by `with` clause 
