@@ -28,9 +28,10 @@
    ;; runs each p in `players` as a client that connects to a server at `ip` on `port#`
    ;; if `wait?` the main thread waits for all of clients -- NEEDED FOR INDEPENDENT RUNS
    ;; of `clients` in a shell process  (why?)
+   ;; 
+   ;; players with special names -- see pick at Client/referee -- get JSON-bad remote-referees
    (->i ([config  client-config/c])         ;; BY DEFAULT: 
         ([wait? boolean?]                   ;; `wait?` is #false
-         #:remote [rm any/c]                ;; `rm` is `make-remote-manager`
          #:baddies [b (listof procedure?)]) ;; `b` is '[]
         (r any/c))]
     
@@ -110,13 +111,13 @@
 ;                                                  
 ;                                                  
 
-(define (clients cc (wait? #f) #:remote  (rm make-remote-manager) #:baddies [bad-clients '()])
+(define (clients cc (wait? #f) #:baddies [bad-clients '()])
   (define players (dict-ref cc PLAYERS))
   (define ip (dict-ref cc HOST))
   (define p# (dict-ref cc PORT))
   (define quiet (dict-ref cc QUIET))
 
-  (define clients-for-players (map (make-client-for-player p# ip quiet rm) players))
+  (define clients-for-players (map (make-client-for-player p# ip quiet) players))
   (define running-clients     (launch-clients (append clients-for-players bad-clients)))
   (when wait?
     (wait-for-all running-clients)
@@ -141,11 +142,13 @@
   (λ () [referee-maker] 'fake-client-is-done))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {PortNumber IPAddress Boolean RemoetManager -> Player -> Client}
+#; {PortNumber IPAddress Boolean -> Player -> Client}
 ;; the connection to the server musy happens "at the same time" as the player becomes a thread
 ;; because the server may immediately start the game as as sufficient number of players connected 
-(define [(make-client-for-player port# ip quiet rm) 1player]
-  (define referee-maker (make-referee-maker (send 1player name) port# ip quiet rm))
+(define [(make-client-for-player port# ip quiet) 1player]
+  (define player-name   (send 1player name))
+  (define remote-ref    (or (pick-referee player-name) make-remote-manager))
+  (define referee-maker (make-referee-maker (send 1player name) port# ip quiet remote-ref))
   (define error-port (if quiet (open-output-string) (current-error-port)))
   (λ () (connect-and-run-together referee-maker 1player error-port)))
 
