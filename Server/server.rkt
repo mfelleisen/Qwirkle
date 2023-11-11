@@ -74,7 +74,8 @@
          make-client-for-name-sender default-client-config set-client-config QUIET PORT PLAYERS)))
   (require (submod Qwirkle/Referee/referee examples))
   (require (prefix-in r: (only-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN)))
-  (require (except-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN)))
+  (require (except-in Qwirkle/Referee/referee QUIET OBSERVE CONFIG-S PER-TURN))
+  (require (prefix-in c: Qwirkle/Client/referee)))
 
 (module+ test
   (require (submod ".."))
@@ -313,7 +314,13 @@
    scenarios-for-7
    scenarios-for-8
    scenarios-for-9
-   scenarios-for-A)
+
+   scenarios-for-7/s
+   scenarios-for-8/s
+   scenarios-for-9/s
+   
+   scenarios-for-A
+   scenarios-for-B)
 
   (provide
    scenario-special-1
@@ -340,7 +347,7 @@
   (define ((server-client-scenario
             msg
             #:expected (result identity)
-            #:drop     (drop identity)
+            #:drop     (drop-a-given-player identity)
             #:quiet    (q #true)
             #:extras   (client* '[])
             ;; the update function injects the actual players into the game state to
@@ -350,7 +357,7 @@
 
     (set! p# (+ p# 1))
 
-    (define nu-players (drop player*))
+    (define nu-players (drop-a-given-player player*))
     (define cc (c:set-client-config c:default-client-config c:PLAYERS nu-players c:QUIET q c:PORT p#))
     
     (define rc
@@ -365,12 +372,17 @@
     (define nu-expected (result expected))
     (list sc cc client* nu-expected (~a msg ": " msg2)))
 
-  
-  (define scenarios-for-7 (scenario* 7 for-tests-7))
-  (define scenarios-for-8 (scenario* 8 for-tests-8)) ;  #:quiet #false
-  (define scenarios-for-9 (scenario* 9 for-tests-9))
-  (define scenarios-for-A (scenario* 'A for-bonus-A))
 
+  (define scenarios-for-7/s (scenario* 7 for-students-7))
+  (define scenarios-for-7 (scenario* 7 for-tests-7))
+  (define scenarios-for-8/s (scenario* 7 for-students-8))
+  (define scenarios-for-8 (scenario* 8 for-tests-8)) ;  #:quiet #false
+  (define scenarios-for-9/s (scenario* 7 for-students-9))
+  (define scenarios-for-9 (scenario* 9 for-tests-9))
+
+  ;; BONUS: baddly named players 
+  (define scenarios-for-A (scenario* 0 for-bonus-A))
+   
   ;; - - - 
   (define [client-diverge-before-sending-name port#]
     (c:make-client-for-name-sender (λ (ip) (let L () (L))) port#))
@@ -383,6 +395,31 @@
      "dummy one"
      "dummy two"))
 
+  ;; TDOO:
+  ;; -- client->jsexpr for above two scenarios, perhaps not the second one
+  
+  (define (make-bad-json-player-client bad-json-player winner order-drop-outs)
+    (define nowin-bad-name (send bad-json-player name))
+    (define special-scenario
+      (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
+       (server-client-scenario 
+        (~a "a player that sends bad JSON for setup")
+        #:quiet #true
+        #:drop (λ (given) (append (all-but-last given) [list bad-json-player]))
+        #:update-state-players identity
+        #:expected (λ (x) (list winner (cons nowin-bad-name (order-drop-outs (rest (second x)))))))
+       "dummy one"
+       "dummy two"))
+    special-scenario)
+
+  (define scenarios-for-B
+    (list
+     (make-bad-json-player-client (first bad-json-players)  '[]    identity)
+     (make-bad-json-player-client (second bad-json-players) '[]    reverse)
+     (make-bad-json-player-client (third bad-json-players)  '["A"] reverse)
+     (make-bad-json-player-client (fourth bad-json-players) '["A"] reverse)
+     (make-bad-json-player-client (fifth bad-json-players)  '["A"] reverse)))
+  
   ;; - - -
   ;; this should be observationally equivalent to a player that goes infinite in the setup method
 
@@ -391,7 +428,7 @@
     (c:make-client-for-name-sender (λ (ip) (send-message name-cd ip) (let L () (L))) port#))
   (define remote-player-for-client
     (make-remote-player name-cd (current-input-port) (current-output-port)))
-
+  
   (define scenario-special-2
     (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
      (server-client-scenario 
@@ -423,8 +460,6 @@
   ;; start a server; start regular clients then bad clients; test
   (define (run-server-client-scenario server-client-scenario)
     (match-define [list sc cc bad-clients expected msg] server-client-scenario)
-
-    (run-server-client sc cc bad-clients)
 
     (check-equal? (run-server-client sc cc bad-clients) expected msg))
   
@@ -462,16 +497,20 @@
 (module+ test ;; running scenarios as unit tests
   7
   (for-each run-server-client-scenario scenarios-for-7)
+  (for-each run-server-client-scenario scenarios-for-7/s)
   8
   (for-each run-server-client-scenario scenarios-for-8)
+  (for-each run-server-client-scenario scenarios-for-8/s)
   9
   (for-each run-server-client-scenario scenarios-for-9)
+  (for-each run-server-client-scenario scenarios-for-9/s)
   'A
-  (for-each run-server-client-scenario scenarios-for-A))
+  (for-each run-server-client-scenario scenarios-for-A)
+  'B
+  (for-each run-server-client-scenario scenarios-for-B))
 
 (module+ test
-  'special-2
-  (run-server-client-scenario scenario-special-2)
   'special-1
-  (run-server-client-scenario scenario-special-1))
-
+  (run-server-client-scenario scenario-special-1)
+  'special-2
+  (run-server-client-scenario scenario-special-2))
