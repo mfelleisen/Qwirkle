@@ -638,7 +638,7 @@
   (define (jsexpr->pk j #:name (name "a name"))
     (define (j->1 j) (jsexpr->1player j #:name name))
     (def/jsexpr-> players #:array [(cons (app j->1 (? sop? f)) `(,(? natural? n) ...)) (cons f n)])
-    (define jsexpr->pk (jsexpr->state/g jsexpr->players jsexpr->natural))
+    (define jsexpr->pk (jsexpr->state/g jsexpr->players jsexpr->tiles#))
     (jsexpr->pk j)))
 
 (module+ test
