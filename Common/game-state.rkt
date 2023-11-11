@@ -635,9 +635,9 @@
       -> JSexpr
       -> Option<[GameState X Y Z]>}
   (define ((jsexpr->state/g jsexpr->players jsexpr->tiles) j)
-    (def/jsexpr-> state
+    (def/jsexpr-> state/general
       #:object {[MAP     map     (? hash? gmap)]
                 [PLAYERS players (cons (? sop? first) p)]
-                [TILES   tiles   (? tile#? t)]} ;; not #false 
+                [TILES   tiles   (? identity  t)]} ;; not #false 
       (state gmap (cons first p) t))
-    (jsexpr->state j)))
+    (jsexpr->state/general j)))
