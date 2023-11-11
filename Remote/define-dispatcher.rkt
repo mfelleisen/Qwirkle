@@ -93,11 +93,12 @@
 (define (([make-remote-manager make-dispatcher] receiver custodian) player)
   (define done? (box (gensym)))
   (define dispatcher (make-dispatcher player done?))
-  (parameterize ([io-time-out 1000])
+  (parameterize ([io-time-out 1000]
+                 [error-print-width 1000])
     (let loop ()
       (with-handlers ([void (λ (xn)
-                              (eprintf "remote manager caught exn: ~a\n" (exn-message xn))
-                              (custodian-shutdown-all custodian))])
+                                (eprintf "remote manager caught exn:\n ~a\n" (exn-message xn))
+                                (custodian-shutdown-all custodian))])
         (receiver dispatcher)
         (unless (boolean? (unbox done?)) (loop)))))
   (unbox done?))
@@ -141,7 +142,7 @@
                [pat  rhs]
                ...
                [patN (set-box! done? #true) rhsN]
-               [ill (error 'dispatcher "server sent ill-formed message: ~e" ill)]))
+               [ill (error 'dispatcher "server sent inappropriate message: ~e" ill)]))
            (make-remote-manager make-dispatcher)))]))
 
 (define-for-syntax ((match-clause player) stx)
