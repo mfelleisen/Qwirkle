@@ -132,6 +132,8 @@
   (require Qwirkle/Lib/check-message)
   (require Qwirkle/Lib/fixed-perm)
 
+  (require Qwirkle/Client/referee)
+
   (require SwDev/Lib/should-be-racket)
   (require SwDev/Testing/check-values)
   (require SwDev/Testing/testing)
@@ -689,7 +691,7 @@
 
 (module+ examples
 
-  (provide dag-player* ldasg-player* exn-player* inf-player*)
+  (provide dag-player* ldasg-player* exn-player* inf-player* bad-json-players)
 
   (define dag-player*
     (let* ([f (retrieve-factory "good" factory-base)]
@@ -739,7 +741,11 @@
            [B (create-player "ouchouchouchouchouchouchouchouchouch" dag-strategy #:bad f)]
            [C (create-player "λ" dag-strategy #:bad f)])
       (list A B C)))
-    
+
+  (define bad-json-players
+    (let* ([f (retrieve-factory "good" factory-base)])
+      (map (λ (n) (create-player (first n) dag-strategy #:bad f)) *referee-list)))
+  
   (define for-students-7 '[])
   (define for-tests-7    '[])
     
