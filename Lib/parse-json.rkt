@@ -62,7 +62,7 @@
          (λ (j)
            (match j
              [(? pred? x) (~? (r x) x)]
-             [_ (eprintf "~a value does not satisfy ~a?\n  ~a\n" 'name 'to (jsexpr->string j))
+             [_ (eprintf "~a : value does not satisfy ~a?\n  ~a\n" 'name 'to (jsexpr->string/ j))
                 #false])))]
 
     [(_ to #:array [pat body ...])
@@ -71,7 +71,7 @@
          (λ (j)
            (match j
              [pat body ...]
-             [_ (eprintf "~a object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
+             [_ (eprintf "~a : object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
                 #false])))]
     
     [(_ to #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
@@ -82,7 +82,7 @@
          (λ (j)
            (match j
              [(hash-table [(? (curry eq? key)) (app jsexpr-> pat)] ...) body ...]
-             [_ (eprintf "~a object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
+             [_ (eprintf "~a : object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
                 #false])))]))
 
 (define (jsexpr->id x) x) ;; is made up by `with` clause 
@@ -98,7 +98,7 @@
 
 ; void?
 (define (void->jsexpr v) "void")
-(def/jsexpr-> void #:plain (curry equal? "void") void)
+(def/jsexpr-> void #:plain (curry equal? "void") void) 
 
 ; string?
 (define string->jsexpr values)
