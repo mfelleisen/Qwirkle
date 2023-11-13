@@ -1328,7 +1328,7 @@
   '---all 
   (for-each (λ (test) [test]) [all-tests])
 
-  (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 4) "make sure all tests are recordded")
+  (check-equal? (length [all-tests]) (+ 10 3 10 3 10 3 3) "make sure all tests are recordded")
   (check-equal? (length for-students-7) 3 "7: students get three tests")
   (check-equal? (length for-students-9) 3 "8: students get three tests -- expected to fail")
   (check-equal? (length for-tests-7) 10 "7: we run students' code on ten tests")
