@@ -16,7 +16,7 @@
 
  client-config->jsexpr
  jsexpr->client-config
-
+ 
  (contract-out
 
   [default-client-config client-config/c]
@@ -37,7 +37,7 @@
     
   (make-client-for-name-sender
    #; (make-client-for-name-sender ns ip port# wait? #:quiet q)
-   (->i ([send-name (-> output-port? any)])  ;; BY DEFAULT: 
+   (->i ([name string?] [send-name (-> string? output-port? any)])  ;; BY DEFAULT: 
         ([port# port/c]                     ;; `port#` is a common port
          [ip string?]                       ;; `ip` is LOCALHOST
          #:quiet [quiet any/c])             ;; `quiet` is #true
@@ -111,6 +111,15 @@
 ;                                                  
 ;                                                  
 
+;; ---------------------------------------------------------------------------------------------------
+#; {[InputPort -> Void] PortNumber IPAddress Boolean -> Client}
+;; the resulting client sends a name and then performs no work; but the name-sending thunk can loop
+;; `ns` is a name sender: it consumes an input port and `send-message`s a string to it 
+(define (make-client-for-name-sender name name-sender (port# PORT0) (ip LOCAL) #:quiet (quiet #false))
+  (define referee-maker (make-referee-maker name port# ip quiet make-remote-manager name-sender))
+  (λ () [referee-maker] 'fake-client-is-done))
+
+;; ---------------------------------------------------------------------------------------------------
 (define (clients cc (wait? #f) #:baddies [bad-clients '()])
   (define players (dict-ref cc PLAYERS))
   (define ip (dict-ref cc HOST))
@@ -134,14 +143,6 @@
     (thread 1-client)))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[InputPort -> Void] PortNumber IPAddress Boolean -> Client}
-;; the resulting client sends a name and then performs no work; but the name-sending thunk can loop
-;; `ns` is a name sender: it consumes an input port and `send-message`s a string to it 
-(define (make-client-for-name-sender ns (port# PORT0) (ip LOCAL) #:quiet (quiet #false)) 
-  (define referee-maker (make-referee-maker "bad client" port# ip quiet make-remote-manager ns))
-  (λ () [referee-maker] 'fake-client-is-done))
-
-;; ---------------------------------------------------------------------------------------------------
 #; {PortNumber IPAddress Boolean -> Player -> Client}
 ;; the connection to the server musy happens "at the same time" as the player becomes a thread
 ;; because the server may immediately start the game as as sufficient number of players connected 
@@ -154,9 +155,9 @@
 
 #; {String PortNumber IPAddress Boolean RemoetManager -> [-> ProxyReferee]}
 ;; the resulting proxy referee gets connected to the server with `name`
-(define [(make-referee-maker name port# ip quiet rm (sender (λ (ip) (send-message name ip))))]
+(define [(make-referee-maker name port# ip quiet rm (sender (λ (name ip) (send-message name ip))))]
   (with-handlers ([exn:fail:network? (λ (xn) (eprintf "fail! ~a" name) (λ (_) 'failed-connection))])
-    (define-values (r c) (connect-to-server-as-receiver ip port# #:init sender))
+    (define-values (r c) (connect-to-server-as-receiver ip port# #:init (λ (ip) (sender name ip))))
     (rm r c)))
 
 #; {[-> ProxyReferee] Player OutputPort -> Void}
