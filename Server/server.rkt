@@ -112,6 +112,7 @@
   (REF-SPEC
    default-referee-config
    #:to-jsexpr referee-config->jsexpr #:from-jsexpr jsexpr->referee-config #:is-a "RefereeConfig"))
+
 ;                                            
 ;                                            
 ;                                            
@@ -311,6 +312,8 @@
 (module+ examples
   
   (provide
+   special-scenario-client-from-port
+   
    scenarios-for-7
    scenarios-for-8
    scenarios-for-9
@@ -380,24 +383,12 @@
   (define scenarios-for-9/s (scenario* 7 for-students-9))
   (define scenarios-for-9 (scenario* 9 for-tests-9))
 
-  ;; BONUS: baddly named players 
+  ;; BONUS -------------------------------------------------------------------------------------------
+  
+  ;; baddly named players 
   (define scenarios-for-A (scenario* 0 for-bonus-A))
-   
-  ;; - - - 
-  (define [client-diverge-before-sending-name port#]
-    (c:make-client-for-name-sender (λ (ip) (let L () (L))) port#))
-  
-  (define scenario-special-1
-    (mixed-all-tiles-rev-inf-exn-dag2-A
-     (server-client-scenario
-      (~a "a client that connects but does not complete the registration")
-      #:extras (list client-diverge-before-sending-name))
-     "dummy one"
-     "dummy two"))
 
-  ;; TDOO:
-  ;; -- client->jsexpr for above two scenarios, perhaps not the second one
-  
+  ;; bad JSON senders 
   (define (make-bad-json-player-client bad-json-player winner order-drop-outs)
     (define nowin-bad-name (send bad-json-player name))
     (define special-scenario
@@ -419,15 +410,29 @@
      (make-bad-json-player-client (third bad-json-players)  '["A"] reverse)
      (make-bad-json-player-client (fourth bad-json-players) '["A"] reverse)
      (make-bad-json-player-client (fifth bad-json-players)  '["A"] reverse)))
-  
-  ;; - - -
-  ;; this should be observationally equivalent to a player that goes infinite in the setup method
+   
+  ;; bad name senders
 
-  (define name-cd  "sendnameloop")
+  (struct special-scenario [client-from-port type])
+
+  (define divBeforeSend "divergeBeforeSending")
+  (define [client-diverge-before-sending-name port#]
+    (c:make-client-for-name-sender divBeforeSend (λ (_ ip) (let L () (L))) port#))
+  
+  (define scenario-special-1
+    (mixed-all-tiles-rev-inf-exn-dag2-A
+     (server-client-scenario
+      (~a "a client that connects but does not complete the registration")
+      #:extras (list [special-scenario client-diverge-before-sending-name divBeforeSend]))
+     "dummy one"
+     "dummy two"))
+ 
+  ;; thne next one should be observationally equivalent to a player that goes infinite in setup
+  (define divAfterSend  "sendnameloop")
   (define [client-diverge-after-sending-name port#]
-    (c:make-client-for-name-sender (λ (ip) (send-message name-cd ip) (let L () (L))) port#))
+    (c:make-client-for-name-sender divAfterSend (λ (n ip) (send-message n ip) (let L () (L))) port#))
   (define remote-player-for-client
-    (make-remote-player name-cd (current-input-port) (current-output-port)))
+    (make-remote-player divAfterSend (current-input-port) (current-output-port)))
   
   (define scenario-special-2
     (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
@@ -435,11 +440,23 @@
       (~a "a client that connects but does not complete the registration")
       #:drop all-but-last
       #:update-state-players (λ (given) (append given [list remote-player-for-client]))
-      #:expected (λ (x) (list (first x) (cons name-cd (reverse (rest (second x))))))
-      #:extras (list client-diverge-after-sending-name))
+      #:expected (λ (x) (list (first x) (cons divAfterSend (reverse (rest (second x))))))
+      #:extras (list [special-scenario client-diverge-after-sending-name divAfterSend]))
      "dummy one"
-     "dummy two")))
+     "dummy two"))
 
+  (provide special->jsexpr jsexpr->special)
+  
+  (define (special->jsexpr fc)
+    (special-scenario-type fc))
+
+  (define (jsexpr->special j)
+    (match j
+      [(== divAfterSend) client-diverge-after-sending-name]
+      [(== divBeforeSend) client-diverge-before-sending-name]
+      [_ (eprintf "jsexpr->special : ~a is not a special scenario" j)
+         #false])))
+  
 ;                                                                        
 ;      ;;                                                                
 ;     ;           ;;;    ;;;             ;                    ;          
@@ -460,8 +477,8 @@
   ;; start a server; start regular clients then bad clients; test
   (define (run-server-client-scenario server-client-scenario)
     (match-define [list sc cc bad-clients expected msg] server-client-scenario)
-
-    (check-equal? (run-server-client sc cc bad-clients) expected msg))
+    (define special-clients (map special-scenario-client-from-port bad-clients))
+    (check-equal? (run-server-client sc cc special-clients) expected msg))
   
   (define (run-server-client sconfig cconfig bad-clients)
     (parameterize ([current-custodian (make-custodian)])
@@ -494,6 +511,12 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
+(module+ test
+  'special-1
+  (run-server-client-scenario scenario-special-1)
+  'special-2
+  (run-server-client-scenario scenario-special-2))
+
 (module+ test ;; running scenarios as unit tests
   7
   (for-each run-server-client-scenario scenarios-for-7)
@@ -508,9 +531,3 @@
   (for-each run-server-client-scenario scenarios-for-A)
   'B
   (for-each run-server-client-scenario scenarios-for-B))
-
-(module+ test
-  'special-1
-  (run-server-client-scenario scenario-special-1)
-  'special-2
-  (run-server-client-scenario scenario-special-2))
