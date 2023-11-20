@@ -183,7 +183,7 @@
     #:to-jsexpr refereeState-config->jsexpr
     #:from-jsexpr jsexpr->refereeState-config
     #:is-a "RefereeStateConfig"]
-  [PER-TURN [time-out-limit] #:is-a "Natural" "less than 6"]
+  [PER-TURN 6 #:is-a "Natural" "less than or equal to 6"]
   [OBSERVE
    void
    #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr (λ (x) (if x #t void)) #:is-a "Boolean"])
@@ -1164,7 +1164,7 @@
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
     #:kind         for-students-8)
-
+  
   ;; -------------------------------------------------------------------------------------------------
   (define-integration-test ldasgs-with-two-cheaters
     #:desc "two cheating players, two ldasg player; reversed tiles: does the tile order matter"
