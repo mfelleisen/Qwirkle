@@ -162,10 +162,14 @@
 
 ;; this player serves as the base (like a common abstract class) for implementing several variants 
 (define player%
-  (class object% ; class* object% (equal<%>)
-    (init-field [my-name "Adam"] [strategy dag-strategy])
+  (class object% 
+    (init-field
+      [my-name  "Adam"]
+      [strategy dag-strategy])
     
-    [field [my-tiles '()]]
+    (field [my-tiles '()])
+    
+    (super-new)
 
     (define/public (description)
       `[,my-name ,(strategy->jsexpr strategy)])
@@ -173,13 +177,13 @@
     (define/public (name)
       my-name)
 
-    (define/public (reset) (void))
+    (define/public (reset)
+      (void))
 
     (define/public (setup state0 tiles0)
       (reset)
       (set! my-tiles tiles0))
 
-    (define *cache (hash))
     (define/public (take-turn s)
       (iterate-strategy strategy s))
 
@@ -188,22 +192,7 @@
 
     (define/public (win b)
       (eprintf "~a ~a\n" my-name (if b "won" "lost"))
-      (void))
-    
-    ;; --- ASSUME Unique names
-    #|
-    (define/public (equal-to? other recur)
-      ;; ASSUME THE UNIQUENESS OF ALL NAMES 
-      (string-ci=? my-name (get-field my-name other)))
-    
-    (define/public (equal-hash-code-of hash-code)
-      (hash-code (string-downcase my-name)))
-    
-    (define/public (equal-secondary-hash-code-of hash-code)
-      (hash-code (string-downcase my-name)))
-    |#
-
-    (super-new)))
+      (void))))
 
 (module+ test (check-true (is-a? (new player%) player%) "test coverage"))
 
