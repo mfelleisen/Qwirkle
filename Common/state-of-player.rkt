@@ -221,6 +221,6 @@
 
   (define (jsexpr->1player j #:name (name "a name"))
     (def/jsexpr-> 1player
-      #:object {[NAME (? string? n)] [SCORE (? tile#? s)] [TILES tiles (list t ...)]}
+      #:object {[NAME (? string? n)] [SCORE (app jsexpr->tiles# (? tile#? s))] [TILES tiles (list t ...)]}
       (sop s t n))
     (jsexpr->1player j)))
