@@ -37,7 +37,7 @@
    (define PNG ".png")
 
    (require (only-in racket/math natural?))
-   (define TILE# 10000)
+   (define TILE# 1000000)
    (define (tile#? x) (and (natural? x) (<= x TILE#)))	
   
    (define (jsexpr->tiles# x)
