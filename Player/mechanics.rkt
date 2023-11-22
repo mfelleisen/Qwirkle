@@ -164,8 +164,8 @@
 (define player%
   (class object% 
     (init-field
-      [my-name  "Adam"]
-      [strategy dag-strategy])
+     [my-name  "Adam"]
+     [strategy dag-strategy])
     
     (field [my-tiles '()])
     
@@ -247,7 +247,7 @@
     [(class/fail go-bad-after-this-many-times [(method-that-goes-bad args) body ...])
      #'(class* player% ()
          (init-field #; [String {Nat}]  badfm) ;; descriptor for use in integration tests
-         (inherit-field my-name my-tiles)
+         (inherit-field strategy my-name my-tiles)
          (super-new)
 
          (define/override (description)
@@ -368,19 +368,27 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define not-a-line%
   ;; returns placements that are not in a line, if possible 
-  (class/fail 1 ([take-turn args]
-                 (define the-state (first args))
-                 (define my-tiles (sop-tiles (first (state-players the-state))))
-                 (cond
-                   [(< (length my-tiles) 2) (super take-turn . args)]
-                   [else 
-                    (define two-tiles (take my-tiles 2))
-                    (define candidat1 (find-candidates (state-map the-state) (first two-tiles)))
-                    (define candidat2 (find-candidates (state-map the-state) (second two-tiles)))
-                    (define two-coord (two-non-aligned-coordinates candidat1 candidat2))
-                    (cond
-                      [(boolean? two-coord) (super take-turn . args)]
-                      [else (map placement two-coord two-tiles)])]))))
+  (class/fail
+   1
+   ([take-turn args]
+    (define the-state (first args))
+    (define my-tiles (sop-tiles (first (state-players the-state))))
+    (cond
+      [(< (length my-tiles) 2) (super take-turn . args)]
+      [else
+       (let/ec escape
+         (iterate-strategy (get-field strategy this) the-state (not-a-line-placements escape)))]))))
+
+(define ((not-a-line-placements  escape) legal? placements-so-far+)
+  (eprintf "placements ~a\n" placements-so-far+)
+
+  (if (and (false? legal?) (non-line placements-so-far+))
+      (escape placements-so-far+)
+      #false))
+
+(define (non-line placements-so-far+)
+  (and (>= (length placements-so-far+) 2)
+       (not (or (same-row placements-so-far+) (same-column placements-so-far+)))))
 
 (define (two-non-aligned-coordinates candidat1 candidat2)
   (define one (set-map candidat1 candidate-place))
@@ -560,8 +568,9 @@
 (module+ test ;; checker
 
   #; {PubKnowledge -> x:Any -> Boolean : (x is illegal (series of) placement(s))}
-  (define ((illegal-placement state) s)
-    (and (andmap placement? s) (not (legal info-starter-state s))))
+  (define ((illegal-placement state) placements)
+    (eprintf "~a\n" placements)
+    (and (andmap placement? placements) (not (legal state placements))))
 
   (define illegal-in-info-starter-state? (illegal-placement info-starter-state)))
 
@@ -581,7 +590,8 @@
   (define nal-player (create-player "bad" dag-strategy #:bad new-nal))
 
   (check-equal? (send nal-player take-turn info-starter-state) REPLACEMENT "coverage")
-  (check-pred (illegal-placement info-+starter-state) (send nal-player take-turn info-+starter-state))
+  'b
+  (render-info-state info-special-state)
   (check-pred (illegal-placement info-special-state) (send nal-player take-turn info-special-state)))
 
 (module+ test ;; player requests tiles when there aren't enough 
