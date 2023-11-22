@@ -1208,7 +1208,7 @@
     #:externals    (take (reverse cheating-player*) MAX-PLAYERS)
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
     #:ref-map      map0
-    #:expected     [[] ["chnofit" "chtilen" "chnotal" "chbadas"]]
+    #:expected     [[] ["chnofit" "chnotal" "chtilen" "chbadas"]]
     #:kind         for-tests-8)
   
   (define-integration-test bad-all-cheating-tiles-1
