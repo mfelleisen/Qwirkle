@@ -10,7 +10,9 @@
  (contract-out
   [iterate-strategy
    ;; iterate the strategy as far as possible to obtain a sqeuence of placements or PASS/REPALCEMENT
-   (-> (-> pk? action?) pk? action*?)]
+   ;; `check` makes it possible to search for an illegal placement sequence while using `strateggy`
+   (->i ([strategy (-> pk? action?)] [state pk?]) ([check (-> (or/c #false map?) action*? boolean?)])
+        (r action*?))]
   (dag-strategy
    ;; strategy 1: dumb and greedy
    ;; choose "smallest tile" that has candidates; break tie among candidates via coodinate<
@@ -19,8 +21,7 @@
    ;; strategy 2: a bit more sophisticate and still greedy
    ;; choose "smallest tile" that has candidates; pick most-constrained candidates;
    ;; break tie among candidates via coodinate<   
-   (-> pk? action?))
-  ))
+   (-> pk? action?))))
 
 ;; Tiles are lexically ordered as follows:
 ;; 'star '8star 'square 'circle 'clover 'diamond
@@ -153,7 +154,6 @@
   (for*/first ([t (in-list mine)] [cs (in-value (find-candidates gmap t))] #:unless (set-empty? cs))
     (list t cs)))
 
-
 ;                                                                                      
 ;                                                                                      
 ;                                                      ;                    ;          
@@ -193,7 +193,6 @@
   (for-each (λ (l) (check-equal? ([second l] [first l]) (third l) (fourth l))) ForStudents/)
   (for-each (λ (l) (check-equal? ([second l] [first l]) (third l) (fourth l))) Tests/))
 
-
 ;                                                   
 ;                                                   
 ;      ;     ;                           ;          
@@ -211,7 +210,7 @@
 
 #; {Strategy PubKnowledge -> (U PASS REPLACE [Listof Placement])}
 ;; legally iterate strategy `s` starting in the (public) state `pk0`
-(define (iterate-strategy s pk0)
+(define (iterate-strategy s pk0 [is-it-legal? (λ (legal? _) (false? legal?))])
   #; {[Listof Placement] PubKn -> (U PASS REPLACE [Listof Placement])}
   ;; generate new state until `s` can no longer add placements
   ;; or acts illegally with respect to the accumulated placements 
@@ -221,7 +220,7 @@
       [(== REPLACEMENT) (if (empty? placements) REPLACEMENT placements)]
       [action
        (define placements-so-far+ (append placements (list action)))
-       (if (false? (legal pk0 placements-so-far+))
+       (if (is-it-legal? (legal pk0 placements-so-far+) placements-so-far+)
            placements 
            (iterate/accu placements-so-far+ (apply-action pk action)))]))
   (iterate/accu '[] pk0))
