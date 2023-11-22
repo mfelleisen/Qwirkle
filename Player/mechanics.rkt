@@ -376,26 +376,69 @@
     (cond
       [(< (length my-tiles) 2) (super take-turn . args)]
       [else
-       (let/ec escape
-         (iterate-strategy (get-field strategy this) the-state (not-a-line-placements escape)))]))))
+       (define possible-to-cheat (find-any-non-aligned-placements the-state))
+       (if possible-to-cheat
+           possible-to-cheat
+           (super take-turn . args))
+       ;; the following would use the given strategy to find a non-aligned series of placements 
+       #;
+       (let/ec return
+         (iterate-strategy (get-field strategy this) the-state (not-a-line-placements return)))]))))
 
-(define ((not-a-line-placements  escape) legal? placements-so-far+)
-  (eprintf "placements ~a\n" placements-so-far+)
+#; {PubKnowledge -> [Option [Listof Placement]]}
+;; for any permutation of the given tiles,
+;;   determine whether a prefix of the permutation can create a sequence of placements
+;;   that are not in a row or column 
+(define (find-any-non-aligned-placements pk)
+  (define my-tiles  (active-sop-tiles pk))
+  (cond
+    [(empty? (rest my-tiles)) #false]
+    [else 
+     (define gmap      (state-map pk))
+     (define my-tiles  (active-sop-tiles pk))
+     (for*/first ([a-permutation (in-permutations my-tiles)]
+                  [placements    (in-value (search-for-not-a-line gmap a-permutation))]
+                  #:when placements)
+       placements)]))
 
+#; {Map [NEListof Tile] -> [Option [Listof Placement]]}
+;; determine whether a prefix of the given permutation can create a sequence of placements
+;;   that are not in a row or column
+;; meaning, explore each possible candidate for placement and check the remainder of the tiles 
+(define (search-for-not-a-line gmap permutation-of-active-player-s-tiles)
+  
+  #; {Map [Listof Tile] [Listof Placement] -> [Option [Listof Placement]]}
+  (define (search gmap perm-of-tiles placements-so-far)
+    (define one-tile   (first perm-of-tiles))
+    (define candidates (find-candidates gmap one-tile))
+    (define placements (for/list ([c candidates]) (placement (candidate-place c) one-tile)))
+    (for*/first
+        ([p placements]
+         [n (in-value (not-lined (add-tile gmap p) (cons p placements-so-far) (rest perm-of-tiles)))]
+         #:when n)
+      n))
+
+  #;{Map [Listof Placement] [Listof Tile] -> [Option [Listof Placeememnt]]}
+  (define (not-lined gmap placements perm-of-tiles)
+    (cond
+      [(non-line placements)  placements]
+      [(empty? perm-of-tiles) #false]
+      [else (search gmap perm-of-tiles placements)]))
+  
+  (search gmap permutation-of-active-player-s-tiles '[]))
+  
+#; {[[Listof Placement] -> Empty] -> [Option Map] [Listof Placement] -> False}
+;; if the placements are illegal _and_ do not forma a line, escape with them 
+(define ((not-a-line-placements return) legal? placements-so-far+)
   (if (and (false? legal?) (non-line placements-so-far+))
-      (escape placements-so-far+)
+      (return placements-so-far+)
       #false))
 
+#; {[Listof Placement] -> Boolean}
 (define (non-line placements-so-far+)
   (and (>= (length placements-so-far+) 2)
-       (not (or (same-row placements-so-far+) (same-column placements-so-far+)))))
-
-(define (two-non-aligned-coordinates candidat1 candidat2)
-  (define one (set-map candidat1 candidate-place))
-  (define two (set-map candidat2 candidate-place))
-  (for/first ([pair (for*/list ([o one] [t two]) (list o t))]
-              #:unless (or (same-row pair) (same-column pair)))
-    pair))
+       (let ([coordinates (map placement-coordinate placements-so-far+)])
+         (not (or (same-row coordinates) (same-column coordinates))))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define bad-ask-for-tiles%
@@ -569,7 +612,6 @@
 
   #; {PubKnowledge -> x:Any -> Boolean : (x is illegal (series of) placement(s))}
   (define ((illegal-placement state) placements)
-    (eprintf "~a\n" placements)
     (and (andmap placement? placements) (not (legal state placements))))
 
   (define illegal-in-info-starter-state? (illegal-placement info-starter-state)))
@@ -590,8 +632,6 @@
   (define nal-player (create-player "bad" dag-strategy #:bad new-nal))
 
   (check-equal? (send nal-player take-turn info-starter-state) REPLACEMENT "coverage")
-  'b
-  (render-info-state info-special-state)
   (check-pred (illegal-placement info-special-state) (send nal-player take-turn info-special-state)))
 
 (module+ test ;; player requests tiles when there aren't enough 
