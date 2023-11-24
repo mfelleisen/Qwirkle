@@ -176,8 +176,6 @@
 
 (define ALL-TILES (apply append (make-list 30 ALL-SHAPE-COLOR-COMBOS)))
 
-(define prgv (vector 0 1 4294967086 4294944442 2 0))
-(define rgen (vector->pseudo-random-generator prgv))
 (define ALL-TILES-PERM (pick-fixed-permutation ALL-TILES))
 
 ;                                                          
