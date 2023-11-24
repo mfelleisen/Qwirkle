@@ -330,4 +330,6 @@ referee                        player (p_1) . . . player (p_n)
 | [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
 | [q-rule.rkt](q-rule.rkt) | the Q specific rule for fitting a tile into a space | 
 | [state-of-player.rkt](state-of-player.rkt) | a data representation of the state of a Q player | 
+| [tile-colors.rkt](tile-colors.rkt) | the colors of tiles | 
+| [tile-shapes.rkt](tile-shapes.rkt) | the shapes of tiles | 
 | [tiles.rkt](tiles.rkt) | data representation of tiles, shapes, and colors | 
