@@ -474,8 +474,7 @@
 
 #; {[Listof Tile] -> Boolean}
 (define (is-q? tile*)
-  (or (and (all-colors? tile*) (= (length tile*) COLORS#))
-      (and (all-shapes? tile*) (= (length tile*) SHAPES#))))
+  (or (all-colors? tile*) (all-shapes? tile*)))
 
 (module+ test ;; for just Q bonus
   (check-equal? (q-bonus exactly-all-colors) [Q-BONUS] "exactly all colors")
