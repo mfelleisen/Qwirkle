@@ -17,6 +17,7 @@
  candidate-top
  candidate-right
  candidate-below
+
  (contract-out 
   [candidate-constraints# (-> candidate? natural?)])
 
@@ -26,7 +27,9 @@
  
  (contract-out
   [start-map  (-> tile? map?)]
+
   [render-map (-> map? 2:image?)]
+
   [add-tile
    ;; add a tile at a particular spot (placement) to this map
    (->i ([m map?] [p placement?]) #:pre/name (m p) "neighbor?" (adjacent? m (placement-coordinate p))

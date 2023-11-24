@@ -31,28 +31,28 @@ Here is a rough overview of the layers:
                                 |
  BASIC CONCEPTS                 |
                                 |
-                                +-----> + ------------ + ------+
-                                        | map          | ---+  |
-                                        + ------------ +    |  |
-                                        | graph        |    |  |
-                                        | extend       |    |  |
-                                        + ------------ +    |  |
-                                                            |  |
-                                        + ------------ +    |  |
-                                        | tiles        | <--+  |  +------------+
-                                        + ------------ +       |  | color      |
-                                        | color        |       |  +------------+
-                                        | shape        |       |  | is-color?  |
-                                        + ------------ +       |  | allColors? |
-                                                               |  +------------+
-                                        + ------------ +       |  
-                                        | Coordinates  | <-----+  
-                                        + ------------ +          +------------+
-                                        | row relative |          | shape      |
-                                        | col relative |          +------------+
-                                        | ordering     |          | is-shape?  |
-                                        + ------------ +          | allShapes? |
-                                                                  +------------+
+                                +-------> + ------------ + 
+                                          | map          | 
+                                          + ------------ +    
+                                +-------- | sparse       | 
+                                | +------ | graph        | 
+                                | |       + ------------ + 
+                                | |                        
+                                | |       + ------------ + 
+                                | +-----> | tiles        |          
+                                |         + ------------ +          +------------+
+                                |         | color        | -------> | color      |
+                                |         | shape        | ----+    +------------+
+                                |         + ------------ +     |    | is-color?  |
+                                |                              |    | allColors? |
+                                |         + ------------ +     |    +------------+
+                                +-------> | Coordinates  |     |
+                                          + ------------ +     |    +------------+
+                                          | row relative |     +--> | shape      |
+                                          | col relative |          +------------+
+                                          | ordering     |          | is-shape?  |
+                                          + ------------ +          | allShapes? |
+                                                                    +------------+
 ```
 
 
@@ -228,14 +228,14 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 |
   |                                |                 |
-  |     setup(map,bagOfTiles)      |                 | % the initial map for this game
+  |     setup(state,bagOfTiles)    |                 | % the initial map for this game
   | -----------------------------> |                 | % a set of tiles for this player
   |                                |                 | 
   .                                .                 .
   .                                .                 . % repeat for descending age
   .                                .                 . 
   |                                |                 |
-  |     setup(map,bagOfTiles)      |                 | 
+  |     setup(state,bagOfTiles)    |                 | 
   | -----------------------------------------------> |
   |                                |                 |
 ```
