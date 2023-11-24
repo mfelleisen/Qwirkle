@@ -21,14 +21,25 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; -- create interface-readme file
 ;; ---------------------------------------------------------------------------------------------------
 
-(provide
- ;; ./xreadme      ;; shows the generated README.md file
- ;; ./xreadme --no ;; doesn't 
- main)
+(define help-string
+  #<< eos
+ ./xreadme                  ;; shows the generated README.md file                    
+ ./xreadme --no             ;; doesn't                                               
+ ./xreadme --show directory ;; shows only the README.md in the specified directory   
+ ./xreadme --help           ;; 
+ eos
+)
+
+(provide main)
 
 (define (main . x)
-  (define show (and (empty? x) (eq? (system-type) 'macosx)))
-  (eprintf "~a ~a\n" (system-type) show)
+  (define show
+    (match x
+      [(list)              (eq? (system-type) 'macosx)]
+      [(list "--no")       #false]
+      [(list "--show" dir) (and (eq? (system-type) 'macosx) (directory-exists? dir) dir)]
+      [(list "--help")     (printf "usage:\n~a\n" help-string) (exit 0)]
+      [_ (printf "usage: \n~a\n" help-string) (exit 1)]))
   (define adirs (all-git-tracked-directories EXCEPTIONS))
   (readme* adirs show)
   (top-level-reademe adirs show))
@@ -42,10 +53,11 @@ exec racket -tm "$0" -- ${1+"$@"}
 #; {[Listof PathString] Boolean -> Void}
 ;; find README.source in each directory in `adirs` and create README.md in this directory
 (define (readme* adirs show)
-  (for ([dir adirs]) 
+  (for ([dir adirs])
+    (define show2 (and show (or (boolean? show) (and (string? show) (equal? show dir)))))
     (parameterize ([current-directory dir])
       (define afils (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (list f f)))
-      (write-readme-and-show "file" afils strip-semis show))))
+      (write-readme-and-show "file" afils strip-semis show2))))
 
 #; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
 ;; write one README.md file with an organization table made from `afils` labeled with `header`
@@ -159,6 +171,5 @@ exec racket -tm "$0" -- ${1+"$@"}
    "|--------------------- | ------- |\n"))
 
 ;; ---------------------------------------------------------------------------------------------------
-#;
-(module+ main
-  (main #; 'dontshow))
+(module+ test
+  (main "--show" "Common"))
