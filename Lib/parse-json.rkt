@@ -1,5 +1,7 @@
 #lang racket
 
+;; functionality for deserialzing JSexpr into internal data representations 
+
 (provide
  ;; SYNTAX
 

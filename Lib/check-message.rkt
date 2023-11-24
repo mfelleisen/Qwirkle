@@ -1,5 +1,7 @@
 #lang racket
 
+;; a primitive addition to rackunit that checks whether an expression prints an error message matching some regular expression
+
 (provide
  ;; SYNTAX
  #; (check-message port re body ...)

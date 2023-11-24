@@ -1,5 +1,7 @@
 #lang racket
 
+;; make a permutation of a list in fixed order 
+
 (provide
  (contract-out 
   [pick-fixed-permutation
