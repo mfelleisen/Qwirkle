@@ -101,47 +101,50 @@
 
 (module+ examples
   
-  (define coord0 (list #s(coordinate +3 0) #s(coordinate +3 +1) #s(coordinate +3 +2)))
+  (define coord0 (list (coordinate +3 0) (coordinate +3 +1) (coordinate +3 +2)))
   (define can001 ;; candidates for map0, (first tiles0)
-    '(#s(coordinate -1 0)
-      #s(coordinate 0 -1)
-      #s(coordinate 0 1)
-      #s(coordinate 1 -1)
-      #s(coordinate 1 1)
-      #s(coordinate 2 -1)
-      #s(coordinate 2 1)
-      #s(coordinate 3 0)))
+    (list
+       (coordinate -1 0)
+      (coordinate 0 -1)
+      (coordinate 0 1)
+      (coordinate 1 -1)
+      (coordinate 1 1)
+      (coordinate 2 -1)
+      (coordinate 2 1)
+      (coordinate 3 0)))
 
-  (define coord1 (list #s(coordinate +2 +1)))
-  (define coord2 (list #s(coordinate 0 -1)   #s(coordinate +1 -1)))
+  (define coord1 (list (coordinate +2 +1)))
+  (define coord2 (list (coordinate 0 -1)   (coordinate +1 -1)))
   (define can221 ;; candidates for map2, (first tiles2)
-    '(#s(coordinate -1 0)
-      #s(coordinate 0 -1)
-      #s(coordinate 0 1)))
-  (define can222 '(#s(coordinate 1 -1)))
+    (list
+      (coordinate -1 0)
+      (coordinate 0 -1)
+      (coordinate 0 1)))
+  (define can222 (list (coordinate 1 -1)))
 
   (provide can001 can221 can222 can992 can993)
 
 
-  (define coord3 (list #s(coordinate -1 -1) #s(coordinate +2 -1)))
-  (define coord4 (list #s(coordinate +3 +3) #s(coordinate +4 +3)))
-  (define coord5 (list #s(coordinate -1 -2)  #s(coordinate -1 -3)))
-  (define coord6 (list #s(coordinate 0 -3)  #s(coordinate +1 -3)))
-  (define coord7 (list #s(coordinate +1 -2)    #s(coordinate +2 -2)))
-  (define coord8 (list #s(coordinate -1 0)))
-  (define coord9 (list #s(coordinate +4 0) #s(coordinate +4 -1) #s(coordinate +4 +1)))
+  (define coord3 (list (coordinate -1 -1) (coordinate +2 -1)))
+  (define coord4 (list (coordinate +3 +3) (coordinate +4 +3)))
+  (define coord5 (list (coordinate -1 -2)  (coordinate -1 -3)))
+  (define coord6 (list (coordinate 0 -3)  (coordinate +1 -3)))
+  (define coord7 (list (coordinate +1 -2)    (coordinate +2 -2)))
+  (define coord8 (list (coordinate -1 0)))
+  (define coord9 (list (coordinate +4 0) (coordinate +4 -1) (coordinate +4 +1)))
 
   (define can992
-    '(#s(coordinate -2 -3)
-      #s(coordinate -1 -4)
-      #s(coordinate 0 -4)
-      #s(coordinate 1 -4)
-      #s(coordinate 2 3)
-      #s(coordinate 3 4)))
+    (list
+      (coordinate -2 -3)
+      (coordinate -1 -4)
+      (coordinate 0 -4)
+      (coordinate 1 -4)
+      (coordinate 2 3)
+      (coordinate 3 4)))
 
-  (define can993 '(#s(coordinate 0 -4) #s(coordinate 4 1)))
+  (define can993 (list (coordinate 0 -4) (coordinate 4 1)))
 
-  (define coord10 (list #s(coordinate +3 +4) #s(coordinate +4 +4)))
+  (define coord10 (list (coordinate +3 +4) (coordinate +4 +4)))
 
   (define +starter-coor (coordinate 0 -1))
 
@@ -253,7 +256,7 @@
 
 (module+ test
   (check-true (integer? (same-row coord1)))
-  (check-false (same-column '(#s(coordinate 1 1) #s(coordinate 3 2)))))
+  (check-false (same-column (list (coordinate 1 1) (coordinate 3 2)))))
 
 (define same-row    (same coordinate-row))
 (define same-column (same coordinate-column))

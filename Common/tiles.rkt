@@ -189,17 +189,17 @@
       [list-ref ALL-SHAPE-COLOR-COMBOS i]))
   (define duplicate-star-all-shapes (cons (first exactly-all-shapes) exactly-all-shapes))
   
-  (define tiles0 (list #s(tile square red) #s(tile square blue) #s(tile square purple)))
-  (define tiles1 (list #s(tile circle blue)))
-  (define tiles2 (list #s(tile clover green) #s(tile diamond green)))
-  (define tiles3 (list #s(tile 8star green) #s(tile circle green)))
-  (define tiles4 (list #s(tile square orange) #s(tile square red)))
-  (define tiles5 (list #s(tile 8star yellow) #s(tile 8star orange)))
-  (define tiles6 (list #s(tile star orange) #s(tile diamond orange)))
-  (define tiles7 (list #s(tile diamond yellow) #s(tile circle yellow)))
-  (define tiles8 (list #s(tile 8star red)))
-  (define tiles9 (list #s(tile star red)   #s(tile star orange) #s(tile star blue)))
-  (define tiles10 (list #s(tile square yellow) #s(tile square blue))))
+  (define tiles0 (list (tile 'square  'red)    (tile 'square  'blue) (tile 'square 'purple)))
+  (define tiles1 (list (tile 'circle  'blue)))                
+  (define tiles2 (list (tile 'clover  'green)  (tile 'diamond 'green)))
+  (define tiles3 (list (tile '8star   'green)  (tile 'circle  'green)))
+  (define tiles4 (list (tile 'square  'orange) (tile 'square  'red)))
+  (define tiles5 (list (tile '8star   'yellow) (tile '8star   'orange)))
+  (define tiles6 (list (tile 'star    'orange) (tile 'diamond 'orange)))
+  (define tiles7 (list (tile 'diamond 'yellow) (tile 'circle  'yellow)))
+  (define tiles8 (list (tile '8star   'red)))                 
+  (define tiles9 (list (tile 'star    'red)    (tile 'star    'orange) (tile 'star 'blue)))
+  (define tiles10(list (tile 'square   'yellow)(tile 'square  'blue))))
 
 ;                                     
 ;                                     

@@ -119,7 +119,7 @@
   (struct-copy sop p [tiles tiles-owned]))
 
 (module+ test
-  (define green-square #s(tile square green))
+  (define green-square (tile 'square 'green))
   (define sop-with-2-identical-tiles (sop 0 (list green-square green-square) 'sop1))
   (define sop-with-1-such-tile       (sop 0 (list green-square) 'sop1))
   (check-equal? (sop-tiles-- sop-with-2-identical-tiles (list green-square)) sop-with-1-such-tile))

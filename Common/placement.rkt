@@ -155,16 +155,16 @@
   (def/placements 9)
   (def/placements 10)
 
-  (define place-atop-starter (list (placement origin #s(tile circle red))))
+  (define place-atop-starter (list (placement origin (tile 'circle 'red))))
   (define +starter-plmt (list (placement +starter-coor +starter-tile)))
   (define lshaped-placement* (map placement lshaped-coordinates starter-tile*))
   (define special-placements
     (list 
-     (placement #s(coordinate -1 1) #s(tile diamond green))
-     (placement #s(coordinate -3 1) #s(tile star green))))
-  (define place-orange-circle-at--2-2 [list (placement #s(coordinate -2 2) #s(tile circle orange))])
+     (placement (coordinate -1 1) (tile 'diamond 'green))
+     (placement (coordinate -3 1) (tile 'star    'green))))
+  (define place-orange-circle-at--2-2 [list (placement (coordinate -2 2) (tile 'circle 'orange))])
 
-  (define bad-spec-plmnt (list (placement #s(coordinate -2 1) #s(tile square green)))))
+  (define bad-spec-plmnt (list (placement (coordinate -2 1) (tile 'square 'green)))))
 
 ;                              
 ;      ;                       

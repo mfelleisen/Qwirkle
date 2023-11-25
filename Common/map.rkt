@@ -162,7 +162,7 @@
 
 #; {Map Coordinate -> Boolean}
 (module+ test
-  (check-true (adjacent? starter-map #s(coordinate 0 -1)))
+  (check-true (adjacent? starter-map (coordinate 0 -1)))
   (check-false (adjacent? starter-map origin)))
 (define (adjacent? b c)
   (and (false? (hash-ref b c #false))
@@ -188,55 +188,55 @@
 
 (module+ examples
   (define special-map
-    (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
-           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
-           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
-           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
+    (let* ([s (start-map                               (tile 'circle 'red))]
+           [s (add-tile s (placement (coordinate -1 0) (tile 'diamond 'red)))]
+           [s (add-tile s (placement (coordinate -2 0) (tile '8star 'red)))]
+           [s (add-tile s (placement (coordinate -3 0) (tile 'star 'red)))]
+           [s (add-tile s (placement (coordinate -4 0) (tile 'clover 'red)))]
            ;; hooks 
-           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
-           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))])
+           [s (add-tile s (placement (coordinate -4 1) (tile 'clover 'green)))]
+           [s (add-tile s (placement (coordinate  0 1) (tile 'circle 'green)))])
       s))
 
   (define special-map+green-star-at--3-1
-    (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(placement #s(coordinate -3 1) #s(tile star green)))]
+    (let* ([s (start-map                                   (tile 'circle  'red))]
+           [s (add-tile s (placement (coordinate -3 1) (tile 'star    'green)))]
 
-           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
-           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
-           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
-           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
+           [s (add-tile s (placement (coordinate -1 0) (tile 'diamond 'red)))]
+           [s (add-tile s (placement (coordinate -2 0) (tile '8star   'red)))]
+           [s (add-tile s (placement (coordinate -3 0) (tile 'star    'red)))]
+           [s (add-tile s (placement (coordinate -4 0) (tile 'clover  'red)))]
            ;; hooks 
-           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
-           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))])
+           [s (add-tile s (placement (coordinate -4 1) (tile 'clover  'green)))]
+           [s (add-tile s (placement (coordinate  0 1) (tile 'circle  'green)))])
       s))
 
-  (define (make-special-map+green-circle-at--2-2 (at-1-2 #s(tile circle purple)))
-    (let* ([s (start-map                      #s(tile circle red))]
-           [s (add-tile s #s(placement #s(coordinate -1 0) #s(tile diamond red)))]
-           [s (add-tile s #s(placement #s(coordinate -2 0) #s(tile 8star red)))]
-           [s (add-tile s #s(placement #s(coordinate -3 0) #s(tile star red)))]
-           [s (add-tile s #s(placement #s(coordinate -4 0) #s(tile clover red)))]
+  (define (make-special-map+green-circle-at--2-2 (at-1-2 (tile 'circle 'purple)))
+    (let* ([s (start-map                                   (tile 'circle  'red))]
+           [s (add-tile s (placement (coordinate -1 0) (tile 'diamond 'red)))]
+           [s (add-tile s (placement (coordinate -2 0) (tile '8star   'red)))]
+           [s (add-tile s (placement (coordinate -3 0) (tile 'star    'red)))]
+           [s (add-tile s (placement (coordinate -4 0) (tile 'clover  'red)))]
            ;; hooks 
-           [s (add-tile s #s(placement #s(coordinate -4 1) #s(tile clover green)))]
-           [s (add-tile s   (placement #s(coordinate -4 2) #s(tile circle purple)))]
-           [s (add-tile s   (placement #s(coordinate -3 2) at-1-2))]
-           [s (add-tile s #s(placement #s(coordinate  0 1) #s(tile circle green)))]
-           [s (add-tile s #s(placement #s(coordinate  0 2) #s(tile circle yellow)))]
-           [s (add-tile s   (placement #s(coordinate +1 2) #s(tile clover purple)))]
-           [s (add-tile s #s(placement #s(coordinate -1 2) #s(tile circle blue)))])
+           [s (add-tile s (placement (coordinate -4 1) (tile 'clover 'green)))]
+           [s (add-tile s (placement (coordinate -4 2) (tile 'circle 'purple)))]
+           [s (add-tile s (placement (coordinate -3 2) at-1-2))]
+           [s (add-tile s (placement (coordinate  0 1) (tile 'circle 'green)))]
+           [s (add-tile s (placement (coordinate  0 2) (tile 'circle 'yellow)))]
+           [s (add-tile s (placement (coordinate +1 2) (tile 'clover 'purple)))]
+           [s (add-tile s (placement (coordinate -1 2) (tile 'circle 'blue)))])
       s))
 
   (define special-map+green-circle-at--2-2 (make-special-map+green-circle-at--2-2))
   
-  (define special-map+purple-star-at-1-2 (make-special-map+green-circle-at--2-2 #s(tile star purple)))
-  (define special-map+purple-placement #s(placement #s(coordinate -3 +1) #s(tile star green)))
+  (define special-map+purple-star-at-1-2 (make-special-map+green-circle-at--2-2 (tile 'star 'purple)))
+  (define special-map+purple-placement (placement (coordinate -3 +1) (tile 'star 'green)))
   (define special-map+purple-star-at-1-2++
     (add-tile special-map+purple-star-at-1-2 special-map+purple-placement))
 
   (define special-map+green-circle-at--2-2++
-    (let* ([s (make-special-map+green-circle-at--2-2 #s(tile circle purple))]
-           [s (add-tile s #s(placement #s(coordinate -2 2) #s(tile circle orange)))])
+    (let* ([s (make-special-map+green-circle-at--2-2 (tile 'circle 'purple))]
+           [s (add-tile s (placement (coordinate -2 2) (tile 'circle 'orange)))])
       s)))
 
 ;                                                                        
@@ -296,7 +296,7 @@
 
 (module+ test
   (check-true (candidate? (fits special-map+purple-star-at-1-2  special-map+purple-placement)))
-  (check-true (candidate? (fits special-map #s(placement #s(coordinate -3 1) #s(tile star green))))))
+  (check-true (candidate? (fits special-map (placement (coordinate -3 1) (tile 'star 'green))))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the neighboring coordinate of a map
@@ -504,9 +504,9 @@
 
 (module+ examples
   (define map0 ;; base scenario 
-    (let* ([s (start-map #s(tile clover red))]
-           [s (add-tile s #s(placement #s(coordinate +1 0) #s(tile diamond red)))]
-           [s (add-tile s #s(placement #s(coordinate +2 0) #s(tile circle red)))])
+    (let* ([s (start-map (tile 'clover 'red))]
+           [s (add-tile s (placement (coordinate +1 0) (tile 'diamond 'red)))]
+           [s (add-tile s (placement (coordinate +2 0) (tile 'circle  'red)))])
       s))
 
   ;; maps from the Qwirkle web page 
@@ -651,8 +651,8 @@
 
   (require (submod Qwirkle/Common/tiles json))
 
-  (define red  #s(tile square red))
-  (define blue #s(tile square blue))
+  (define red  (tile 'square 'red))
+  (define blue (tile 'square 'blue))
 
   (define j-red-square  (tile->jsexpr red))
   (define j-blue-square (tile->jsexpr blue))
@@ -661,7 +661,7 @@
   (check-equal? (dev/null (jsexpr->map bad-2-col-coord)) #false)
   
   (define okay-2-col-coord `[[-1 [0 ,j-red-square]] [0 [0 ,j-blue-square]]])
-  (check-equal? (jsexpr->map okay-2-col-coord) (hash #s(coordinate -1 0) red #s(coordinate 0 0) blue))
+  (check-equal? (jsexpr->map okay-2-col-coord) (hash (coordinate -1 0) red (coordinate 0 0) blue))
 
   (check-equal? (dev/null (jsexpr->map '[[-1] [0]])) #false)
   

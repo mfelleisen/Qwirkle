@@ -216,7 +216,7 @@
   (define +starter-state (create-1player-state starter-map (list (list +starter-tile) "p12")))
   
   (provide +atop-state) ;; local testing only 
-  (define +atop-state (create-1player-state map0 (list (list #s(tile circle red)) "p12")))
+  (define +atop-state (create-1player-state map0 (list (list (tile 'circle 'red)) "p12")))
 
   (provide +starter-tile)
 
@@ -224,17 +224,17 @@
   (define special-state (create-1player-state special-map (list special-tiles "ps")))
   
   (define special-state+green-circle-at--2-2
-    (create-1player-state special-map+green-circle-at--2-2 `[[#s(tile circle orange)] ppp]))
+    (create-1player-state special-map+green-circle-at--2-2 `[[,(tile 'circle 'orange)] ppp]))
 
   (define bad-map   (legal special-state special-placements))
-  (define bad-state (create-1player-state bad-map '[(#s(tile square orange)) ps])))
+  (define bad-state (create-1player-state bad-map `[(,(tile 'square 'orange)) ps])))
 
 (module+ examples ;; of basic states 
   #; {[X Y Z] Map Placement -> [GameState X Y Z]}
   (define (create-state-ready-for-placement gmap pp #:score (score 0) #:more-sops (more '()))
     (define tiles* (map placement-tile pp))
-    (define extra  #s(tile clover green)) ;; to make placement not final.
-    (set!   extra  #s(tile circle red))   ;; for debugging strategy
+    (define extra  (tile 'clover 'green)) ;; to make placement not final.
+    (set!   extra  (tile 'circle 'red))   ;; for debugging strategy
     (define spec `[,(append tiles* (list extra)) ,(~a 'player1)])
     (create-1player-state gmap spec #:score score #:more-sops more))
 
@@ -314,17 +314,18 @@
 
 (module+ test
   (define state-after-first-special-placement
-    #s(state
-       #hash((#s(coordinate -1 1) . #s(tile diamond green))
-             (#s(coordinate -3 0) . #s(tile star red))
-             (#s(coordinate -2 0) . #s(tile 8star red))
-             (#s(coordinate -4 1) . #s(tile clover green))
-             (#s(coordinate 0 0) . #s(tile circle red))
-             (#s(coordinate 0 1) . #s(tile circle green))
-             (#s(coordinate -4 0) . #s(tile clover red))
-             (#s(coordinate -1 0) . #s(tile diamond red)))
-       (#s(sop 0 (#s(tile star green)) "ps"))
-       []))
+    (state
+       (hash
+	 (coordinate -1 1) (tile 'diamond 'green)
+	 (coordinate -3 0) (tile 'star 'red)
+	 (coordinate -2 0) (tile '8star 'red)
+	 (coordinate -4 1) (tile 'clover 'green)
+	 (coordinate  0 0) (tile 'circle 'red)
+	 (coordinate  0 1) (tile 'circle 'green)
+	 (coordinate -4 0) (tile 'clover 'red)
+	 (coordinate -1 0) (tile 'diamond 'red))
+       `(,(sop 0 `(,(tile 'star 'green)) "ps"))
+       '[]))
   
   (check-equal? (apply-action special-state (first special-placements))
                 state-after-first-special-placement "place first special on info-pk"))
@@ -367,7 +368,7 @@
 (module+ test ;; all-adjacent-and-fits 
   (check-equal? (all-adjacent-and-fits? map1 plmt1) map2)
   (check-true (map? (all-adjacent-and-fits? starter-map +starter-plmt)) "aa 1")
-  (define plmnt-2-away (list (placement #s(coordinate +2 0) #s(tile circle red))))
+  (define plmnt-2-away (list (placement (coordinate +2 0) (tile 'circle 'red))))
   (check-false (all-adjacent-and-fits? starter-map plmnt-2-away) "aa 2"))
 
 (module+ test ;; legal integration tests 
