@@ -224,16 +224,16 @@ if all other players pass or request exchanges.
       (fits @(scale .5 [render-map in]) @tt{@place} @(scale .5 [t:render-tile @tile]))
       #false)}})
 
-@fake-test[special-map #s(tile star green) "P1" special-map+green-star-at--3-1]
+@fake-test[special-map (tile 'star 'green) "P1" special-map+green-star-at--3-1]
 
-@fake-false[special-map #s(tile star purple) "P1"]
+@fake-false[special-map (tile 'star 'purple) "P1"]
 
 
-@fake-test[special-map+purple-star-at-1-2 #s(tile star green) "P2" special-map+purple-star-at-1-2++]
+@fake-test[special-map+purple-star-at-1-2 (tile 'star 'green) "P2" special-map+purple-star-at-1-2++]
 
-@fake-false[special-map+purple-star-at-1-2 #s(tile star blue) "P2"]
+@fake-false[special-map+purple-star-at-1-2 (tile 'star 'blue) "P2"]
 
-@;(define p2 #s(placement #s(coordinate -4 1) #s(tile circle red)))
-@;fake-false[(add-tile special-map+green-circle-at--2-2 p2) #s(tile circle red) "P2"]
+@;(define p2 (placement (coordinate -4 1) (tile 'circle 'red)))
+@;fake-false[(add-tile special-map+green-circle-at--2-2 p2) (tile 'circle 'red) "P2"]
 
 
