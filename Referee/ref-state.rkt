@@ -275,7 +275,7 @@
 
 (module+ examples
   (provide handouts)
-  (define handouts (make-list 6 #s(tile diamond green)))
+  (define handouts (make-list 6 (tile 'diamond 'green)))
   (provide starter-players)
   (define starter-players [list [list starter-tile* "player1"] [list qwirkle-tile* "player2"]])
   (define ref-starter-state (create-ref-state starter-map starter-players #:tiles0 handouts))

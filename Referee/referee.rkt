@@ -147,6 +147,7 @@
   (require (submod ".." examples))
   (require (submod Qwirkle/Common/game-state examples))
   (require (except-in (submod Qwirkle/Referee/ref-state examples) ForStudents/ Tests/))
+  (require Qwirkle/Common/tiles)
   (require Qwirkle/Player/mechanics)
   (require Qwirkle/Player/strategies)
   (require Qwirkle/Lib/check-message)
@@ -279,20 +280,20 @@
 
 (module+ test
   (ref-test-case "receiving new tiles fails"
-                 "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
+                 "new-tiles" factory-table-7 (active-sop-hand state1 (list (tile 'clover 'red)))
                  ['[] '["A"]])
   
   (ref-test-case "setup fails"
-                 "setup" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
+                 "setup" factory-table-7 (active-sop-hand state1 (list (tile 'clover 'red)))
                  ['[] '["A"]])
 
   (ref-test-case "informing fails"
-                 "win" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
+                 "win" factory-table-7 (active-sop-hand state1 (list (tile 'clover 'red)))
                  ['[] '["A"]])
 
   (ref-test-case "receiving new tiles fails; game goes on with one more player"
                  "new-tiles" factory-table-7
-                 (active-sop-hand state1-with (list #s(tile clover red)))
+                 (active-sop-hand state1-with (list (tile 'clover 'red)))
                  ['["B"] '["A"]]
                  #:extra B (create-player "B" dag-strategy)))
 
@@ -421,14 +422,14 @@
 (module+ test
   (*-rounds-test-case "receiving new tiles fails; game goes on with one more player"
                       "new-tiles" factory-table-7
-                      (active-sop-hand state1-with (list #s(tile clover red)))
+                      (active-sop-hand state1-with (list (tile 'clover 'red)))
                       ;; this seems to trip over object equality, wach out 
                       [[`["B"] `[]] `[,A]]
                       #:extra B (create-player "B" dag-strategy))
 
   (*-rounds-test-case "receiving new tiles fails"
                       "new-tiles" factory-table-7
-                      (active-sop-hand state1 (list #s(tile clover red)))
+                      (active-sop-hand state1 (list (tile 'clover 'red)))
                       [[`[] `[]] `(,A)]))
 
 ;                                                   
@@ -504,12 +505,12 @@
 (module+ test
   (1-round-test-case "receiving new tiles fails"
                      "new-tiles" factory-table-7
-                     (active-sop-hand state1 (list #s(tile clover red)))
+                     (active-sop-hand state1 (list (tile 'clover 'red)))
                      [#:end? #true #:state? #false #:dropped? 'yes!])
 
   (1-round-test-case "receiving new tiles fails; game goes on with one more player"
                      "new-tiles" factory-table-7
-                     (active-sop-hand state1-with (list #s(tile clover red)))
+                     (active-sop-hand state1-with (list (tile 'clover 'red)))
                      [#:end? #false #:state? #true #:dropped? 'yes!]
                      #:extra B (create-player "B" dag-strategy))
 
@@ -637,12 +638,12 @@
                     [#:state? #false #:passed? 'yes! #:dropped? 'yes!])
 
   (1-turn-test-case "receiving new tiles fails; it's the last player so game's up"
-                    "new-tiles" factory-table-7 (active-sop-hand state1 (list #s(tile clover red)))
+                    "new-tiles" factory-table-7 (active-sop-hand state1 (list (tile 'clover 'red)))
                     [#:end? end? #:state? #false #:dropped? 'yes!])
 
   (1-turn-test-case "receiving new tiles fails; game goes on with one more player"
                     "new-tiles" factory-table-7
-                    (active-sop-hand state1-with (list #s(tile clover red)))
+                    (active-sop-hand state1-with (list (tile 'clover 'red)))
                     [#:dropped? 'yes!]
                     #:extra B (create-player "B" dag-strategy))
 
@@ -854,7 +855,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (take dag-player* 4)
     #:ref-tiles    starter-tile*
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["B"] []]
     #:kind         for-students-7)
 
@@ -864,7 +865,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["F"] []]
     #:kind         for-tests-7)
 
@@ -873,7 +874,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (take dag-player* 4)
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["D"] []]
     #:kind         for-tests-7)
   
@@ -882,7 +883,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-7
     #:finish-bonus FINISH-BONUS-7
@@ -893,7 +894,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -904,7 +905,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["B"] []]
     #:kind         for-tests-7)
 
@@ -913,7 +914,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] []]
     #:kind         for-tests-7)
   
@@ -949,7 +950,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-TILES
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] []]
     #:kind         for-tests-7)
 
@@ -958,7 +959,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take dag-player* 2) (take ldasg-player* 2))
     #:ref-tiles    ALL-TILES-PERM
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["B"] []]
     #:kind         for-tests-7))
 
@@ -1037,7 +1038,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take dag-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["B"] []]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1048,7 +1049,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take inf-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] ["infK" "infL2"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1059,7 +1060,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take (reverse inf-player*) 3) (take ldasg-player* 1))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [[] ["infM3" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1070,7 +1071,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (take (reverse inf-player*) MAX-PLAYERS)
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [[] ["infM3" "infL5" "infM7" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1082,7 +1083,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (cons the-exn (take (reverse inf-player*) (- MAX-PLAYERS 1)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [[] ["infM3" "infM7" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1094,7 +1095,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list* (first dag-player*) the-exn (take (reverse inf-player*) (- MAX-PLAYERS 2)))
     #:ref-tiles    (pick-fixed-permutation (reverse ALL-TILES))
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] ["infM3" "xnW" "infO"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1106,7 +1107,7 @@
     #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
     #:ref-tiles    t-mixed-all-tiles-rev-inf-exn-dag2
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1121,7 +1122,7 @@
     #:player-tiles (list 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (list (first dag-player*) the-exn (second inf-player*))
     #:ref-tiles    t-mixed-all-tiles-rev-inf-exn-dag2-A
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [[] ["infL2" "xnW"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1148,7 +1149,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["F"] ["chnonad" "chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1159,7 +1160,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (reverse (append (take cheating-player* 2) (take ldasg-player* 2)))
     #:ref-tiles    ALL-SHAPE-COLOR-COMBOS
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] ["chtilen" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1171,7 +1172,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    (append (take cheating-player* 2) (take ldasg-player* 2))
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["F"] ["chnonad" "chtilen"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1185,7 +1186,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*
     #:ref-tiles    (reverse ALL-SHAPE-COLOR-COMBOS)
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1241,7 +1242,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*-2 
     #:ref-tiles    ALL-TILES
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["E"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1255,7 +1256,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*-3
     #:ref-tiles    ALL-TILES-PERM
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1269,7 +1270,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*-4
     #:ref-tiles    ALL-TILES-PERM
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
@@ -1283,7 +1284,7 @@
     #:player-tiles (list starter-tile* 1starter-tile* 2starter-tile* 3starter-tile*)
     #:externals    1dag-1exn-1ldag-1cheater-player*-5
     #:ref-tiles    ALL-TILES-PERM
-    #:ref-map      (start-map #s(tile clover yellow))
+    #:ref-map      (start-map (tile 'clover 'yellow))
     #:expected     [["A"] ["xnX" "chnonad"]]
     #:q-bonus      Q-BONUS-8 
     #:finish-bonus FINISH-BONUS-8
