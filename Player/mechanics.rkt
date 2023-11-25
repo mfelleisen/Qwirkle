@@ -346,7 +346,7 @@
   ;; [players#+1,0] cannot be adjacent to an existing tile: at most # of players have placed tiles 
   (class/fail 1 ((take-turn args)
                  (define players# (length (state-players (first args))))
-                 (list (placement (coordinate (+ players# 1) 0) #s(tile circle orange))))))
+                 (list (placement (coordinate (+ players# 1) 0) (tile 'circle 'orange))))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define tile-not-owned%

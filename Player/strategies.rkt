@@ -94,16 +94,18 @@
     [else REPLACEMENT]))
 
 (module+ examples
-  (define constrained-special #s(placement #s(coordinate -3 1) #s(tile star green)))
-  (define the-special-place #s(placement #s(coordinate -5 1) #s(tile star green)))
-  (define ref-place #s(placement #s(coordinate -1 0) #s(tile circle red)))
+  (define constrained-special    (placement (coordinate -3 1) (tile 'star   'green)))
+  (define the-special-place      (placement (coordinate -5 1) (tile 'star   'green)))
+  (define ref-place              (placement (coordinate -1 0) (tile 'circle 'red)))
 
   (define info-special-place*
-    '(#s(placement #s(coordinate -5 1) #s(tile star green))
-      #s(placement #s(coordinate -6 1) #s(tile diamond green))))
+    (list
+      (placement (coordinate -5 1) (tile 'star    'green))
+      (placement (coordinate -6 1) (tile 'diamond 'green))))
   (define info-special-places*dug
-    '(#s(placement #s(coordinate -3 1) #s(tile star green))
-      #s(placement #s(coordinate -1 1) #s(tile diamond green)))))
+    (list
+      (placement (coordinate -3 1) (tile 'star    'green))
+      (placement (coordinate -1 1) (tile 'diamond 'green)))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; dumb and greedy strategy: pick "smallest" coordinate of all feasible candidates for the first tile 
