@@ -61,8 +61,6 @@
 (require Qwirkle/Client/referee)
 (require (submod Qwirkle/Player/mechanics json))
 (require Qwirkle/Lib/configuration)
-(require (except-in SwDev/Testing/make-client port/c))
-(require SwDev/Testing/communication)
 
 ;                                                                                             
 ;                           ;;                                                                
@@ -94,78 +92,35 @@
    #:from-jsexpr (λ (x) (jsexpr->player* x #:loops #true #:cheating #true))
    #:is-a        "JActorsB"])
 
-;                                                  
-;                                                  
-;            ;;;       ;                           
-;              ;                              ;    
-;              ;                              ;    
-;     ;;;      ;     ;;;     ;;;;   ; ;;;   ;;;;;; 
-;    ;   ;     ;       ;    ;    ;  ;;   ;    ;    
-;   ;          ;       ;    ;;;;;;  ;    ;    ;    
-;   ;          ;       ;    ;       ;    ;    ;    
-;   ;          ;       ;    ;       ;    ;    ;    
-;    ;   ;     ;       ;    ;;   ;  ;    ;    ;    
-;     ;;;       ;;;  ;;;;;   ;;;;;  ;    ;     ;;; 
-;                                                  
-;                                                  
-;                                                  
-;                                                  
-
-;; ---------------------------------------------------------------------------------------------------
-#; {[InputPort -> Void] PortNumber IPAddress Boolean -> Client}
-;; the resulting client sends a name and then performs no work; but the name-sending thunk can loop
-;; `ns` is a name sender: it consumes an input port and `send-message`s a string to it 
-(define (make-client-for-name-sender name name-sender (port# PORT0) (ip LOCAL) #:quiet (quiet #false))
-  (define referee-maker (make-referee-maker name port# ip quiet make-remote-manager name-sender))
-  (λ () [referee-maker] 'fake-client-is-done))
+;                                                   
+;                                                   
+;          ;;;       ;                   ;          
+;            ;                           ;          
+;    ;;;     ;     ;;;    ;;;   ; ;;   ;;;;;   ;;;  
+;   ;;  ;    ;       ;   ;;  ;  ;;  ;    ;    ;   ; 
+;   ;        ;       ;   ;   ;; ;   ;    ;    ;     
+;   ;        ;       ;   ;;;;;; ;   ;    ;     ;;;  
+;   ;        ;       ;   ;      ;   ;    ;        ; 
+;   ;;       ;       ;   ;      ;   ;    ;    ;   ; 
+;    ;;;;     ;;   ;;;;;  ;;;;  ;   ;    ;;;   ;;;  
+;                                                   
+;                                                   
+;                                                   
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (clients cc (wait? #f) #:baddies [bad-clients '()])
-  (define players (dict-ref cc PLAYERS))
-  (define ip (dict-ref cc HOST))
-  (define p# (dict-ref cc PORT))
-  (define quiet (dict-ref cc QUIET))
-
-  (define clients-for-players (map (make-client-for-player p# ip quiet) players))
-  (define running-clients     (launch-clients (append clients-for-players bad-clients)))
+  (define clients-for-players (map (make-client-for-player cc) (dict-ref cc PLAYERS)))
+  (define running-clients     (launch-all-clients (append clients-for-players bad-clients)))
   (when wait?
     (wait-for-all running-clients)
     (displayln "all done")))
 
-#; {type Client = [-> Void]}
-;; a client connects to the server as a callee (receiver) and then runs a thread that deals with RMCs 
-
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Client] -> [Listof Thread]}
-(define (launch-clients clients-for-players)
+(define (launch-all-clients clients-for-players)
   (for/list ([1-client clients-for-players])
     (sleep WAIT-BETWEEN-THREADS) ;; to make determinism extremely likely
-    (thread 1-client)))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {PortNumber IPAddress Boolean -> Player -> Client}
-;; the connection to the server musy happens "at the same time" as the player becomes a thread
-;; because the server may immediately start the game as as sufficient number of players connected 
-(define [(make-client-for-player port# ip quiet) 1player]
-  (define player-name   (send 1player name))
-  (define remote-ref    (or (pick-referee player-name) make-remote-manager))
-  (define referee-maker (make-referee-maker (send 1player name) port# ip quiet remote-ref))
-  (define error-port (if quiet (open-output-string) (current-error-port)))
-  (λ () (connect-and-run-together referee-maker 1player error-port)))
-
-#; {String PortNumber IPAddress Boolean RemoetManager -> [-> ProxyReferee]}
-;; the resulting proxy referee gets connected to the server with `name`
-(define [(make-referee-maker name port# ip quiet rm (sender (λ (name ip) (send-message name ip))))]
-  (with-handlers ([exn:fail:network? (λ (xn) (eprintf "fail! ~a" name) (λ (_) 'failed-connection))])
-    (define-values (r c) (connect-to-server-as-receiver ip port# #:init (λ (ip) (sender name ip))))
-    (rm r c)))
-
-#; {[-> ProxyReferee] Player OutputPort -> Void}
-(define (connect-and-run-together referee-maker 1player error-port)
-  (parameterize ([prefix-with-spaces 5000]
-                 [current-error-port error-port]
-                 [trickle-output?    #true])
-    ([referee-maker] 1player)))
+    (launch 1-client)))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Thread] -> Void}
@@ -176,3 +131,62 @@
       (for/list ((dp client-threads))
         (handle-evt dp (λ (r) (wait-for-all (remq dp client-threads))))))
     (apply sync removes-itself)))
+
+;                                                   
+;                                                   
+;     ;;     ;;;  ;;;       ;                   ;   
+;    ; ;    ;   ;   ;                           ;   
+;      ;   ;        ;     ;;;    ;;;   ; ;;   ;;;;; 
+;      ;   ;        ;       ;   ;;  ;  ;;  ;    ;   
+;      ;   ;        ;       ;   ;   ;; ;   ;    ;   
+;      ;   ;        ;       ;   ;;;;;; ;   ;    ;   
+;      ;   ;        ;       ;   ;      ;   ;    ;   
+;      ;    ;   ;   ;       ;   ;      ;   ;    ;   
+;    ;;;;;   ;;;     ;;   ;;;;;  ;;;;  ;   ;    ;;; 
+;                                                   
+;                                                   
+;                                                   
+
+#; {type Client = [-> Void]}
+;; a client connects to the server as a callee (receiver) and then runs a thread that deals with RMCs
+
+#; {Client -> Thread}
+(define (launch 1-client)
+  (thread 1-client))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {PortNumber IPAddress Boolean -> Player -> Client}
+;; the connection to the server musy happens "at the same time" as the player becomes a thread
+;; because the server may immediately start the game as as sufficient number of players connected 
+(define [(make-client-for-player cc) 1player]
+  (define ip    (dict-ref cc HOST))
+  (define port# (dict-ref cc PORT))
+  (define quiet (dict-ref cc QUIET))
+  
+  (define make-proxy-ref (or (pick-referee (send 1player name)) default-proxy-ref-maker))
+  (define proxy-referee  (create-proxy-referee (send 1player name) port# ip quiet make-proxy-ref))
+  (define error-port     (if quiet (open-output-string) (current-error-port)))
+  (λ () (connect-and-run proxy-referee 1player error-port)))
+
+;                                                                        
+;                     ;                                                  
+;   ;;;;              ;           ;;;  ;;;       ;                   ;   
+;   ;   ;             ;          ;   ;   ;                           ;   
+;   ;   ;  ;;;;    ;;;;         ;        ;     ;;;    ;;;   ; ;;   ;;;;; 
+;   ;   ;      ;  ;; ;;         ;        ;       ;   ;;  ;  ;;  ;    ;   
+;   ;;;;       ;  ;   ;         ;        ;       ;   ;   ;; ;   ;    ;   
+;   ;   ;   ;;;;  ;   ;         ;        ;       ;   ;;;;;; ;   ;    ;   
+;   ;   ;  ;   ;  ;   ;         ;        ;       ;   ;      ;   ;    ;   
+;   ;   ;  ;   ;  ;; ;;          ;   ;   ;       ;   ;      ;   ;    ;   
+;   ;;;;    ;;;;   ;;;;           ;;;     ;;   ;;;;;  ;;;;  ;   ;    ;;; 
+;                                                                        
+;                                                                        
+;                                                                        
+
+#; {[InputPort -> Void] PortNumber IPAddress Boolean -> Client}
+;; the resulting client sends a name and then performs no work; but the name-sending thunk can loop
+;; `ns` is a name sender: it consumes an input port and `send-message`s a string to it 
+(define (make-client-for-name-sender name name-sender (port# PORT0) (ip LOCAL) #:quiet (quiet #false))
+  (define proxy-ref (create-proxy-referee name port# ip quiet default-proxy-ref-maker name-sender))
+  (λ () [proxy-ref] 'fake-client-is-done))
+
