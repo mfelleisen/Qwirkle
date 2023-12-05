@@ -65,7 +65,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require Qwirkle/Common/tiles)
 (require (prefix-in 2: 2htdp/image))
 (require (for-syntax syntax/parse))

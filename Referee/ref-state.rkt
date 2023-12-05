@@ -162,7 +162,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/tiles)
 (require Qwirkle/Common/game-state)

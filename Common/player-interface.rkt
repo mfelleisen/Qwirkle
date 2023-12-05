@@ -18,7 +18,7 @@
  (all-from-out Qwirkle/Common/placement))
 
 ;; ---------------------------------------------------------------------------------------------------
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/game-state)
 (require Qwirkle/Common/tiles)

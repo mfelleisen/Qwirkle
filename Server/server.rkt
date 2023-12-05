@@ -2,7 +2,7 @@
 
 ;; a server that signs up players over TCP and runs a game 
 
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide

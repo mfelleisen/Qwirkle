@@ -101,7 +101,7 @@
 ;                     ;                                    
 ;                     ;                                    
 
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require Qwirkle/Common/coordinates)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Common/map)

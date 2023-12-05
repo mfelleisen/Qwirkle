@@ -24,7 +24,7 @@
 ;                                                                  
 
 (require Qwirkle/Referee/ref-state)
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require (submod Qwirkle/Referee/ref-state json))
 (require 2htdp/universe)
 (require 2htdp/image)

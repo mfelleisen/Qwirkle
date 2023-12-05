@@ -3,7 +3,7 @@
 ;; referee: mediates between external players (local or remote) and the referee state, via safe xsend 
 ;; ---------------------------------------------------------------------------------------------------
 
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 (require Qwirkle/Common/player-interface)
 (require Qwirkle/Lib/json)
 

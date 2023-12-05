@@ -82,7 +82,7 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/state-of-player)
 (require Qwirkle/Player/strategies)
-(require (submod (lib "Qwirkle/scribblings/qwirkle.scrbl") spec))
+(require Qwirkle/scribblings/spec)
 
 (require (for-syntax syntax/parse))
 
