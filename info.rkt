@@ -3,14 +3,22 @@
 (define collection "Qwirkle")
 
 (define deps
-  '("htdp-lib"
+  (list
+    "htdp-lib"
+    "SwDev"
+    "rackunit-lib"
+    "gui-lib"
     "base"))
 
 (define build-deps
-  '("at-exp-lib"
+  (list
+    "at-exp-lib"
     "scribble-abbrevs"
+    "scribble-lib"
     "typed-racket-lib"
-    "scribble-lib" "racket-doc" "rackunit-lib"))
+    "sandbox-lib"r
+    "racket-doc"
+    "rackunit-lib"))
 
 (define scribblings '(("scribblings/qwirkle.scrbl" ())))
 

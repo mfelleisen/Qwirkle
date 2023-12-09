@@ -18,7 +18,7 @@
          (provide prov))]))
 
 ;; the specs 
-(req->prov (submod (file "scribblings/qwirkle.scrbl") spec))
+(req->prov Qwirkle/scribblings/spec)
 
 ; (req->prov Qwirkle/Common/coordinates)
 (req->prov Qwirkle/Common/tiles)
