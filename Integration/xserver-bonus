@@ -1,0 +1,51 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -W error -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xserver 12345 < server-config-file
+ ;; this one allows dealing with names that are just strings, no matter what
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require Qwirkle/Server/server)
+(require (submod Qwirkle/Player/mechanics json))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (main x)
+  (parameterize ([lax-names-okay? #true])
+    (define tag 'xserver)
+    (define sc (get jsexpr->server-config tag "ServerConfiguration"))
+    (server (dict-set sc PORT (string->port-number x)) descending-by-age)))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ test
+  (require (submod Qwirkle/Referee/ref-state examples))
+  (require Qwirkle/Referee/referee)
+  (require json)
+  (require rackunit)
+
+  (define tmp-directory "Tmp/")
+  (define config-file (~a tmp-directory "config-1.json")))
+
+(module+ test  ;; argument parsing for server configs 
+  (delete-directory/files tmp-directory #:must-exist? #false)
+  (make-directory tmp-directory)
+
+  (define rc (set-referee-config default-referee-config STATE0 ref-starter-state))
+  (define sc (set-server-config default-server-config REF-SPEC rc))
+
+  (with-output-to-file config-file
+    #:exists 'replace
+    (λ () (write-json (server-config->jsexpr sc) #:indent 4)))
+
+  (define [parse]
+    (with-input-from-file config-file (λ () (get jsexpr->server-config 'xserver "ServerConfig"))))
+ 
+  (check-equal? (parse) sc))
+

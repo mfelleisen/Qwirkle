@@ -1,0 +1,86 @@
+{
+    "port": 45716,
+    "quiet": true,
+    "ref-spec": {
+        "config-s": {
+            "fbo": 6,
+            "qbo": 6
+        },
+        "observe": false,
+        "per-turn": 6,
+        "quiet": true,
+        "state0": {
+            "map": [
+                [
+                    0,
+                    [
+                        0,
+                        {
+                            "color": "red",
+                            "shape": "clover"
+                        }
+                    ]
+                ],
+                [
+                    1,
+                    [
+                        0,
+                        {
+                            "color": "red",
+                            "shape": "diamond"
+                        }
+                    ]
+                ],
+                [
+                    2,
+                    [
+                        0,
+                        {
+                            "color": "red",
+                            "shape": "circle"
+                        }
+                    ]
+                ]
+            ],
+            "players": [
+                {
+                    "name": "A",
+                    "score": 0,
+                    "tile*": [
+                        {
+                            "color": "blue",
+                            "shape": "circle"
+                        }
+                    ]
+                },
+                {
+                    "name": "B",
+                    "score": 0,
+                    "tile*": [
+                        {
+                            "color": "blue",
+                            "shape": "circle"
+                        }
+                    ]
+                }
+            ],
+            "tile*": [
+                {
+                    "color": "red",
+                    "shape": "square"
+                },
+                {
+                    "color": "blue",
+                    "shape": "square"
+                },
+                {
+                    "color": "purple",
+                    "shape": "square"
+                }
+            ]
+        }
+    },
+    "server-tries": 2,
+    "server-wait": 20,
+    "wait-for-signup": 2
+}

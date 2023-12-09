@@ -1,0 +1,28 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "xnX",
+            "ldasg",
+            "setup"
+        ],
+        [
+            "xnY",
+            "ldasg",
+            "take-turn"
+        ],
+        [
+            "xnZ",
+            "ldasg",
+            "new-tiles"
+        ],
+        [
+            "xnW",
+            "ldasg",
+            "win"
+        ]
+    ],
+    "port": 45680,
+    "quiet": true,
+    "wait": 2
+}

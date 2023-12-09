@@ -1,0 +1,32 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "λ",
+            "dag"
+        ],
+        [
+            "ouchouchouchouchouchouchouchouchouch",
+            "dag"
+        ],
+        [
+            "E",
+            "ldasg"
+        ],
+        [
+            "F",
+            "ldasg"
+        ],
+        [
+            "G",
+            "ldasg"
+        ],
+        [
+            "H",
+            "ldasg"
+        ]
+    ],
+    "port": 45714,
+    "quiet": true,
+    "wait": 2
+}

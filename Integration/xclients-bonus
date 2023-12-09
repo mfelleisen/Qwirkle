@@ -1,0 +1,58 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xclient-bonus 12345 < client-config-file
+ ;; this one allows dealing with names that are just strings, no matter what
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require Qwirkle/Client/client)
+(require (submod Qwirkle/Server/server examples))
+(require (submod Qwirkle/Player/mechanics json))
+
+(define (main x)
+  (parameterize ([lax-names-okay? #true])
+    (define tag 'xclient)
+    (define cc (get jsexpr->client-config tag "ClientConfiguration"))
+    (define xs (get jsexpr->special* tag "SpecialClientConfiguration" #:eof-okay? #true))
+    (define pp (string->port-number x))
+    (if (eq? xs NO-SPECIALS)
+        (clients (dict-set cc PORT pp) #true)
+        (clients (dict-set cc PORT pp) #true #:baddies (list (xs pp))))))
+
+#; {JSexpr -> [Option Client]}
+(define (jsexpr->special* j)
+  (if (eof-object? j) NO-SPECIALS (jsexpr->special j)))
+
+(define NO-SPECIALS (gensym 'ok))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ test
+  (require json)
+  (require rackunit)
+
+  (define tmp-directory "Tmp/")
+  (define config-file (~a tmp-directory "config-1.json")))
+
+(module+ test  ;; argument parsing for client configs 
+  (delete-directory/files tmp-directory #:must-exist? #false)
+  (make-directory tmp-directory)
+  
+  (define cc default-client-config)
+
+  (with-output-to-file config-file
+    #:exists 'replace
+    (λ () (write-json (client-config->jsexpr cc) #:indent 4)))
+
+  (define [parse-cc]
+    (with-input-from-file config-file (λ () (get jsexpr->client-config 'xclients "ClientConfig"))))
+  
+  ;; because player names become "" ... 
+  (check-equal? (parse-cc) cc))

@@ -1,0 +1,28 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "F",
+            "ldasg"
+        ],
+        [
+            "E",
+            "ldasg"
+        ],
+        [
+            "infL2",
+            "ldasg",
+            "take-turn",
+            2
+        ],
+        [
+            "infK",
+            "ldasg",
+            "setup",
+            1
+        ]
+    ],
+    "port": 45709,
+    "quiet": true,
+    "wait": 2
+}

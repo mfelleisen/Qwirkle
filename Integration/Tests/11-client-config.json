@@ -1,0 +1,27 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "A",
+            "dag"
+        ],
+        [
+            "xnX",
+            "ldasg",
+            "setup"
+        ],
+        [
+            "E",
+            "ldasg"
+        ],
+        [
+            "chnonad",
+            "ldasg",
+            "a cheat",
+            "non-adjacent-coordinate"
+        ]
+    ],
+    "port": 45692,
+    "quiet": true,
+    "wait": 2
+}

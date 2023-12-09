@@ -1,0 +1,29 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "A",
+            "dag"
+        ],
+        [
+            "xnW",
+            "ldasg",
+            "win"
+        ],
+        [
+            "infO",
+            "ldasg",
+            "win",
+            1
+        ],
+        [
+            "infM3",
+            "ldasg",
+            "new-tiles",
+            3
+        ]
+    ],
+    "port": 45705,
+    "quiet": true,
+    "wait": 2
+}

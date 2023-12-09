@@ -1,0 +1,32 @@
+{
+    "host": "127.0.0.1",
+    "players": [
+        [
+            "chtilen",
+            "ldasg",
+            "a cheat",
+            "tile-not-owned"
+        ],
+        [
+            "chnotal",
+            "ldasg",
+            "a cheat",
+            "not-a-line"
+        ],
+        [
+            "chbadas",
+            "ldasg",
+            "a cheat",
+            "bad-ask-for-tiles"
+        ],
+        [
+            "chnofit",
+            "ldasg",
+            "a cheat",
+            "no-fit"
+        ]
+    ],
+    "port": 45696,
+    "quiet": true,
+    "wait": 2
+}
