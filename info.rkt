@@ -16,7 +16,7 @@
     "scribble-abbrevs"
     "scribble-lib"
     "typed-racket-lib"
-    "sandbox-lib"r
+    "sandbox-lib"
     "racket-doc"
     "rackunit-lib"))
 

@@ -176,6 +176,12 @@
 (define (set-with-obs x) (set! with-obs x))
 (define with-obs void)
 
+#; {Any -> (-> Void)}
+(define (not-observe x)
+  (when x
+    (eprintf "WARNING: no observer expected during test fest; given ~a\n" x))
+  void)
+
 (define-configuration referee
   [STATE0   #false   #:to-jsexpr state->jsexpr #:from-jsexpr jsexpr->state  #:is-a "JState"]
   [QUIET    #true #:is-a "Boolean"]
@@ -187,7 +193,7 @@
   [PER-TURN 6 #:is-a "Natural" "less than or equal to 6"]
   [OBSERVE
    void
-   #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr (λ (x) (if x #t void)) #:is-a "Boolean"])
+   #:to-jsexpr (λ (x) (not (eq? x void))) #:from-jsexpr not-observe #:is-a "Boolean"])
 
 #; {-> Void}
 (define (install-default-config)
