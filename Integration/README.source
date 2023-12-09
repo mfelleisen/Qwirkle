@@ -1,6 +1,8 @@
-## Test Code for Project Milestone 10, 2023
+## Integration Tests
 
-### Files for test fest, like those for 9
+This directory satisfies the basic specs of milestone 10 for Sw Dev F'23.
+
+### Files for test fest
 
 - `xtest` is the testing script 
 - `xserver` 

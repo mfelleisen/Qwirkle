@@ -1,6 +1,8 @@
-## Test Code for Project Milestone 10, 2023
+## Integration Tests
 
-### Files for test fest, like those for 9
+This directory satisfies the basic specs of milestone 10 for Sw Dev F'23.
+
+### Files for test fest
 
 - `xtest` is the testing script 
 - `xserver` 
@@ -49,3 +51,9 @@ $ ./xtest Bonus/ pathto_MY_xclients-bonus pathto_THEIR_server
 ```
 which will test their servers with "clients that violate the protocols
 in all kinds of ways" 
+
+| file | purpose |
+|--------------------- | ------- |
+| [get.rkt](get.rkt) | a utility for retrieving JSON from STDIN and check for well-formedness and validity with a predicate | 
+| [run-server-client.rkt](run-server-client.rkt) | deal with a port number as a command-line arguments | 
+| [run-server-client.rkt~](run-server-client.rkt~) | ovide | 

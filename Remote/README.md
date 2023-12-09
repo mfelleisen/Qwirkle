@@ -17,6 +17,6 @@ protocol for turning a monolithic (game) system into a distributed one:
 
 | file | purpose |
 |--------------------- | ------- |
-| [define-dispatcher.rkt](define-dispatcher.rkt) | create a remote manager from types of the player's methods | 
+| [define-dispatcher.rkt](define-dispatcher.rkt) | create a remote proxy-context from types of the player's methods | 
 | [define-remote.rkt](define-remote.rkt) | ovide | 
 | [remote-testing.rkt](remote-testing.rkt) | a facility for testing remote players | 
