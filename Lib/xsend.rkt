@@ -28,7 +28,8 @@
 
  show-exn
 
- #;{Parameter Real} 
+ #;{Parameter Real}
+ ;; seconds? 
  (contract-out
   [time-out-limit (parameter/c (λ (d) (and (real? d) (positive? d))))])
 
@@ -36,11 +37,26 @@
  failed?
  failed-value
  
- #;(xsend object method args ...)
+ #; (xsend object method args ...)
  ;; returns a failed value of method raises an exception or exceeds time-out-limit 
  xsend
 
- #;{ ([X ...] -> Y) X ... #:throw-handler (Z -> W) #:time-out (-> V) #:f-msg-format FmtString -> Y }
+ #;{ ([X ...] -> Y)
+     X ...
+     [#:throw-handler (Z -> W)]
+     [#:time-out      (-> V)]
+     [#:f-msg-format FmtString]
+     -> Y }
+ #; (xcall f [#:caller string?] [#:thrown XN] [#:timed-out TO] [#:f-msg-format fmt] a ...)
+ ;; calls (f a ...)
+ ;; if it terminates in (time-out-limit) seconds, it returns the value
+ ;; if it times out, it runs (TO)
+ ;; if it raises an exception `xn`, it (usually) runs `(XN xn)`
+ ;;   but:
+ ;;    if `xn` is an exn:contract:fail _and_ `name` is blamed, then it re-raises `xn` to show trace
+ ;;    if `(show-exn)` ise set to `#true` it also re-raises `xn`
+ ;; the default is to return `(failed 'time)` or `(failed exn-message)`
+ ;; `fmt` is used to format the exn message 
  xcall
 
  #; {type Action = [Player Message -> (or/c failed? any/c)]}
@@ -128,10 +144,18 @@
   (define f (lambda a (apply dynamic-send target m a)))
   (apply xcall f #:caller name #:thrown throw-hdler #:timed-out time-out-hdler #:f-msg-format fmt a))
 
+#; (xcall f [#:caller string?] [#:thrown ] [#:timed-out ] [#:f-msg-format] a ...)
+;; calls (f a ...)
+;; if it terminates in (time-out-limit) seconds, it returns the value
+;; if it times out, it calls (time-out-handler)
+;; if it raises an exception `xn`, it (usually) calls `(throw-handler xn)`
+;;   but:
+;;    if `xn` is an exn:contract:fail _and_ `name` is blamed, then it re-raises `xn` to show trace
+;;    if `(show-exn)` ise set to `#true` it also re-raises `xn` 
 (define (xcall f
-               #:caller (name #false)
-               #:thrown (throw-handler failed)
-               #:timed-out (time-out-handler (λ _ (failed 'time)))
+               #:caller       (name               #false)
+               #:thrown       (throw-handler      failed)
+               #:timed-out    (time-out-handler   (λ _ (failed 'time)))
                #:f-msg-format (fmt (string-append (format "xcall: ~a:\n" (object-name f)) "~e"))
                . a)
   (define cust (make-custodian))
@@ -165,7 +189,7 @@
      (if (show-exn)
          (raise thrown)
          (throw-handler thrown))]
-    [else (error 'xdynamic-send "something went horribly wrong: ~e" result)]))
+    [else (error 'xcall "something went horribly wrong: ~e" result)]))
 
 #; {(U False String) -> Any -> Boolean}
 (define (is-it-me my-name)
