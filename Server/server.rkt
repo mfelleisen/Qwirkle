@@ -170,6 +170,45 @@
 #; {[Listof Player] ServerConfig -> [Listof Player]}
 ;; collect list of playaers in reverse order of sign-up [youngest first]
 ;; it spawns a thread to manage time and number of tries in parallel 
+#|  wait-for-players
+        |   spawn(channel)
+        | -----------------> sign-up-players
+        |                         |
+
+ 1. 
+
+        |                         |
+        |   put(channel, players) | once max # of players 
+        | <---------------------- | sign up 
+        |                        ---
+        | 
+
+ 2. 
+        |   spawn(channel)
+        | -----------------> sign-up-players
+        |                         |
+        |   put(channel: and?)    | 
+        | --------------------->  | if time has run out 
+        |                         |
+        |   put(channel: players) | if min # of players
+        | <---------------------- | have signed up
+        |                         |
+        |                        ----
+
+  3. 
+        |   spawn(channel)
+        | -----------------> sign-up-players
+        |                         |
+        |   put(channel: and?)    | 
+        | --------------------->  | if time has run out 
+        |                         |
+        |   put(channel: #false)  | too few players 
+        | <---------------------- | have signed up
+        |                         |
+        |                         |
+      more wait time passes and 1/2/3 repeat up to number of wait periods 
+|#
+
 (define (wait-for-players house-players config)
   (define max-time  (dict-ref config SERVER-WAIT))
   (define max-tries (dict-ref config SERVER-TRIES))
@@ -213,7 +252,7 @@
 (define [(sign-up->add-to *players listener) _]
   (with-handlers ((exn:fail:network? (lambda (x) (log-error "connect: ~a" (exn-message x)) *players)))
     (define-values (in out) (tcp-accept listener))
-    (define name (read-message in))
+    (define name (read-message in)) ;; timed 
     (cond
       [(player-name? name)
        (define nxt (if (test-run?) (add1 (length (unbox *players))) (make-remote-player name in out)))
