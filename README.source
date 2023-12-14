@@ -1,15 +1,5 @@
 ## The Q Project
 
-#### Next Step
-
-- remotes: (1) remote (2) client (3) server
-- modify essential aspect
-
-- integration tests for students 
-
-- readme sources : clean up
-  - explain the separation of `Common/game-state` and `Referee/ref-state` 
-
 #### Install
 
 ```
@@ -21,7 +11,9 @@ $ raco doc Qwirkle
 
 #### Run
 
-- todo
+```
+
+```
 
 #### Generate Readme
 
@@ -36,14 +28,18 @@ as both an educational and a research project.
 
 ### The Idea 
 
-"Q" is a tole game. This repository is a framework for programming
-competitive "Q" players, a variant of the Qwirkle original game.
-Participants will design automated players that run on their desktops
-and connect to a (remote) "Q" server. This server will run a single
-game. Any misbehavior of a player---non-responsiveness due to bugs or
-cheating---results in immediate termination. So the competition is
-first about delivering robust code and second about writing great
-strategies.
+"Q" is a table game. Players place tiles on an "infinitely large" table,
+building a map. Each placement must satisfy certain constraints; each
+placement is immediately scored. When a player succeeds in placing all
+tiles, the game ends. 
+
+This repository is a framework for programming competitive "Q" players,
+a variant of the Qwirkle original game.  Participants design automated
+players that run on their desktops and connect to a (remote) "Q"
+server. This server runs a single game. Any misbehavior of a
+player---non-responsiveness due to bugs or cheating---results in
+immediate termination. So the competition is first about delivering
+robust code and second about writing great strategies.
 
 ### Concepts and Relationships
 
