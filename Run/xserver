@@ -1,0 +1,23 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -W error -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xserver 12345 < server-config-file
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require Qwirkle/Integration/get)
+(require Qwirkle/Integration/run-server-client)
+(require Qwirkle/Server/server)
+
+;; ---------------------------------------------------------------------------------------------------
+(define (main x)
+  (define tag 'xserver)
+  (define sc (get jsexpr->server-config tag "ServerConfiguration" #:empty-okay? #true))
+  (when (false? sc) (set! sc default-server-config))
+  (server (dict-set sc PORT (string->port-number x)) descending-by-age))
+
