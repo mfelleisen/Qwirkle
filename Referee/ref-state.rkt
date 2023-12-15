@@ -6,6 +6,7 @@
 (provide
  ;; from Qwirkle/Common/game-state
  state?
+ default-referee-state
  active-player 
  active-sop-finished? 
  active-sop-hand)
@@ -49,7 +50,7 @@
      (eprintf " given players ~a\n" givenPlayers)
      #false]))
 
-(define dont-double-check-names (make-parameter #false))
+(define dont-double-check-names (make-parameter #true))
      
 (provide
  #; {type [RefState Y] = [GameState Y [SoPlayer Y]] [Listof Tile]}
@@ -74,7 +75,7 @@
    ;; sets the external players in order 
    (->i ([s state?] [lop (listof player/c)])
         #:pre/name (s lop) "same number of player representations and player objects expected"
-        (= (length (state-players s)) (length lop))
+        (or [dont-double-check-names] (= (length (state-players s)) (length lop)))
         #:pre/name (lop) "distinct external names"
         (distinct? (map (λ (p) (send p name)) lop))
         #:pre/name (s lop) "same order of names"
@@ -252,7 +253,10 @@
 
 #; {[Y] [RefState Y] [Listof SoPlayer] -> [RefState Y]}
 (define (set-ref-state-players state0 players)
-  (match-define [cons first others] (map sop-set-player (state-players state0) players))
+  (match-define (cons first others)
+    (match (state-players state0)
+      ['() (map make-sop-player players)]
+      [(cons first others) (map sop-set-player (state-players state0) players)]))
   (create-state (state-map state0) first others (state-tiles state0)))
 
 #; {[Y] [RefState Y] -> PubKnowledge}

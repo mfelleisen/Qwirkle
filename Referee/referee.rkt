@@ -60,7 +60,7 @@
         #:pre/name (players) "players must have distince names"
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (config players) "matching number of players"
-        (matching-number config players)
+        (or [dont-double-check-names] (matching-number config players))
         (r [list/c [listof string?] [listof string?]]))]))
 
 (module+ examples
@@ -183,8 +183,14 @@
   void)
 
 (define-configuration referee
-  [STATE0   #false   #:to-jsexpr state->jsexpr #:from-jsexpr jsexpr->state  #:is-a "JState"]
-  [QUIET    #true #:is-a "Boolean"]
+  [STATE0
+   default-referee-state
+   #:to-jsexpr   (λ (x) (and x (state->jsexpr x)))
+   #:from-jsexpr (λ (x) (if x (jsexpr->state x) default-referee-state))
+   #:is-a "JState"]
+  [QUIET
+   #true
+   #:is-a "Boolean"]
   [CONFIG-S
    DEFAULT-CONFIG-S
     #:to-jsexpr refereeState-config->jsexpr
@@ -231,7 +237,7 @@
 ;; `lo-players` must list the player in the order in which they get into the state 
 (define (referee/config c lo-players)
   (install-default-config)
-  (define s0 (set-ref-state-players (dict-ref c STATE0) lo-players))
+  (define s0 (set-ref-state-players (dict-ref c STATE0 default-referee-state) lo-players))
   (define cs (dict-ref c CONFIG-S))
   (define wo (dict-ref c OBSERVE))
   (define qq (dict-ref c QUIET quiet))

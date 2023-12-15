@@ -11,6 +11,8 @@
  sop-tiles
  sop-player
  sop-set-player
+
+ make-sop-player
  
  (contract-out
   [sop (-> natural? (listof tile?) any/c sop?)])
@@ -95,6 +97,9 @@
 ;                                                                 
 
 (struct sop [score tiles player] #:prefab)
+
+(define (make-sop-player player)
+  (sop 0 '() player))
 
 (define-match-expander sop/m
   (λ (stx)

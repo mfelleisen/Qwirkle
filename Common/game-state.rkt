@@ -25,7 +25,9 @@
  render-ref-state/g
  
  (contract-out
-  [create-state         (-> map? sop? [listof any/c] any/c state?)]
+  [create-state          (-> map? sop? [listof any/c] any/c state?)]
+  [default-referee-state state?]
+  
   [transform-state      (-> (-> sop? sop?) (-> sop? any/c) (-> any/c any) (-> state? state?))]
 
   [state-map++          (-> state? map? state?)]
@@ -107,6 +109,7 @@
 (require Qwirkle/Common/map)
 (require Qwirkle/Common/placement)
 (require Qwirkle/Common/tiles)
+(require (only-in (submod Qwirkle/Common/map examples) starter-map))
 (require (prefix-in 2: 2htdp/image))
 
 (module+ examples
@@ -146,9 +149,15 @@
 
 (struct state [map players tiles] #:prefab)
 
+(define default-referee-state (state starter-map '() (shuffle ALL-TILES)))
+
 #; {[X Y Z] Map [SoPlayer X] [Listof Y] Z -> [GameState X Y Z]}
 (define (create-state gmap player-one others tiles)
   (state gmap (cons player-one others) tiles))
+
+(module+ test
+  'default-state
+  (render-pub-state default-referee-state))
 
 #; {[X Y Z U V W]
     [[SoPlayer X] -> {SoPlayer U}]
@@ -583,14 +592,31 @@
 ;                                            
 
 (define ((render-ref-state/g render-sop render-tiles) gs)
-  (match-define [state gmap (cons one [list sop ...]) tiles] gs)
-  (define gmap-image  (render-map gmap))
-  (define sop-images  (render-sop* one sop render-sop))
-  (2:above/align
-   'left 
-   (2:beside/align 'top gmap-image hblank sop-images)
-   vblank
-   (2:beside (2:text "tiles left: " 22 'black) (render-tiles tiles))))
+  (match gs
+    {[state gmap (cons one [list sop ...]) tiles]
+     (define gmap-image  (render-map gmap))
+     (define sop-images  (render-sop* one sop render-sop))
+     (2:above/align
+      'left 
+      (2:beside/align 'top gmap-image hblank sop-images)
+      vblank
+      (2:beside (2:text "tiles left: " 22 'black) (render-tiles tiles)))}
+    {[state gmap '() tiles]
+     (define gmap-image  (render-map gmap))
+     (define sop-images  2:empty-image)
+     (2:above/align
+      'left 
+      (2:beside/align 'top gmap-image hblank sop-images)
+      vblank
+      (2:beside (2:text "tiles left: " 22 'black) (render-tiles tiles)))}))
+
+(define render-pub-state
+  (render-ref-state/g
+   render-sop
+   (λ (t*)
+     (define how-many (min (length t*) 12))
+     (define dots-suf (if (> (length t*) 12) (2:text "   ..." 22 'black) 2:empty-image))
+     (2:beside (apply 2:beside (map render-tile (take t* how-many))) dots-suf))))
 
 (define hblank (2:rectangle 10 1 'solid 'white))
 (define vblank (2:rectangle 1 10 'solid 'white))
@@ -622,13 +648,18 @@
       ->
       {MAP : JMap, PLAYERS : [Cons JPlayer [Listof W]], TILES : U}}
   (define ((state->jsexpr/g players->jsexpr tiles->jsexpr) s)
-    (match-define [state gmap (cons one players) tiles] s)
-    (define jactive  (1player->jsexpr one))
-    (define jplayers (players->jsexpr players))
-    (hasheq MAP     (map->jsexpr gmap)
-            PLAYERS (cons jactive jplayers)
-            TILES   (tiles->jsexpr tiles)))
-
+    (match s
+      {[state gmap (cons one players) tiles]
+       (define jactive  (1player->jsexpr one))
+       (define jplayers (players->jsexpr players))
+       (hasheq MAP     (map->jsexpr gmap)
+               PLAYERS (cons jactive jplayers)
+               TILES   (tiles->jsexpr tiles))}
+      {[state gmap '[] tiles]
+       (hasheq MAP     (map->jsexpr gmap)
+               PLAYERS '()
+               TILES   (tiles->jsexpr tiles))}))
+       
   #; {[X Y Z]
       [JSexpr -> Option<Z>]
       [JSexpr -> Option<Cons [SoPlayer X] [Listof Y]>]
