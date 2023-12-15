@@ -2,6 +2,11 @@
 
 This directory satisfies the basic specs of milestone 10 for Sw Dev F'23.
 
+### MODIFY REF TO RUN
+
+In `Referee/referee.rkt` set (dont-double-check-names #false) to make sure tests are deterministic. 
+
+
 ### Files for test fest
 
 - `xtest` is the testing script 
@@ -56,4 +61,3 @@ in all kinds of ways"
 |--------------------- | ------- |
 | [get.rkt](get.rkt) | a utility for retrieving JSON from STDIN and check for well-formedness and validity with a predicate | 
 | [run-server-client.rkt](run-server-client.rkt) | deal with a port number as a command-line arguments | 
-| [run-server-client.rkt~](run-server-client.rkt~) | ovide | 

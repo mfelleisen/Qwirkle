@@ -113,10 +113,6 @@
    default-referee-config
    #:to-jsexpr referee-config->jsexpr #:from-jsexpr jsexpr->referee-config #:is-a "RefereeConfig"))
 
-(module+ test
-  (require json)
-  (with-output-to-file "../Run/default-server-config.json" (λ () (write-json (server-config->jsexpr default-server-config) #:indent 4))))
-
 ;                                            
 ;                                            
 ;                                            
