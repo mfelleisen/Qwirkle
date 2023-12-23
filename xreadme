@@ -18,7 +18,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
 ;; -- allow a specific order
-;; -- create interface-readme file
+;; -- signal missing purpose statements properly 
 ;; ---------------------------------------------------------------------------------------------------
 
 (define help-string
@@ -29,7 +29,7 @@ exec racket -tm "$0" -- ${1+"$@"}
  ./xreadme --show ./        ;; shows only the README.md in the top-level directory   
  ./xreadme --help           ;; show this help string 
  eos
-)
+  )
 
 (provide main)
 
@@ -41,9 +41,13 @@ exec racket -tm "$0" -- ${1+"$@"}
       [(list "--show" dir) (and (eq? (system-type) 'macosx) (directory-exists? dir) dir)]
       [(list "--help")     (printf "usage:\n~a\n" help-string) (exit 0)]
       [_ (printf "usage: \n~a\n" help-string) (exit 1)]))
-  (define adirs (all-git-tracked-directories EXCEPTIONS))
+  (define adirs (order-via (all-git-tracked-directories EXCEPTIONS) ORDER))
   (readme* adirs show)
   (top-level-reademe adirs show))
+
+#; {[Listof String] Ordering -> [Listof Striing]}
+(define (order-via directories order)
+  directories)
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof PathString] Boolean -> Void}
@@ -71,14 +75,8 @@ exec racket -tm "$0" -- ${1+"$@"}
     (λ () (printf "~a" (make-table header afils purps))))
   (when show (system "open README.md")))
 
-#; {String [Listof [List PathString String]] [Listof String] -> String}
-(define (make-table header0 adirs purps)
-  (define header (make-header header0))
-  (define content
-    (for/list ([d adirs] [p purps])
-      (match-define (list dl dn) d)
-      (~a "| [" dn "](" dl ")" " | " p " | \n")))
-  (apply string-append header content))
+;; ---------------------------------------------------------------------------------------------------
+;; extract purpose statements from code files, note missing purpose statements 
 
 #; {[Listof [List PathString String]] -> [Listof String]}
 (define (purpose-statements l clean)
@@ -92,6 +90,11 @@ exec racket -tm "$0" -- ${1+"$@"}
 (define ((missing-purpose-statement d) xn)
   (error 'purpose-statement "~a \n~a" (first d) (exn-message xn)))
 
+#; {String -> String}
+#; (strip-semis ";; ...") ;; yields "..."
+(define (strip-semis l) (substring l 3))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {String[Filename] String[Filename] Any -> Void}
 ;; copy the content from `old` to `new`
 ;; replace "@@include(.)" with the content of the specified fle 
@@ -115,44 +118,40 @@ exec racket -tm "$0" -- ${1+"$@"}
 (define (code-block c)
   (append (cons "```" c) (list "```")))
 
-#; {String -> String}
-#; (strip-semis ";; ...") ;; yields "..."
-(define (strip-semis l) (substring l 3))
-
 ;; ---------------------------------------------------------------------------------------------------
 #; {-> [Listof String]}
 (define (all-git-tracked-directories except)
-  (define untracked (git-status-check))
+  (define git-tracked-file? (make-git-tracked-directories))
   (for*/list ([fd (directory-list)]
               [fd-str (in-value (path->string fd))]
-              #:when (and (git-tracked-file? untracked fd) (not (member fd-str except))))
+              #:when (and (git-tracked-file? fd) (not (member fd-str except))))
     fd-str))
 
+#; {[Listof PathString] PathString -> Boolean}
+(define (make-git-tracked-directories) 
+  (define untracked (git-untracked))
+  (lambda (fd)
+    (and (directory-exists? fd)
+         (not (regexp-match #px"\\.|compiled" fd))
+         (not (member fd untracked)))))
+
 #; {[Path] -> [Listof PathString]}
-;; a primitive way to exclude Untracked directories and files 
-(define (git-status-check [which-one "./"])
+;; a primitive way to determine Untracked directories and files 
+(define (git-untracked [which-one "./"])
   (parameterize ((current-directory which-one))
     (match-define (list in out pid err control) (process "git status"))
     (define status (port->list read-line in))
     (let loop ((status status))
       (cond
         [(empty? status) '()]
-        [(regexp-match #px"Untracked" (first status)) (git-untracked status)]
+        [(regexp-match #px"Untracked" (first status))
+         (let git-untracked ([status status])
+           (let inner ([status (cdddr status)])
+             (define next (string-trim (first status)))
+             (cond
+               [(equal? "" next) '()]
+               [else (cons next (inner (rest status)))])))]
         [else (loop (rest status))]))))
-
-#; {[Listof String] -> [Listof PathString]}
-(define (git-untracked status)
-  (let inner ([status (cdddr status)])
-    (define next (string-trim (first status)))
-    (cond
-      [(equal? "" next) '()]
-      [else (cons next (inner (rest status)))])))
-
-#; {[Listof PathString] PathString -> Boolean}
-(define (git-tracked-file? untracked fd)
-  (and (directory-exists? fd)
-       (not (regexp-match #px"\\.|compiled" fd))
-       (not (member fd untracked))))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof String] -> [Listof String]}
@@ -165,6 +164,17 @@ exec racket -tm "$0" -- ${1+"$@"}
         'confirm-in-s)))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; MARK DOWN 
+
+#; {String [Listof [List PathString String]] [Listof String] -> String}
+(define (make-table header0 adirs purps)
+  (define header (make-header header0))
+  (define content
+    (for/list ([d adirs] [p purps])
+      (match-define (list dl dn) d)
+      (~a "| [" dn "](" dl ")" " | " p " | \n")))
+  (apply string-append header content))
+
 (define (make-header x)
   (string-append
    "\n"
