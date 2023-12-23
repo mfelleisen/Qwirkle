@@ -39,6 +39,31 @@ player---non-responsiveness due to bugs or cheating---results in
 immediate termination. So the competition is first about delivering
 robust code and second about writing great strategies.
 
+### Milestones
+
+See [Milestones](https://felleisen.org/matthias/4500-f23/index.html) for details.
+
+|  Milestone | design & implement | script integration testing	     |
+| -----------| ------------------------------------------------------------------------------------- | ----------- |
+| 1. The Plan  | work out a plan of "sprints" (milestones), plus essential components; 		     | n/a	   | 
+| 2. The Map   | basic game component; the component consists of five data representations  	     | n/a 	   | 
+|    	       | (due to the simplicity of this game, add a rule-inspired functionality so that students can test) | |
+| 3. The State | data representations for the referee's/the player's knowledge about a game	     | candidates for legal tile placements |
+| 4. The Score | an algorithm for computing the score of a player's action     	       		     | legality of player action |
+| 5. The Strategies | an atomic strategy for placing one tile, plus an iterator for such strategies  | scoring a player action |
+| 6. Games! 	    | a referee and a player mechanism 	       	       		    	 	     | atomic actions |
+| 7. The Clean Up   | pay down tech debt     							     | complete games |
+| 8. The Observer   | a game observer for the referee's understanding of the process		     | games with failing players |
+| 9. Remote 	    | separate the monolithic system into distributed component (via remote proxies) | games with cheating and looping players |
+| 10. Revised! 	    | data representations for configurations; configuring servers, refs, clients    | just config scripts for clients and servers |
+
+The final integration test runs
+
+- students' servers with instructor players
+- the instructor's server with a student's players
+- plus bonus test that evaluate the robustness of students' servers (broken protocols)
+
+
 ### Concepts and Relationships
 
 ```
@@ -55,7 +80,7 @@ robust code and second about writing great strategies.
                  | Common Ontology (of Clients and Server)                 |
                  +---------------------------------------------------------+
                  | player interface and protocol                           |
-                 | the player's game state: its own knowledge              |
+                 | the player's game state its own knowledge              |
                  |     plus its knowledge about others                     |
                  | the rules (legality checking)			   |
                  | basic game pieces and constants                         |
