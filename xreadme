@@ -34,6 +34,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 (provide main)
 
 (define (main . x)
+  ;; -- analyze cmd line args and directory 
   (define show
     (match x
       [(list)              (eq? (system-type) 'macosx)]
@@ -42,6 +43,7 @@ exec racket -tm "$0" -- ${1+"$@"}
       [(list "--help")     (printf "usage:\n~a\n" help-string) (exit 0)]
       [_ (printf "usage: \n~a\n" help-string) (exit 1)]))
   (define adirs (order-via (all-git-tracked-directories EXCEPTIONS) ORDER))
+  ;; -- now create the READMEs in `adirs` and link them up 
   (readme* adirs show)
   (top-level-reademe adirs show))
 
@@ -53,7 +55,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 #; {[Listof PathString] Boolean -> Void}
 (define (top-level-reademe adirs show)
   (define afils (map (λ (d) (list (build-path d "README.md") d)) adirs))
-  (write-readme-and-show "directory" afils identity (and show (equal? show "./"))))
+  (define show2 (and show (or (boolean? show) (equal? show "./"))))
+  (write-readme-and-show "directory" afils identity show2))
 
 #; {[Listof PathString] Boolean -> Void}
 ;; find README.source in each directory in `adirs` and create README.md in this directory
