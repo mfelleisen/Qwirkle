@@ -1,5 +1,7 @@
 ## Running a Server or Client 
 
+how to run the system from either the server side or the client side (or both) 
+
 ### Files
 
 - `xserver` 

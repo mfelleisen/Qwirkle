@@ -5,15 +5,25 @@ exec racket -tm "$0" -- ${1+"$@"}
 #lang racket
 
 ;; create the README.md files from README.source in the top-level & all git-tracked code directories:
+;; (assume the directories contain only files) 
 
 (define EXCEPTIONS '["Signatures" "scribblings"]) ;; no need for organization tables 
 
-(define ORDER
-  '[ "Referee"
-     "Player"
-     ["Common" "player-interface"]
-     ["Common" "states"]
-     "Common"])
+#; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
+;; the `file` name is assumed to be a ".rkt" file (for now)
+
+(define ORDER ; Ordering 
+  '[ "Run"
+     ["Server" "server"]
+     "Client"
+     ["Referee" "referee" "ref-state"]
+     ["Player" "mechanics" "strategies"]
+     ["Common"
+      "player-interface"
+      "placement"
+      "q-rule"
+      "game-state" "state-of-player"
+      "map" "coordinates" "tiles"]])
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
@@ -47,10 +57,6 @@ exec racket -tm "$0" -- ${1+"$@"}
   (readme* adirs show)
   (top-level-reademe adirs show))
 
-#; {[Listof String] Ordering -> [Listof Striing]}
-(define (order-via directories order)
-  directories)
-
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof PathString] Boolean -> Void}
 (define (top-level-reademe adirs show)
@@ -64,8 +70,12 @@ exec racket -tm "$0" -- ${1+"$@"}
   (for ([dir adirs])
     (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
     (parameterize ([current-directory dir])
-      (define afils (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (list f f)))
-      (write-readme-and-show "file" afils strip-semis show2))))
+      (define afils (order-via (get-files EXCEPTIONS) (find-order dir ORDER)))
+      (write-readme-and-show "file" (map (λ (f) (list f f)) afils) strip-semis show2))))
+
+#; {[Listof String] -> [Listof String]}
+(define (get-files EXCEPTIONS)
+  (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (path->string f)))
 
 #; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
 ;; write one README.md file with an organization table made from `afils` labeled with `header`
@@ -98,6 +108,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 (define (strip-semis l) (substring l 3))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; interpret readme files to include diagrams 
+
 #; {String[Filename] String[Filename] Any -> Void}
 ;; copy the content from `old` to `new`
 ;; replace "@@include(.)" with the content of the specified fle 
@@ -122,6 +134,8 @@ exec racket -tm "$0" -- ${1+"$@"}
   (append (cons "```" c) (list "```")))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; connect with git and get tracked files and directories 
+
 #; {-> [Listof String]}
 (define (all-git-tracked-directories except)
   (define git-tracked-file? (make-git-tracked-directories))
@@ -157,14 +171,30 @@ exec racket -tm "$0" -- ${1+"$@"}
         [else (loop (rest status))]))))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Listof String] -> [Listof String]}
-(define (follow-specified-order s)
-  s
-  #;
-  (for/list ([next ORDER])
-    (if (pair? next)
-        'insert-file
-        'confirm-in-s)))
+;; ordering
+
+#; {[Listof String] Ordering -> [Listof Striing]}
+(define (order-via givens0 order0)
+  (let in-order ([order order0] [givens givens0])
+    (match order 
+      ['() givens]
+      [(cons (cons (? string? dir) files) order+)
+       (unless (member dir givens0)
+         (error 'xreadme "specified name not found: ~a\n in ~s" dir givens0))
+       (cons dir (in-order order+ (remove dir givens)))]
+      [(cons (? string? dir) order+)
+       (unless (member dir givens0)
+         (error 'xreadme "specified name not found: ~a\n in ~s" dir givens0))
+       (cons dir (in-order order+ (remove dir givens)))])))
+
+#; {dir:String Ordering -> [Listof file:String]}
+(define (find-order dir order)
+  (match order
+    ['() '()]
+    [(cons (? string? d) order+)
+     (if (equal? d dir) '[] (find-order dir order+))]
+    [(cons (cons (? string? d) files) order+)
+     (if (equal? d dir) (map (λ (f) (~a f ".rkt")) files) (find-order dir order+))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; MARK DOWN 

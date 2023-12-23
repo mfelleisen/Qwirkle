@@ -256,12 +256,12 @@ For detailed explanations of the files, follow the links.
 
 | directory | purpose |
 |--------------------- | ------- |
+| [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
+| [Server](Server/README.md) | The component in this directory implements the Q server. | 
 | [Client](Client/README.md) | The component in this directory implements the client code for the | 
+| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
+| [Player](Player/README.md) | The component in this directory implements a Q player. | 
 | [Common](Common/README.md) | The components in this directory represent the common ontology that the players and the gaming framework must share. | 
 | [Integration](Integration/README.md) | This directory satisfies the basic specs of milestone 10 for Sw Dev F'23. | 
 | [Lib](Lib/README.md) | functionality that should probably exist in Racket's libraries | 
-| [Player](Player/README.md) | The component in this directory implements a Q player. | 
-| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
 | [Remote](Remote/README.md) | The components in this directory support the implementationn of a remote-proxy | 
-| [Run](Run/README.md) | ### Files | 
-| [Server](Server/README.md) | The component in this directory implements the Q server. | 
