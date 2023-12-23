@@ -50,3 +50,5 @@ should consume a data representation of the game's history.
 |--------------------- | ------- |
 | [mechanics.rkt](mechanics.rkt) | the player mechanism; several broken variants, provided via "factories" to bundle them into groups | 
 | [strategies.rkt](strategies.rkt) | simple strategies for picking a single placement and iterating those | 
+| [README.md](README.md) |  component in this directory implements a Q player. | 
+| [README.source](README.source) |  component in this directory implements a Q player. | 

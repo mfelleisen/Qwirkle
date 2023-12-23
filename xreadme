@@ -7,7 +7,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; create the README.md files from README.source in the top-level & all git-tracked code directories:
 ;; (assume the directories contain only files) 
 
-(define EXCEPTIONS '["Signatures" "scribblings"]) ;; no need for organization tables 
+(define EXCEPTIONS '[".git" "compiled" "scribblings"]) ;; no need for organization tables 
 
 #; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
 ;; the `file` name is assumed to be a ".rkt" file (for now)
@@ -27,8 +27,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
-;; -- allow a specific order
-;; -- signal missing purpose statements properly 
+;; -- signal missing purpose statements properly
+;; -- allow files that don't have a ".rkt" extension 
 ;; ---------------------------------------------------------------------------------------------------
 
 (define help-string
@@ -52,7 +52,7 @@ exec racket -tm "$0" -- ${1+"$@"}
       [(list "--show" dir) (and (eq? (system-type) 'macosx) (directory-exists? dir) dir)]
       [(list "--help")     (printf "usage:\n~a\n" help-string) (exit 0)]
       [_ (printf "usage: \n~a\n" help-string) (exit 1)]))
-  (define adirs (order-via (all-git-tracked-directories EXCEPTIONS) ORDER))
+  (define adirs (order-via (all-git-tracked directory-exists? EXCEPTIONS) ORDER))
   ;; -- now create the READMEs in `adirs` and link them up 
   (readme* adirs show)
   (top-level-reademe adirs show))
@@ -70,12 +70,8 @@ exec racket -tm "$0" -- ${1+"$@"}
   (for ([dir adirs])
     (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
     (parameterize ([current-directory dir])
-      (define afils (order-via (get-files EXCEPTIONS) (find-order dir ORDER)))
+      (define afils (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
       (write-readme-and-show "file" (map (λ (f) (list f f)) afils) strip-semis show2))))
-
-#; {[Listof String] -> [Listof String]}
-(define (get-files EXCEPTIONS)
-  (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (path->string f)))
 
 #; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
 ;; write one README.md file with an organization table made from `afils` labeled with `header`
@@ -137,19 +133,19 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; connect with git and get tracked files and directories 
 
 #; {-> [Listof String]}
-(define (all-git-tracked-directories except)
-  (define git-tracked-file? (make-git-tracked-directories))
+(define (all-git-tracked exists? except)
+  (define is-tracked? (make-git-tracked exists?))
   (for*/list ([fd (directory-list)]
               [fd-str (in-value (path->string fd))]
-              #:when (and (git-tracked-file? fd) (not (member fd-str except))))
+              #:when (and (is-tracked? fd) (not (member fd-str except))))
     fd-str))
 
-#; {[Listof PathString] PathString -> Boolean}
-(define (make-git-tracked-directories) 
+#; {(String -> Boolean) -> PathString -> Boolean}
+(define (make-git-tracked exists?) 
   (define untracked (git-untracked))
   (lambda (fd)
-    (and (directory-exists? fd)
-         (not (regexp-match #px"\\.|compiled" fd))
+    (and (exists? fd)
+         (not (regexp-match #px"\\.+compiled" fd))
          (not (member fd untracked)))))
 
 #; {[Path] -> [Listof PathString]}

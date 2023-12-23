@@ -34,3 +34,9 @@ Editing the configuration is almost self-evident.
 
 | file | purpose |
 |--------------------- | ------- |
+| [README.md](README.md) |  to run the system from either the server side or the client side (or both) | 
+| [README.source](README.source) |  to run the system from either the server side or the client side (or both) | 
+| [default-server-config.json](default-server-config.json) | iet": true, | 
+| [sample-client-config.json](sample-client-config.json) | ayers": [ | 
+| [xclients](xclients) | c racket -tm "$0" -- ${1+"$@"} | 
+| [xserver](xserver) | c racket -W error -tm "$0" -- ${1+"$@"} | 
