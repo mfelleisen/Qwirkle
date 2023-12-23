@@ -25,8 +25,9 @@ exec racket -tm "$0" -- ${1+"$@"}
   #<< eos
  ./xreadme                  ;; shows the generated README.md file                    
  ./xreadme --no             ;; doesn't                                               
- ./xreadme --show directory ;; shows only the README.md in the specified directory   
- ./xreadme --help           ;; 
+ ./xreadme --show directory ;; shows only the README.md in the specified directory
+ ./xreadme --show ./        ;; shows only the README.md in the top-level directory   
+ ./xreadme --help           ;; show this help string 
  eos
 )
 
@@ -48,13 +49,13 @@ exec racket -tm "$0" -- ${1+"$@"}
 #; {[Listof PathString] Boolean -> Void}
 (define (top-level-reademe adirs show)
   (define afils (map (λ (d) (list (build-path d "README.md") d)) adirs))
-  (write-readme-and-show "directory" afils identity (and show (not (string? show)))))
+  (write-readme-and-show "directory" afils identity (and show (equal? show "./"))))
 
 #; {[Listof PathString] Boolean -> Void}
 ;; find README.source in each directory in `adirs` and create README.md in this directory
 (define (readme* adirs show)
   (for ([dir adirs])
-    (define show2 (and show (or (boolean? show) (and (string? show) (equal? show dir)))))
+    (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
     (parameterize ([current-directory dir])
       (define afils (for*/list ([f (directory-list)] #:when (regexp-match #px"\\.rkt" f)) (list f f)))
       (write-readme-and-show "file" afils strip-semis show2))))
