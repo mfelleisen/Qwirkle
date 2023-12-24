@@ -13,8 +13,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; the `file` name is assumed to be a ".rkt" file (for now)
 
 (define ORDER ; Ordering 
-  '[ ["Referee" "referee" "ref-state"]
-     "Run"
+  '[ "Run"
+     ["Referee" "referee" "ref-state"]
      ["Server" "server"]
      "Client"
      ["Player" "mechanics" "strategies"]
@@ -28,7 +28,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
 ;; -- signal missing purpose statements properly
-;; -- allow files that don't have a ".rkt" extension 
+;; -- allow files in ordering that don't have a ".rkt" extension
 ;; ---------------------------------------------------------------------------------------------------
 
 (define help-string
@@ -58,6 +58,8 @@ exec racket -tm "$0" -- ${1+"$@"}
   (top-level-reademe adirs show))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; readme creation for the top-level directory and its immediate sub-directories 
+
 #; {[Listof PathString] Boolean -> Void}
 (define (top-level-reademe adirs show)
   (define afils (map (λ (d) (list (build-path d "README.md") d)) adirs))
@@ -146,10 +148,11 @@ exec racket -tm "$0" -- ${1+"$@"}
   (lambda (fd)
     (and (exists? fd)
          (not (regexp-match #px"\\.+compiled" fd))
+         (not (regexp-match #px"\\.+txt" fd))
          (not (member fd untracked)))))
 
 #; {[Path] -> [Listof PathString]}
-;; a primitive way to determine Untracked directories and files 
+;; a primitive way to determine Untracked directories and files from the CURRENT DIRECTORY
 (define (git-untracked)
   (match-define (list in out pid err control) (process "git status"))
   (define status (port->list read-line in))
@@ -165,7 +168,7 @@ exec racket -tm "$0" -- ${1+"$@"}
       [else (loop (rest status))])))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; ordering
+;; ordering of directories and files 
 
 #; {[Listof String] Ordering -> [Listof Striing]}
 (define (order-via givens0 order0)
@@ -191,7 +194,7 @@ exec racket -tm "$0" -- ${1+"$@"}
      (if (equal? d dir) (map (λ (f) (~a f ".rkt")) files) (find-order dir order+))]))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; MARK DOWN 
+;; Some MARK DOWN facilities 
 
 #; {String [Listof [List PathString String]] [Listof String] -> String}
 (define (make-table header0 adirs purps)

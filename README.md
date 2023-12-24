@@ -256,8 +256,8 @@ For detailed explanations of the files, follow the links.
 
 | directory | purpose |
 |--------------------- | ------- |
-| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
 | [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
+| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
 | [Server](Server/README.md) | The component in this directory implements the Q server. | 
 | [Client](Client/README.md) | The component in this directory implements the client code for the | 
 | [Player](Player/README.md) | The component in this directory implements a Q player. | 
