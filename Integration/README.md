@@ -59,8 +59,6 @@ in all kinds of ways"
 
 | file | purpose |
 |--------------------- | ------- |
-| [README.md](README.md) | s directory satisfies the basic specs of milestone 10 for Sw Dev F'23. | 
-| [README.source](README.source) | s directory satisfies the basic specs of milestone 10 for Sw Dev F'23. | 
 | [get.rkt](get.rkt) | a utility for retrieving JSON from STDIN and check for well-formedness and validity with a predicate | 
 | [run-server-client.rkt](run-server-client.rkt) | deal with a port number as a command-line arguments | 
 | [xclients](xclients) | c racket -tm "$0" -- ${1+"$@"} | 

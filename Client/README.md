@@ -20,7 +20,5 @@ specifying the connectivity (call-me vs call-you)
 
 | file | purpose |
 |--------------------- | ------- |
-| [README.md](README.md) |  component in this directory implements the client code for the | 
-| [README.source](README.source) |  component in this directory implements the client code for the | 
 | [client.rkt](client.rkt) | a client that signs up some players with a server at a given IP address and port, | 
 | [referee.rkt](referee.rkt) | the proxy referee runs a player in the same context as a referee proper | 

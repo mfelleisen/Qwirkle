@@ -331,8 +331,6 @@ referee                        player (p_1) . . . player (p_n)
 | [map.rkt](map.rkt) | data representation of a Q map | 
 | [coordinates.rkt](coordinates.rkt) | data representation of map coordinates | 
 | [tiles.rkt](tiles.rkt) | data representation of tiles, shapes, and colors | 
-| [README.md](README.md) |  components in this directory represent the common ontology that the players and the gaming framework must share. | 
-| [README.source](README.source) |  components in this directory represent the common ontology that the players and the gaming framework must share. | 
 | [interacting-with-game-state.txt](interacting-with-game-state.txt) | apply a one-tile placement to the state | 
 | [protocol-end-game.txt](protocol-end-game.txt) |                               |                 | | 
 | [protocol-play-turn.txt](protocol-play-turn.txt) |                               |                 | | 

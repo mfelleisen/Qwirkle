@@ -145,8 +145,5 @@ signature:
 |--------------------- | ------- |
 | [referee.rkt](referee.rkt) | referee: mediates between external players (local or remote) and the referee state, via safe xsend | 
 | [ref-state.rkt](ref-state.rkt) | a data representation of the referee's knowledge about the game | 
-| [README.md](README.md) |  component in this directory implements the Q referee. | 
-| [README.source](README.source) |  component in this directory implements the Q referee. | 
-| [observer-2.rkt](observer-2.rkt) | ovide | 
 | [observer-interface.rkt](observer-interface.rkt) | an interface for a primitive observer | 
 | [observer.rkt](observer.rkt) | a primitive observer that saves all images in Tmp/ and allows users to view game developments | 

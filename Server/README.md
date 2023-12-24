@@ -86,6 +86,4 @@ The `xserver` script ...
 | file | purpose |
 |--------------------- | ------- |
 | [server.rkt](server.rkt) | a server that signs up players over TCP and runs a game | 
-| [README.md](README.md) |  component in this directory implements the Q server. | 
-| [README.source](README.source) |  component in this directory implements the Q server. | 
 | [player.rkt](player.rkt) | this remote player implements the same interface as the player but conveys its arguments | 

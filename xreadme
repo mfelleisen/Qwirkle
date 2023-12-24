@@ -7,16 +7,16 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; create the README.md files from README.source in the top-level & all git-tracked code directories:
 ;; (assume the directories contain only files) 
 
-(define EXCEPTIONS '[".git" "compiled" "scribblings"]) ;; no need for organization tables 
+(define EXCEPTIONS '[".git" "compiled" "README.md" "README.source" "scribblings"]) 
 
 #; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
 ;; the `file` name is assumed to be a ".rkt" file (for now)
 
 (define ORDER ; Ordering 
-  '[ "Run"
+  '[ ["Referee" "referee" "ref-state"]
+     "Run"
      ["Server" "server"]
      "Client"
-     ["Referee" "referee" "ref-state"]
      ["Player" "mechanics" "strategies"]
      ["Common"
       "player-interface"
@@ -137,10 +137,10 @@ exec racket -tm "$0" -- ${1+"$@"}
   (define is-tracked? (make-git-tracked exists?))
   (for*/list ([fd (directory-list)]
               [fd-str (in-value (path->string fd))]
-              #:when (and (is-tracked? fd) (not (member fd-str except))))
+              #:when (and (is-tracked? fd-str) (not (member fd-str except))))
     fd-str))
 
-#; {(String -> Boolean) -> PathString -> Boolean}
+#; {(String -> Boolean) PathString -> PathString -> Boolean}
 (define (make-git-tracked exists?) 
   (define untracked (git-untracked))
   (lambda (fd)
@@ -150,21 +150,19 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 #; {[Path] -> [Listof PathString]}
 ;; a primitive way to determine Untracked directories and files 
-(define (git-untracked [which-one "./"])
-  (parameterize ((current-directory which-one))
-    (match-define (list in out pid err control) (process "git status"))
-    (define status (port->list read-line in))
-    (let loop ((status status))
-      (cond
-        [(empty? status) '()]
-        [(regexp-match #px"Untracked" (first status))
-         (let git-untracked ([status status])
-           (let inner ([status (cdddr status)])
-             (define next (string-trim (first status)))
-             (cond
-               [(equal? "" next) '()]
-               [else (cons next (inner (rest status)))])))]
-        [else (loop (rest status))]))))
+(define (git-untracked)
+  (match-define (list in out pid err control) (process "git status"))
+  (define status (port->list read-line in))
+  (let loop ((status status))
+    (cond
+      [(empty? status) '()]
+      [(regexp-match #px"Untracked" (first status))
+       (let inner ([status (cdddr status)])
+         (define next (string-trim (first status)))
+         (cond
+           [(equal? "" next) '()]
+           [else (cons next (inner (rest status)))]))]
+      [else (loop (rest status))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; ordering
