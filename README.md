@@ -257,11 +257,11 @@ For detailed explanations of the files, follow the links.
 | directory | purpose |
 |--------------------- | ------- |
 | [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
-| [Referee](Referee/README.md) | The component in this directory implements the Q referee. | 
-| [Server](Server/README.md) | The component in this directory implements the Q server. | 
-| [Client](Client/README.md) | The component in this directory implements the client code for the | 
-| [Player](Player/README.md) | The component in this directory implements a Q player. | 
-| [Common](Common/README.md) | The components in this directory represent the common ontology that the players and the gaming framework must share. | 
-| [Integration](Integration/README.md) | This directory satisfies the basic specs of milestone 10 for Sw Dev F'23. | 
-| [Lib](Lib/README.md) | functionality that should probably exist in Racket's libraries | 
-| [Remote](Remote/README.md) | The components in this directory support the implementationn of a remote-proxy | 
+| [Referee](Referee/README.md) | this component implements the Q referee | 
+| [Server](Server/README.md) | this component implements the Q server. | 
+| [Client](Client/README.md) | this component directory implements the client code for the Q game. | 
+| [Player](Player/README.md) | this component implements a Q player. | 
+| [Common](Common/README.md) | this component represents the common ontology of Q players and the Q gaming framework | 
+| [Integration](Integration/README.md) | this directory satisfies the basic specs of the integration tests of milestone 10 for Sw Dev F'23. | 
+| [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
+| [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 

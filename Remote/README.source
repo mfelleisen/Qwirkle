@@ -1,7 +1,7 @@
 ## Remotes 
 
-The components in this directory support the implementationn of a remote-proxy
-protocol for turning a monolithic (game) system into a distributed one:
+this component support the implementationn of a remote-proxy protocol,
+which is key to turning a monolithic (game) system into a distributed one:
 
 - `define-dispatcher` supplies a construct for implementing a remote-referee
   for the client side 

@@ -1,7 +1,8 @@
 ## Clients
 
-The component in this directory implements the client code for the
-Q game. The client program consumes a list of players and spawns a
+this component directory implements the client code for the Q game. 
+
+The client program consumes a list of players and spawns a
 client thread for each of them, as if they were running on separate
 machine.
 

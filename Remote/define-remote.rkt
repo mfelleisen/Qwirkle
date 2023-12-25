@@ -1,5 +1,7 @@
 #lang racket
 
+;; a library for specifying the methods of remote proxies via "types"
+
 (provide
  #; (define-define/remote define/remote:id in out)
  ;; given an input port and an output port, the macro defines a macro that creates two new forms

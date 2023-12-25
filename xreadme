@@ -14,20 +14,19 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 (define ORDER ; Ordering 
   '[ "Run"
-     ["Referee" "referee" "ref-state"]
      ["Server" "server"]
-     "Client"
-     ["Player" "mechanics" "strategies"]
+     ["Referee" "referee" "ref-state"]
      ["Common"
       "player-interface"
       "placement"
       "q-rule"
       "game-state" "state-of-player"
-      "map" "coordinates" "tiles"]])
+      "map" "coordinates" "tiles"]
+     "Client"
+     ["Player" "mechanics" "strategies"]])
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
-;; -- signal missing purpose statements properly
 ;; -- allow files in ordering that don't have a ".rkt" extension
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -76,7 +75,7 @@ exec racket -tm "$0" -- ${1+"$@"}
       (write-readme-and-show "file" (map (λ (f) (list f f)) afils) strip-semis show2))))
 
 #; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
-;; write one README.md file with an organization table made from `afils` labeled with `header`
+;; create one README.md file with an organization table made from `afils` labeled with `header`
 ;; `clean` each description line with 
 (define (write-readme-and-show header afils clean show)
   (define purps (purpose-statements afils clean))
@@ -87,15 +86,19 @@ exec racket -tm "$0" -- ${1+"$@"}
   (when show (system "open README.md")))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; extract purpose statements from code files, note missing purpose statements 
+;; extract purpose statements from code files, note missing purpose statements
+
+(define SEMIs ";; ")
 
 #; {[Listof [List PathString String]] -> [Listof String]}
 (define (purpose-statements l clean)
   (for/list ([d l])
     (with-handlers ([exn:fail? (missing-purpose-statement d)])
-      (with-input-from-file (first d)
-        (λ ()
-          (clean (string-trim (caddr (port->lines)))))))))
+      (define file (first d))
+      (cond
+        [(regexp-match #px".rkt|.md" file)
+         (with-input-from-file file (λ () (clean (string-trim (caddr (port->lines))))))]
+        [else ""]))))
 
 #; {[List PathString String] -> Empty}
 (define ((missing-purpose-statement d) xn)
@@ -103,7 +106,10 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 #; {String -> String}
 #; (strip-semis ";; ...") ;; yields "..."
-(define (strip-semis l) (substring l 3))
+(define (strip-semis line)
+  (unless (equal? (substring line 0 3) SEMIs)
+    (error 'strim-semis "missing semicolons for purpose statement in Racket file; given ~s" line))
+  (substring line 3))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; interpret readme files to include diagrams 

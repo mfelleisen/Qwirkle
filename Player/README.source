@@ -1,6 +1,6 @@
 ## Players 
 
-The component in this directory implements a Q player.
+this component implements a Q player.
 
 A player implements the mechanism that employs "strategies" to compute
 responses. For Q, a strategy is a function from the current state

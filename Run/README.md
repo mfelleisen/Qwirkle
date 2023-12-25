@@ -34,7 +34,7 @@ Editing the configuration is almost self-evident.
 
 | file | purpose |
 |--------------------- | ------- |
-| [default-server-config.json](default-server-config.json) | iet": true, | 
-| [sample-client-config.json](sample-client-config.json) | ayers": [ | 
-| [xclients](xclients) | c racket -tm "$0" -- ${1+"$@"} | 
-| [xserver](xserver) | c racket -W error -tm "$0" -- ${1+"$@"} | 
+| [default-server-config.json](default-server-config.json) |  | 
+| [sample-client-config.json](sample-client-config.json) |  | 
+| [xclients](xclients) |  | 
+| [xserver](xserver) |  | 

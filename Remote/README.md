@@ -1,7 +1,7 @@
 ## Remotes 
 
-The components in this directory support the implementationn of a remote-proxy
-protocol for turning a monolithic (game) system into a distributed one:
+this component support the implementationn of a remote-proxy protocol,
+which is key to turning a monolithic (game) system into a distributed one:
 
 - `define-dispatcher` supplies a construct for implementing a remote-referee
   for the client side 
@@ -18,5 +18,5 @@ protocol for turning a monolithic (game) system into a distributed one:
 | file | purpose |
 |--------------------- | ------- |
 | [define-dispatcher.rkt](define-dispatcher.rkt) | create a remote proxy-context from types of the player's methods | 
-| [define-remote.rkt](define-remote.rkt) | ovide | 
+| [define-remote.rkt](define-remote.rkt) | a library for specifying the methods of remote proxies via "types" | 
 | [remote-testing.rkt](remote-testing.rkt) | a facility for testing remote players | 

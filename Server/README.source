@@ -1,6 +1,6 @@
 ## Server 
 
-The component in this directory implements the Q server. 
+this component implements the Q server. 
 
 The server signs up clients over TCP that connect on behalf of an AI
 player and runs a Q game. 

@@ -1,6 +1,6 @@
 ## Library Files 
 
-functionality that should probably exist in Racket's libraries	 	    
+this library provides functionality that should probably (or may) exist in Racket's libraries	 	    
 
 | file | purpose |
 |--------------------- | ------- |

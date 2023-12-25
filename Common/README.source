@@ -1,6 +1,6 @@
 ## Common 
 
-The components in this directory represent the common ontology that the players and the gaming framework must share.
+this component represents the common ontology of Q players and the Q gaming framework 
 
 Here is a rough overview of the layers: 
 
