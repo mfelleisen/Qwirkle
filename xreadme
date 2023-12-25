@@ -28,6 +28,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
 ;; -- allow files in ordering that don't have a ".rkt" extension
+;;    -- json
+;;    -- script 
 ;; ---------------------------------------------------------------------------------------------------
 
 (define help-string
@@ -67,7 +69,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 (define (top-level-readme adirs show)
   (define files (map (λ (d) (build-path d "README.md")) adirs))
   (define purps (purpose-statements files identity))
-  (define afils (map documented files adirs purps))
+  (define afils (map row files adirs purps))
   (define show2 (and show (or (boolean? show) (equal? show "./"))))
   (write-readme-and-show "directory" afils show2))
 
@@ -78,7 +80,7 @@ exec racket -tm "$0" -- ${1+"$@"}
     (parameterize ([current-directory dir])
       (define files (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
       (define purps (purpose-statements files strip-semis))
-      (define afils (map documented files files purps))
+      (define afils (map row files files purps))
       (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
       (write-readme-and-show "file" afils show2))))
 
@@ -208,7 +210,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; Some MARK DOWN facilities
 
-(struct documented [path name purpose] #:prefab)
+(struct row [path name purpose] #:prefab)
 #; {type Documented = [documented PathString String String]}
 
 #; {String [Listof [List PathString String]] [Listof String] -> String}
@@ -216,7 +218,7 @@ exec racket -tm "$0" -- ${1+"$@"}
   (define header (make-header header0))
   (define content
     (for/list ([d documented-files])
-      (match-define (documented path name purpose) d)
+      (match-define (row path name purpose) d)
       (~a "| [" name "](" path ")" " | " purpose " | \n")))
   (apply string-append header content))
 
