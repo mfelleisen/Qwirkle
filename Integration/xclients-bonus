@@ -1,14 +1,12 @@
 #! /bin/sh
+#!  main is invoked via the command line as follows:  $ ./xclient-bonus 12345 < client-config-file
+#!    this one allows dealing with names that are just strings, no matter what
 #| -*- racket -*-
 exec racket -tm "$0" -- ${1+"$@"}
 |#
 #lang racket
 
-(provide
- ;; main is invoked via the command line as follows: 
- ;; $ ./xclient-bonus 12345 < client-config-file
- ;; this one allows dealing with names that are just strings, no matter what
- main)
+(provide main)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require "get.rkt")

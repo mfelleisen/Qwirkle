@@ -1,17 +1,15 @@
 #! /bin/sh
+#! main is invoked via the command line as follows:  $ ./xclient-bonus port-number < client-config-file
 #| -*- racket -*-
 exec racket -tm "$0" -- ${1+"$@"}
 |#
 #lang racket
 
-(provide
- ;; main is invoked via the command line as follows: 
- ;; $ ./xclient-bonus 12345 < client-config-file
- main)
+(provide main)
 
 ;; ---------------------------------------------------------------------------------------------------
-(require "get.rkt")
-(require "run-server-client.rkt")
+(require Qwirkle/Integration/get)
+(require Qwirkle/Integration/run-server-client)
 (require Qwirkle/Client/client)
 
 (define (main x)

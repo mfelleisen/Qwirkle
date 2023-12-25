@@ -59,10 +59,10 @@ in all kinds of ways"
 
 | file | purpose |
 |--------------------- | ------- |
+| [xtest](xtest) | ./xtest Tests/ ./xclients ,/xserver launches a server locally on a port, points n clients there, with tests creates from configs | 
+| [xserver](xserver) |  main is invoked via the command line as follows: $ ./xserver 12345 < server-config-file | 
+| [xclients](xclients) | main is invoked via the command line as follows: $ ./xclient-bonus 12345 < client-config-file | 
 | [get.rkt](get.rkt) | a utility for retrieving JSON from STDIN and check for well-formedness and validity with a predicate | 
 | [run-server-client.rkt](run-server-client.rkt) | deal with a port number as a command-line arguments | 
-| [xclients](xclients) |  | 
-| [xclients-bonus](xclients-bonus) |  | 
-| [xserver](xserver) |  | 
-| [xserver-bonus](xserver-bonus) |  | 
-| [xtest](xtest) |  | 
+| [xclients-bonus](xclients-bonus) |  main is invoked via the command line as follows:  $ ./xclient-bonus 12345 < client-config-file | 
+| [xserver-bonus](xserver-bonus) |  main is invoked via the command line as follows:  $ ./xserver 12345 < server-config-file | 

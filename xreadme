@@ -1,4 +1,5 @@
 #! /bin/sh
+#! generate the README.md files from README.source files, *.txt files, and purpose statements 
 #| -*- racket -*-
 exec racket -tm "$0" -- ${1+"$@"}
 |#
@@ -11,10 +12,11 @@ exec racket -tm "$0" -- ${1+"$@"}
   '[".git" "compiled" "README.md" "README.source" "info.rkt" "scribblings" ".DS_Store"]) 
 
 #; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
-;; the `file` name is assumed to be a ".rkt" file (for now)
+;; the `file` name is assumed to be a ".rkt" file, mostly except
+;; a file name ending in * is a script 
 
 (define ORDER ; Ordering 
-  '[ "Run"
+  '[ ["Run" "xserver*" "xclients*"]
      ["Server" "server"]
      ["Referee" "referee" "ref-state"]
      ["Common"
@@ -24,13 +26,11 @@ exec racket -tm "$0" -- ${1+"$@"}
       "game-state" "state-of-player"
       "map" "coordinates" "tiles"]
      "Client"
-     ["Player" "mechanics" "strategies"]])
+     ["Player" "mechanics" "strategies"]
+     ["Integration" "xtest*" "xserver*" "xclients*"]])
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
-;; -- allow files in ordering that don't have a ".rkt" extension
-;;    -- json
-;;    -- script 
 ;; ---------------------------------------------------------------------------------------------------
 
 (define help-string
@@ -105,14 +105,17 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; extract purpose statements from code files, note missing purpose statements
 
 (define SEMIs ";; ")
+(define BANGs "#! ")
 
 #; {[Listof PathString] -> [Listof String]}
 (define (purpose-statements file* clean)
   (for/list ([file file*])
     (with-handlers ([exn:fail? (missing-purpose-statement file)])
       (cond
-        [(regexp-match #px".rkt|.md" file)
+        [(regexp-match #px".rkt|.md" file) ;; code or readme file 
          (with-input-from-file file (λ () (clean (string-trim (caddr (port->lines))))))]
+        [(regexp-match #px"x.*" file) ;; script
+         (with-input-from-file file (λ () (clean (string-trim (cadr (port->lines))))))]
         [else ""]))))
 
 #; {[List PathString String] -> Empty}
@@ -122,7 +125,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 #; {String -> String}
 #; (strip-semis ";; ...") ;; yields "..."
 (define (strip-semis line)
-  (unless (equal? (substring line 0 3) SEMIs)
+  (unless (or (equal? (substring line 0 3) SEMIs) (equal? (substring line 0 3) BANGs))
     (error 'strim-semis "missing semicolons for purpose statement in Racket file; given ~s" line))
   (substring line 3))
 
@@ -212,7 +215,14 @@ exec racket -tm "$0" -- ${1+"$@"}
     [(cons (? string? d) order+)
      (if (equal? d dir) '[] (find-order dir order+))]
     [(cons (cons (? string? d) files) order+)
-     (if (equal? d dir) (map (λ (f) (~a f ".rkt")) files) (find-order dir order+))]))
+     (if (equal? d dir) (file-spec* files) (find-order dir order+))]))
+
+#; {file-name:String -> file-name:String}
+(define (file-spec* files)
+  (for/list ([f files])
+    (cond
+      [(regexp-match "(.*)\\*$" f) => second]
+      [else (~a f ".rkt")])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Some MARK DOWN facilities

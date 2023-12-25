@@ -1,4 +1,5 @@
 #!/bin/bash 
+#! run `raco test` on all relevant code files
 
 echo "gc-ing" 
 rm -rf *~ */*~ ; rm -rf errors.txt 

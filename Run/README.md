@@ -34,7 +34,7 @@ Editing the configuration is almost self-evident.
 
 | file | purpose |
 |--------------------- | ------- |
+| [xserver](xserver) |  main is invoked via the command line as follows: $ ./xserver port-number < server-config-file | 
+| [xclients](xclients) | main is invoked via the command line as follows:  $ ./xclient-bonus port-number < client-config-file | 
 | [default-server-config.json](default-server-config.json) |  | 
 | [sample-client-config.json](sample-client-config.json) |  | 
-| [xclients](xclients) |  | 
-| [xserver](xserver) |  | 

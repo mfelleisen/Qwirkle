@@ -1,14 +1,12 @@
 #! /bin/sh
+#!  main is invoked via the command line as follows:  $ ./xserver 12345 < server-config-file
+#!    this one allows dealing with names that are just strings, no matter what
 #| -*- racket -*-
 exec racket -W error -tm "$0" -- ${1+"$@"}
 |#
 #lang racket
 
-(provide
- ;; main is invoked via the command line as follows: 
- ;; $ ./xserver 12345 < server-config-file
- ;; this one allows dealing with names that are just strings, no matter what
- main)
+(provide main)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require "get.rkt")
