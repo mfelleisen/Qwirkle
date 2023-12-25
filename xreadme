@@ -7,7 +7,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; create the README.md files from README.source in the top-level & all git-tracked code directories:
 ;; (assume the directories contain only files) 
 
-(define EXCEPTIONS '[".git" "compiled" "README.md" "README.source" "scribblings"]) 
+(define EXCEPTIONS
+  '[".git" "compiled" "README.md" "README.source" "info.rkt" "scribblings" ".DS_Store"]) 
 
 #; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
 ;; the `file` name is assumed to be a ".rkt" file (for now)
@@ -27,7 +28,6 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
-;; -- files in top-level directory 
 ;; -- allow files in ordering that don't have a ".rkt" extension
 ;;    -- json
 ;;    -- script 
@@ -72,27 +72,33 @@ exec racket -tm "$0" -- ${1+"$@"}
   (define purps (purpose-statements files identity))
   (define afils (map row files adirs purps))
   (define show2 (and show (or (boolean? show) (equal? show "./"))))
-  (write-readme-and-show "directory" afils show2))
+  (define table (string-append (make-table "directory" afils) (create-file-table "./")))
+  (write-readme-and-show table show2))
 
 #; {[Listof PathString] Boolean -> Void}
 ;; find README.source in each directory in `adirs` and create README.md in this directory
 (define (readme* dir* show)
   (for ([dir dir*])
     (parameterize ([current-directory dir])
-      (define files (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
-      (define purps (purpose-statements files strip-semis))
-      (define afils (map row files files purps))
       (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
-      (write-readme-and-show "file" afils show2))))
+      (write-readme-and-show (create-file-table dir) show2))))
+
+#; {PathString -> Table}
+(define (create-file-table dir)
+  (define files (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
+  (define purps (purpose-statements files strip-semis))
+  (define afils (map row files files purps))
+  (define table (make-table "file" afils))
+  table)
 
 #; {String [Listof Documented] [String -> String] Boolean -> Void}
 ;; create one README.md file with an organization table made from `afils` labeled with `header`
 ;; `clean` each description line with 
-(define (write-readme-and-show header documented-files show)
+(define (write-readme-and-show table show)
   (copy-file2 "README.source" "README.md" 'delete-existing-one)
   (with-output-to-file "README.md"
     #:exists 'append
-    (λ () (printf "~a" (make-table header documented-files))))
+    (λ () (printf "~a" table)))
   (when show (system "open README.md")))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -211,8 +217,10 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; Some MARK DOWN facilities
 
+#; {Type Table = String}
+
 (struct row [path name purpose] #:prefab)
-#; {type Documented = [documented PathString String String]}
+#; {type Row = [documented PathString String String]}
 
 #; {String [Listof [List PathString String]] [Listof String] -> String}
 (define (make-table header0 documented-files)

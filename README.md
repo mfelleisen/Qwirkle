@@ -265,3 +265,11 @@ For detailed explanations of the files, follow the links.
 | [Integration](Integration/README.md) | this directory satisfies the basic specs of the integration tests of milestone 10 for Sw Dev F'23. | 
 | [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
 | [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 
+
+| file | purpose |
+|--------------------- | ------- |
+| [LICENSE-APACHE](LICENSE-APACHE) |  | 
+| [LICENSE-MIT](LICENSE-MIT) |  | 
+| [homework.rkt](homework.rkt) | this file exists to export names for the milestone specifications of the Sw Dev course | 
+| [xreadme](xreadme) |  | 
+| [xtest](xtest) |  | 
