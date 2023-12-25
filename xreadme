@@ -27,6 +27,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; TODO:
+;; -- files in top-level directory 
 ;; -- allow files in ordering that don't have a ".rkt" extension
 ;;    -- json
 ;;    -- script 

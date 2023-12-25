@@ -1,6 +1,6 @@
 #lang racket
 
-;; this file exists to 
+;; this file exists to export names for the milestone specifications of the Sw Dev course 
 
 (require (for-syntax syntax/parse))
 
@@ -20,30 +20,19 @@
 ;; the specs 
 (req->prov Qwirkle/scribblings/spec)
 
-; (req->prov Qwirkle/Common/coordinates)
+;; code files 
 (req->prov Qwirkle/Common/tiles)
 (req->prov Qwirkle/Common/game-state)
-
-; (req->prov (prefix-in players: Qwirkle/Common/players))
-; (req->prov Qwirkle/Common/directions)
 (req->prov Qwirkle/Player/mechanics)
 (req->prov Qwirkle/Referee/referee)
 (req->prov Qwirkle/Referee/ref-state)
-
 (req->prov Qwirkle/Server/server)
 (req->prov (prefix-in client: Qwirkle/Client/client))
 
-; (req->prov Qwirkle/Lib/colors)
-
-; (req->prov (prefix-in state: Qwirkle/Common/states))
-; (req->prov (prefix-in board: Qwirkle/Common/boards))
-
-; (req->prov (submod Qwirkle/Common/tiles examples))
-
+;; json specs 
 (req->prov (submod Qwirkle/Common/tiles json))
 (req->prov (submod Qwirkle/Common/coordinates json))
 (req->prov (submod Qwirkle/Common/placement json))
-; (req->prov (submod Qwirkle/Common/players json))
 (req->prov (submod Qwirkle/Common/game-state json))
 (req->prov (submod Qwirkle/Common/state-of-player json))
 (req->prov (submod Qwirkle/Player/mechanics json))
