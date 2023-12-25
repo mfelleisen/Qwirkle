@@ -52,37 +52,44 @@ exec racket -tm "$0" -- ${1+"$@"}
       [(list "--help")     (printf "usage:\n~a\n" help-string) (exit 0)]
       [_ (printf "usage: \n~a\n" help-string) (exit 1)]))
   (define adirs (order-via (all-git-tracked directory-exists? EXCEPTIONS) ORDER))
-  ;; -- now create the READMEs in `adirs` and link them up 
+  ;; -- now create the READMEs in `adirs` 
   (readme* adirs show)
-  (top-level-reademe adirs show))
+  ;; ... finally and link them up
+  ;; (must be in this order because the next expression assumes their existence)
+  (top-level-readme adirs show))
+
+#;{type Show = (U Boolean PathString)}
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; readme creation for the top-level directory and its immediate sub-directories 
 
-#; {[Listof PathString] Boolean -> Void}
-(define (top-level-reademe adirs show)
-  (define afils (map (λ (d) (list (build-path d "README.md") d)) adirs))
+#; {[Listof PathString] Show -> Void}
+(define (top-level-readme adirs show)
+  (define files (map (λ (d) (build-path d "README.md")) adirs))
+  (define purps (purpose-statements files identity))
+  (define afils (map documented files adirs purps))
   (define show2 (and show (or (boolean? show) (equal? show "./"))))
-  (write-readme-and-show "directory" afils identity show2))
+  (write-readme-and-show "directory" afils show2))
 
 #; {[Listof PathString] Boolean -> Void}
 ;; find README.source in each directory in `adirs` and create README.md in this directory
-(define (readme* adirs show)
-  (for ([dir adirs])
-    (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
+(define (readme* dir* show)
+  (for ([dir dir*])
     (parameterize ([current-directory dir])
-      (define afils (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
-      (write-readme-and-show "file" (map (λ (f) (list f f)) afils) strip-semis show2))))
+      (define files (order-via (all-git-tracked file-exists? EXCEPTIONS) (find-order dir ORDER)))
+      (define purps (purpose-statements files strip-semis))
+      (define afils (map documented files files purps))
+      (define show2 (and show (or (and (boolean? show) show) (and (string? show) (equal? show dir)))))
+      (write-readme-and-show "file" afils show2))))
 
-#; {String [Listof [List PathString String]] [String -> String] Boolean -> Void}
+#; {String [Listof Documented] [String -> String] Boolean -> Void}
 ;; create one README.md file with an organization table made from `afils` labeled with `header`
 ;; `clean` each description line with 
-(define (write-readme-and-show header afils clean show)
-  (define purps (purpose-statements afils clean))
+(define (write-readme-and-show header documented-files show)
   (copy-file2 "README.source" "README.md" 'delete-existing-one)
   (with-output-to-file "README.md"
     #:exists 'append
-    (λ () (printf "~a" (make-table header afils purps))))
+    (λ () (printf "~a" (make-table header documented-files))))
   (when show (system "open README.md")))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -90,19 +97,18 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 (define SEMIs ";; ")
 
-#; {[Listof [List PathString String]] -> [Listof String]}
-(define (purpose-statements l clean)
-  (for/list ([d l])
-    (with-handlers ([exn:fail? (missing-purpose-statement d)])
-      (define file (first d))
+#; {[Listof PathString] -> [Listof String]}
+(define (purpose-statements file* clean)
+  (for/list ([file file*])
+    (with-handlers ([exn:fail? (missing-purpose-statement file)])
       (cond
         [(regexp-match #px".rkt|.md" file)
          (with-input-from-file file (λ () (clean (string-trim (caddr (port->lines))))))]
         [else ""]))))
 
 #; {[List PathString String] -> Empty}
-(define ((missing-purpose-statement d) xn)
-  (error 'purpose-statement "~a \n~a" (first d) (exn-message xn)))
+(define ((missing-purpose-statement file) xn)
+  (error 'purpose-statement "~a \n~a" file (exn-message xn)))
 
 #; {String -> String}
 #; (strip-semis ";; ...") ;; yields "..."
@@ -200,15 +206,18 @@ exec racket -tm "$0" -- ${1+"$@"}
      (if (equal? d dir) (map (λ (f) (~a f ".rkt")) files) (find-order dir order+))]))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Some MARK DOWN facilities 
+;; Some MARK DOWN facilities
+
+(struct documented [path name purpose] #:prefab)
+#; {type Documented = [documented PathString String String]}
 
 #; {String [Listof [List PathString String]] [Listof String] -> String}
-(define (make-table header0 adirs purps)
+(define (make-table header0 documented-files)
   (define header (make-header header0))
   (define content
-    (for/list ([d adirs] [p purps])
-      (match-define (list dl dn) d)
-      (~a "| [" dn "](" dl ")" " | " p " | \n")))
+    (for/list ([d documented-files])
+      (match-define (documented path name purpose) d)
+      (~a "| [" name "](" path ")" " | " purpose " | \n")))
   (apply string-append header content))
 
 (define (make-header x)
