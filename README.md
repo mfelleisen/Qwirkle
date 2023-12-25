@@ -271,5 +271,5 @@ For detailed explanations of the files, follow the links.
 | [LICENSE-APACHE](LICENSE-APACHE) |  | 
 | [LICENSE-MIT](LICENSE-MIT) |  | 
 | [homework.rkt](homework.rkt) | this file exists to export names for the milestone specifications of the Sw Dev course | 
-| [xreadme](xreadme) | generated the README.md files from the README.source files, *.txt files, and purpose statements | 
+| [xreadme](xreadme) | generate the README.md files from README.source files, *.txt files, and purpose statements | 
 | [xtest](xtest) | run `raco test` on all relevant code files | 
