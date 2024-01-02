@@ -5,6 +5,9 @@ this component represents the common ontology of Q players and the Q gaming fram
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 

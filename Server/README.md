@@ -8,6 +8,9 @@ player and runs a Q game.
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [server.rkt](server.rkt) | a server that signs up players over TCP and runs a game | 

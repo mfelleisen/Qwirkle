@@ -133,13 +133,23 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; interpret readme files to include diagrams 
 
+
+(define toc-note
+  #<< eos
+
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+ eos
+  )
+
+
 #; {String[Filename] String[Filename] Table Any -> Void}
 ;; copy the content from `old` to `new`
 ;; replace "@@include(.)" with the content of the specified fle 
 (define (copy-file2 old new table _)
   (let* ([s (file->list old read-line)]
          [s (replace #px"@@include\\((.*)\\)" s)]
-         [s (replace #px"@@table" s #:new (list table))])
+         [s (replace #px"@@table" s #:new (list table toc-note))])
     (with-output-to-file new #:exists 'replace (λ () (for ((l s)) (displayln l))))))
 
 #; {String String[Filename] Any -> Void}

@@ -10,6 +10,9 @@ until a final state is reached.
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [referee.rkt](referee.rkt) | referee: mediates between external players (local or remote) and the referee state, via safe xsend | 

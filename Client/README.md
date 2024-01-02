@@ -19,6 +19,9 @@ specifying the connectivity (call-me vs call-you)
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [client.rkt](client.rkt) | a client that signs up some players with a server at a given IP address and port, | 

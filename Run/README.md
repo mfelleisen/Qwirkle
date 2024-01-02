@@ -5,6 +5,9 @@ how to run the system from either the server side or the client side (or both)
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [xserver](xserver) |  main is invoked via the command line as follows: $ ./xserver port-number < server-config-file | 

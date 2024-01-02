@@ -5,6 +5,9 @@ this directory satisfies the basic specs of the integration tests of milestone 1
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [xtest](xtest) | ./xtest Tests/ ./xclients ,/xserver launches a server locally on a port, points n clients there, with tests creates from configs | 

@@ -5,6 +5,9 @@ this library provides functionality that should probably (or may) exist in Racke
 ### Table of Content
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | file | purpose |
 |--------------------- | ------- |
 | [check-message.rkt](check-message.rkt) | a primitive addition to rackunit that checks whether an expression prints an error message matching some regular expression | 

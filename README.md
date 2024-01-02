@@ -32,6 +32,9 @@ The following table describes the purpose of each directory in this repository.
 For detailed explanations of the files, follow the links. 
 
 
+See [Modular Programming](https://felleisen.org/matthias/Thoughts/Modular_Programming.html)
+for an explanation of how code files are organized in Racket.
+
 | directory | purpose |
 |--------------------- | ------- |
 | [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
