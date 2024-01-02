@@ -2,6 +2,24 @@
 
 this component represents the common ontology of Q players and the Q gaming framework 
 
+### Table of Content
+
+
+| file | purpose |
+|--------------------- | ------- |
+| [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
+| [placement.rkt](placement.rkt) | a data representation for player actions, esp. placements | 
+| [q-rule.rkt](q-rule.rkt) | the Q specific rule for fitting a tile into a space | 
+| [game-state.rkt](game-state.rkt) | a data representation of the generic game-state knowledge | 
+| [state-of-player.rkt](state-of-player.rkt) | a data representation of the state of a Q player | 
+| [map.rkt](map.rkt) | data representation of a Q map | 
+| [coordinates.rkt](coordinates.rkt) | data representation of map coordinates | 
+| [tiles.rkt](tiles.rkt) | data representation of tiles, shapes, and colors | 
+| [tile-colors.rkt](tile-colors.rkt) | the colors of tiles | 
+| [tile-shapes.rkt](tile-shapes.rkt) | the shapes of tiles | 
+
+
+
 Here is a rough overview of the layers: 
 
 ```
@@ -317,19 +335,3 @@ referee                        player (p_1) . . . player (p_n)
   |                                |                 | % losers are informed 
   |                                |                 |
 ```
-
-### Organization
-
-
-| file | purpose |
-|--------------------- | ------- |
-| [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
-| [placement.rkt](placement.rkt) | a data representation for player actions, esp. placements | 
-| [q-rule.rkt](q-rule.rkt) | the Q specific rule for fitting a tile into a space | 
-| [game-state.rkt](game-state.rkt) | a data representation of the generic game-state knowledge | 
-| [state-of-player.rkt](state-of-player.rkt) | a data representation of the state of a Q player | 
-| [map.rkt](map.rkt) | data representation of a Q map | 
-| [coordinates.rkt](coordinates.rkt) | data representation of map coordinates | 
-| [tiles.rkt](tiles.rkt) | data representation of tiles, shapes, and colors | 
-| [tile-colors.rkt](tile-colors.rkt) | the colors of tiles | 
-| [tile-shapes.rkt](tile-shapes.rkt) | the shapes of tiles | 

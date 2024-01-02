@@ -16,10 +16,12 @@ acts like a referee from the player's perspective.
 The implementation uses a general library for calling a server and
 specifying the connectivity (call-me vs call-you)
 
-### Organization
+### Table of Content
 
 
 | file | purpose |
 |--------------------- | ------- |
 | [client.rkt](client.rkt) | a client that signs up some players with a server at a given IP address and port, | 
 | [referee.rkt](referee.rkt) | the proxy referee runs a player in the same context as a referee proper | 
+
+

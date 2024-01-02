@@ -7,6 +7,11 @@ consults external players to cause transitions from one state
 to the next, and applies a rule chhecker to each such transition
 until a final state is reached. 
 
+### Table of Content
+
+@@table 
+
+
 ### Concepts and Relationships
 
 ```
@@ -138,5 +143,3 @@ signature:
   #; (f #false)         ; no more states coming 
   observer (-> state? (-> (or/c #false state?) any/c))
 ```
-
-### Organization 

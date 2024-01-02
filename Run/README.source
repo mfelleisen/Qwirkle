@@ -1,0 +1,30 @@
+## Running a Server or Client 
+
+how to run the system from either the server side or the client side (or both) 
+
+### Table of Content
+
+@@table 
+
+### Run Server
+
+```
+$ ./xserver port-number
+```
+
+or
+
+```
+$ ./xserver port-number < default-server-config.json
+```
+
+Editing the configuration is almost self-evident. 
+
+
+### Run Client
+
+```
+$ ./xclients port-number < sample-client-config.json
+```
+
+Editing the configuration is almost self-evident. 

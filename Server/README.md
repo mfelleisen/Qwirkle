@@ -5,6 +5,18 @@ this component implements the Q server.
 The server signs up clients over TCP that connect on behalf of an AI
 player and runs a Q game. 
 
+### Table of Content
+
+
+| file | purpose |
+|--------------------- | ------- |
+| [server.rkt](server.rkt) | a server that signs up players over TCP and runs a game | 
+| [player.rkt](player.rkt) | this remote player implements the same interface as the player but conveys its arguments | 
+
+
+
+### Configurations 
+
 A server configuration file has the following shape:
 
 ```
@@ -80,10 +92,3 @@ server                           client (c_1) ... client (c_i)
 ### Running
 
 The `xserver` script ... 
-
-### Organization 
-
-| file | purpose |
-|--------------------- | ------- |
-| [server.rkt](server.rkt) | a server that signs up players over TCP and runs a game | 
-| [player.rkt](player.rkt) | this remote player implements the same interface as the player but conveys its arguments | 

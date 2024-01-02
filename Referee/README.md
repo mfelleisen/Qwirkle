@@ -7,6 +7,18 @@ consults external players to cause transitions from one state
 to the next, and applies a rule chhecker to each such transition
 until a final state is reached. 
 
+### Table of Content
+
+
+| file | purpose |
+|--------------------- | ------- |
+| [referee.rkt](referee.rkt) | referee: mediates between external players (local or remote) and the referee state, via safe xsend | 
+| [ref-state.rkt](ref-state.rkt) | a data representation of the referee's knowledge about the game | 
+| [observer-interface.rkt](observer-interface.rkt) | an interface for a primitive observer | 
+| [observer.rkt](observer.rkt) | a primitive observer that saves all images in Tmp/ and allows users to view game developments | 
+
+
+
 ### Concepts and Relationships
 
 ```
@@ -138,12 +150,3 @@ signature:
   #; (f #false)         ; no more states coming 
   observer (-> state? (-> (or/c #false state?) any/c))
 ```
-
-### Organization 
-
-| file | purpose |
-|--------------------- | ------- |
-| [referee.rkt](referee.rkt) | referee: mediates between external players (local or remote) and the referee state, via safe xsend | 
-| [ref-state.rkt](ref-state.rkt) | a data representation of the referee's knowledge about the game | 
-| [observer-interface.rkt](observer-interface.rkt) | an interface for a primitive observer | 
-| [observer.rkt](observer.rkt) | a primitive observer that saves all images in Tmp/ and allows users to view game developments | 

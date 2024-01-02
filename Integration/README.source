@@ -2,18 +2,29 @@
 
 this directory satisfies the basic specs of the integration tests of milestone 10 for Sw Dev F'23.
 
+### Table of Content
+
+@@table 
+
 ### MODIFY REF TO RUN
 
 In `Referee/referee.rkt` set (dont-double-check-names #false) to make sure tests are deterministic. 
 
+### Test Directories:
 
-### Files for test fest
+| directory		 | purpose 
+| ---------------------- | --------------------------------- | 
+| `ForStudents` 	 | examples distributed to students  |
+| `Tests` 		 | standard configurations, pretty much like those for milestone 8 |
+| `Bonus` 		 | client configurations with flaws  |
 
-- `xtest` is the testing script 
-- `xserver` 
-- `xclients`
-- `xserver-bonus` 
-- `xclients-bonus`
+The bonus tests check various robustness aspects of the student's server:
+
+- players that sign up with bad names
+- players that send broken JSON, plus
+- 2 weird clients that don't sign up properly
+
+### Generated Files
 
 Running `xtest` will create the files 
 
@@ -22,15 +33,6 @@ Running `xtest` will create the files
   just in case something goes wrong with the students' TCP port allocation.
 
 It is safe to delete these files after a run.  
-
-### Test Directories:
-
-- `ForStudents` 
-- `Tests` are standard configurations, pretty much like those for `8`
-- `Bonus` are client configurations with flaws:
-  - players that sign up with bad names
-  - players that send broken JSON, plus
-  - 2 weird clients that don't sign up properly
   
 ### Running the required tests
 

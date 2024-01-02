@@ -1,6 +1,6 @@
 ## The Q Project
 
-#### Install
+### Install
 
 ```
 $ git clone git:...
@@ -9,7 +9,7 @@ $ raco pkg install
 $ raco doc Qwirkle 
 ```
 
-#### Run
+### Run
 
 See [Run](Run/README.md)
 
@@ -24,7 +24,36 @@ $ racket readme.rkt
 The repository is a fully functioning game framework, intended to be uses
 as both an educational and a research project.
 
-### The Idea 
+### Read 
+
+#### Table of Content 
+
+The following table describes the purpose of each directory in this repository.
+For detailed explanations of the files, follow the links. 
+
+
+| directory | purpose |
+|--------------------- | ------- |
+| [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
+| [Server](Server/README.md) | this component implements the Q server. | 
+| [Referee](Referee/README.md) | this component implements the Q referee | 
+| [Common](Common/README.md) | this component represents the common ontology of Q players and the Q gaming framework | 
+| [Client](Client/README.md) | this component directory implements the client code for the Q game. | 
+| [Player](Player/README.md) | this component implements a Q player. | 
+| [Integration](Integration/README.md) | this directory satisfies the basic specs of the integration tests of milestone 10 for Sw Dev F'23. | 
+| [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
+| [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 
+
+| file | purpose |
+|--------------------- | ------- |
+| [LICENSE-APACHE](LICENSE-APACHE) |  | 
+| [LICENSE-MIT](LICENSE-MIT) |  | 
+| [homework.rkt](homework.rkt) | this file exists to export names for the milestone specifications of the Sw Dev course | 
+| [xreadme](xreadme) | generate the README.md files from README.source files, *.txt files, and purpose statements | 
+| [xtest](xtest) | run `raco test` on all relevant code files | 
+
+
+#### The Idea 
 
 "Q" is a table game. Players place tiles on an "infinitely large" table,
 building a map. Each placement must satisfy certain constraints; each
@@ -39,7 +68,7 @@ player---non-responsiveness due to bugs or cheating---results in
 immediate termination. So the competition is first about delivering
 robust code and second about writing great strategies.
 
-### Milestones
+#### Milestones
 
 See [Milestones](https://felleisen.org/matthias/4500-f23/index.html) for details.
 
@@ -88,7 +117,7 @@ The final integration test runs
 ```
 
 
-### The Common Ontology
+#### The Common Ontology
 
 For participating AI players to connect to the server and participate in games, they
 need to understand the interaction protocol, which specify remote calls, their
@@ -104,7 +133,7 @@ respect to the rules of the game. the repository's `Common` directory publishes 
 code that interprets the remote calls with respect to the server and the sample
 player in this repository.
 
-### Server Sign-Up
+#### Server Sign-Up
 
 ```
 server                           client (c_1) ... client (c_i)
@@ -143,12 +172,12 @@ server                           client (c_1) ... client (c_i)
   |                                     |
 ```
 
-### The Logical Interaction Protocol
+#### The Logical Interaction Protocol
 
 The following sequence diagrams sketch how proxy referee and the proxy
 player re-connect the referee and the players over TCP. 
 
-#### Starting the Game 
+_Starting the Game_
 
 ```
 
@@ -168,7 +197,7 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
 ```
 
-#### Running Turns
+_Running Turns_
 
 ```
 
@@ -226,7 +255,7 @@ referee                         player (p_1) . . . player (p_n)
   .                                .                 .
 ```
 
-#### Ending the Game
+_Ending the Game_
 
 ```
 
@@ -246,30 +275,6 @@ referee                        player (p_1) . . . player (p_n)
   |                                |                 |
 ```
 
-### Organization
-
-The following table describes the purpose of each directory in this repository.
-For detailed explanations of the files, follow the links. 
 
 
 
-
-| directory | purpose |
-|--------------------- | ------- |
-| [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
-| [Server](Server/README.md) | this component implements the Q server. | 
-| [Referee](Referee/README.md) | this component implements the Q referee | 
-| [Common](Common/README.md) | this component represents the common ontology of Q players and the Q gaming framework | 
-| [Client](Client/README.md) | this component directory implements the client code for the Q game. | 
-| [Player](Player/README.md) | this component implements a Q player. | 
-| [Integration](Integration/README.md) | this directory satisfies the basic specs of the integration tests of milestone 10 for Sw Dev F'23. | 
-| [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
-| [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 
-
-| file | purpose |
-|--------------------- | ------- |
-| [LICENSE-APACHE](LICENSE-APACHE) |  | 
-| [LICENSE-MIT](LICENSE-MIT) |  | 
-| [homework.rkt](homework.rkt) | this file exists to export names for the milestone specifications of the Sw Dev course | 
-| [xreadme](xreadme) | generate the README.md files from README.source files, *.txt files, and purpose statements | 
-| [xtest](xtest) | run `raco test` on all relevant code files | 

@@ -1,6 +1,6 @@
 #lang racket
 
-;; create a remote proxy-context from types of the player's methods 
+;; create a remote proxy-context (remote-ref, remote-manager) from types of the player's methods 
 
 ;                                                          
 ;                                                          

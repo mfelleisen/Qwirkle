@@ -5,6 +5,13 @@ this component implements the Q server.
 The server signs up clients over TCP that connect on behalf of an AI
 player and runs a Q game. 
 
+### Table of Content
+
+@@table 
+
+
+### Configurations 
+
 A server configuration file has the following shape:
 
 ```
@@ -45,5 +52,3 @@ referee.
 ### Running
 
 The `xserver` script ... 
-
-### Organization 

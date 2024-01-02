@@ -1,6 +1,9 @@
 #lang racket
 
-;; a library for specifying the methods of remote proxies via "types"
+;; a library for specifying the methods of remote proxies via "types" (define/remote for classes)
+
+;; turns the signature line for a player method into a method that
+;; serializes arguments, performs TCP-based exchanges, and deserializes the result 
 
 (provide
  #; (define-define/remote define/remote:id in out)

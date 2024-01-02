@@ -44,9 +44,11 @@ The mechanism is a functional component.
 A strategy is always a function. Even a history-sensitive variant
 should consume a data representation of the game's history.  
 
+### Table of Content
 
 
 | file | purpose |
 |--------------------- | ------- |
 | [mechanics.rkt](mechanics.rkt) | the player mechanism; several broken variants, provided via "factories" to bundle them into groups | 
 | [strategies.rkt](strategies.rkt) | simple strategies for picking a single placement and iterating those | 
+

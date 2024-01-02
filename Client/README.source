@@ -16,5 +16,7 @@ acts like a referee from the player's perspective.
 The implementation uses a general library for calling a server and
 specifying the connectivity (call-me vs call-you)
 
-### Organization
+### Table of Content
+
+@@table 
 

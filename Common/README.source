@@ -2,6 +2,11 @@
 
 this component represents the common ontology of Q players and the Q gaming framework 
 
+### Table of Content
+
+@@table
+
+
 Here is a rough overview of the layers: 
 
 ```
@@ -90,6 +95,3 @@ player re-connect the referee and the players over TCP.
 #### Ending the Game
 
 @@include(../Common/protocol-end-game.txt)
-
-### Organization
-

@@ -7,6 +7,8 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 ;; create the README.md files from README.source in the top-level & all git-tracked code directories:
 ;; (assume the directories contain only files) 
+;; @@include -- include an ASCII diagram from another file
+;; @@table   -- place the table of content here 
 
 (define EXCEPTIONS
   '[".git" "compiled" "README.md" "README.source" "info.rkt" "scribblings" ".DS_Store"]) 
@@ -43,6 +45,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 (provide main)
 
 (define (main . x)
+  (system "rm -rf *~ *.dvi .Z*.tex *.class */*~")
   ;; -- analyze cmd line args and directory 
   (define show
     (match x
@@ -88,11 +91,12 @@ exec racket -tm "$0" -- ${1+"$@"}
   (define table (make-table "file" afils))
   table)
 
-#; {String [Listof Documented] [String -> String] Boolean -> Void}
+#; {Table Boolean -> Void}
 ;; create one README.md file with an organization table made from `afils` labeled with `header`
 ;; `clean` each description line with 
 (define (write-readme-and-show table show)
-  (copy-file2 "README.source" "README.md" 'delete-existing-one)
+  (copy-file2 "README.source" "README.md" table 'delete-existing-one)
+  #;
   (with-output-to-file "README.md"
     #:exists 'append
     (λ () (printf "~a" table)))
@@ -129,20 +133,22 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; interpret readme files to include diagrams 
 
-#; {String[Filename] String[Filename] Any -> Void}
+#; {String[Filename] String[Filename] Table Any -> Void}
 ;; copy the content from `old` to `new`
 ;; replace "@@include(.)" with the content of the specified fle 
-(define (copy-file2 old new _)
-  (define c-old (file->list old read-line))
-  (define c-new (replace "@@include" c-old))
-  (with-output-to-file new #:exists 'replace (λ () (for ((l c-new)) (displayln l)))))
+(define (copy-file2 old new table _)
+  (let* ([s (file->list old read-line)]
+         [s (replace #px"@@include\\((.*)\\)" s)]
+         [s (replace #px"@@table" s #:new (list table))])
+    (with-output-to-file new #:exists 'replace (λ () (for ((l s)) (displayln l))))))
 
 #; {String String[Filename] Any -> Void}
-(define (replace _ c-old)
+(define (replace pat c-old #:new (replace-with #false))
   (for/fold ([new '()] #:result (reverse new)) ([line c-old])
-    (define m (regexp-match #px"@@include\\((.*)\\)" line))
+    (define m (regexp-match pat line))
     (cond
       [(boolean? m) (cons line new)]
+      [replace-with (append replace-with new)]
       [else
        (define c (reverse (file->list (second m) read-line)))
        (append (code-block c) new)])))

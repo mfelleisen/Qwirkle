@@ -44,4 +44,6 @@ The mechanism is a functional component.
 A strategy is always a function. Even a history-sensitive variant
 should consume a data representation of the game's history.  
 
+### Table of Content
 
+@@table 
