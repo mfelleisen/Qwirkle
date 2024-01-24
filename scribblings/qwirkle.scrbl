@@ -99,12 +99,9 @@ When granted a turn, a player may take one of the following three actions:
     @item{every tile placed must share a side with at least one tile on the map
     that it extends;}
 
-    @item{@strike{every tile placed must match the colors of @purple{all} its immediate @purple{(up/down, left/right)} neighbors (if
-    any) @strike{along a line (row, column)} or it must match @purple{all} the shapes @purple{of all its immediate neihgbors} @strike{along a line};}}
-
-    @item{@purple{every tile added to the map must simultaneously match both of
+    @item{every tile added to the map must simultaneously match both of
     its immediate neighbors along its row and column, separately, in terms of
-    either shape or color;}}
+    either shape or color;}
 
     @item{all tiles placed during a turn must be in the same row or column,
     though not necessarily adjacent to each other.}
@@ -117,8 +114,8 @@ When granted a turn, a player may take one of the following three actions:
 ]
 @; -----------------------------------------------------------------------------
 The referee eliminates any player that violates any rules during a turn. 
-@purple{The tiles in the hand of the eliminated player get appended to the
-referee's tiles.} 
+The tiles in the hand of the eliminated player get appended to the
+referee's tiles.
 
 @bold{Scoring a Turn} A player that passes or exchanges its tiles receives no
 points. 
@@ -132,12 +129,12 @@ for a turn as follows:
 @item{A player receives one point per tile placed.}
 
 @item{A player receives one point per tile in a contiguous sequence of
- @purple{tiles} (in a row or column) that @purple{contains} at least one of its
- newly placed tiles @strike{@emph{extends}}.}
+ tiles (in a row or column) that contains at least one of its
+ newly placed tiles.}
 
 @item{A player receives @(~a [Q-BONUS]) bonus points for
  @emph{completing} a Q, which is a contiguous sequence of tiles that
- contains all shapes or all colors @purple{and nothing else}.}
+ contains all shapes or all colors and nothing else.}
 
 @item{A player also receives @(~a [FINISH-BONUS]) bonus points for
  placing all tiles in its possession.} 
