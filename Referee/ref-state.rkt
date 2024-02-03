@@ -629,7 +629,6 @@
 
 (module+ json
   (define state->jsexpr (state->jsexpr/g players->jsexpr tiles->jsexpr))
-  (define pk->jsexpr    (state->jsexpr/g natural->jsexpr natural->jsexpr))
 
   (define (jsexpr->state j #:names (names #false))
     (define (j->1 j) ;; kludge for easy testing to get name back 
@@ -637,13 +636,7 @@
       (jsexpr->1player j #:name name))
     (def/jsexpr-> players #:array [(list (app j->1 (? sop? x)) ...) x])
     (define jsexpr->state (jsexpr->state/g jsexpr->players jsexpr->tiles))
-    (jsexpr->state j))
-  
-  (define (jsexpr->pk j #:name (name "a name"))
-    (define (j->1 j) (jsexpr->1player j #:name name))
-    (def/jsexpr-> players #:array [(cons (app j->1 (? sop? f)) `(,(? natural? n) ...)) (cons f n)])
-    (define jsexpr->pk (jsexpr->state/g jsexpr->players jsexpr->tiles#))
-    (jsexpr->pk j)))
+    (jsexpr->state j)))
 
 (module+ test
   (check-equal? (jsexpr->pk (pk->jsexpr info-starter-state) #:name "player1") info-starter-state)

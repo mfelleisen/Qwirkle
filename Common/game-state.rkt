@@ -56,18 +56,6 @@
    (->* (map? (listof placement?)) (#:finishing natural?) natural?)]))
 
 ;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; these are all referee states with tiles and all
-  (provide Tests/ ForStudents/ Local)
-  
-  (provide
-   +starter-state
-   special-state
-   special-state+green-circle-at--2-2
-   bad-state
-   
-   state*
-   state++*))
-
 (module+ json
   (provide
    MAP PLAYERS TILES
@@ -87,6 +75,18 @@
        -> JSexpr
        -> Option<[GameState X Y Z]>}
    jsexpr->state/g))
+
+(module+ examples ;; these are all referee states with tiles and all
+  (provide Tests/ ForStudents/ Local)
+  
+  (provide
+   +starter-state
+   special-state
+   special-state+green-circle-at--2-2
+   bad-state
+   
+   state*
+   state++*))
 
 ;                                                          
 ;                                                          
@@ -440,14 +440,14 @@
   (define coord (map placement-coordinate placements))
   (define line  (create-line gmap coord))
   (+ (length placements)                     ;; task 1 
-     finishing-bonus                         ;; task 2 
-     (score-segments gmap line placements))) ;; tasks 3 and 4        
+     finishing-bonus                         ;; task 4
+     (score-segments gmap line placements))) ;; tasks 2 and 3
 
 #; {Map Line [Listof Placement] -> Natural}
 ;; score the segments on the line plus all segments orthonal to the at addition points 
 (define (score-segments gmap line placements)
-  (+ (score-same-line-segments gmap line placements) ;; task 3 & 4 
-     (score-orthogonal-lines gmap line placements))) ;; task 3 & 4 
+  (+ (score-same-line-segments gmap line placements) ;; task 2 & 3
+     (score-orthogonal-lines gmap line placements))) ;; task 2 & 3
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Map Line [Listof Placement] -> Natural}
@@ -613,6 +613,8 @@
 (define render-pub-state
   (render-ref-state/g
    render-sop
+   (λ (t*) (2:text (~a "yeah many tiles in ref's deck: " t*) 22 'red))
+   #;
    (λ (t*)
      (define how-many (min (length t*) 12))
      (define dots-suf (if (> (length t*) 12) (2:text "   ..." 22 'black) 2:empty-image))
@@ -659,7 +661,7 @@
        (hasheq MAP     (map->jsexpr gmap)
                PLAYERS '()
                TILES   (tiles->jsexpr tiles))}))
-       
+  
   #; {[X Y Z]
       [JSexpr -> Option<Z>]
       [JSexpr -> Option<Cons [SoPlayer X] [Listof Y]>]
@@ -671,4 +673,15 @@
                 [PLAYERS players (cons (? sop? first) p)]
                 [TILES   tiles   (? identity  t)]} ;; not #false 
       (state gmap (cons first p) t))
-    (jsexpr->state/general j)))
+    (jsexpr->state/general j))
+
+  (provide jsexpr->pk pk->jsexpr)
+
+  (define pk->jsexpr (state->jsexpr/g natural->jsexpr natural->jsexpr))
+
+  (define (jsexpr->pk j #:name (name "a name"))
+    (define (j->1 j) (jsexpr->1player j #:name name))
+    (def/jsexpr-> players #:array [(cons (app j->1 (? sop? f)) `(,(? natural? n) ...)) (cons f n)])
+    (define jsexpr->pk (jsexpr->state/g jsexpr->players jsexpr->tiles#))
+    (jsexpr->pk j)))
+
