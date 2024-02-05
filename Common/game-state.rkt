@@ -48,7 +48,7 @@
    (-> state? (listof placement?) (or/c #false map?))]
   
   [score
-   ;; legal confirmed, new map evaluated with placements that produced it 
+   ;; confirmed legal, new map evaluated with placements that produced it 
    ;; referee must add bonus for finish
    ;; SHOULD THIS BE JUST A PART OF `complete-turn`?? NO, because the ref adds the 'finish bonus'
    ;; the ref must consult the state and determine whether the active player has placed all tiles
@@ -417,18 +417,18 @@
    - a player places 3 tiles x
    - they are all in the same row 
 
-      +-+
-      |o|
-      +-+
-      +-+              +-+
-      |o|	       |o|
-      +-+              +-+ 
-   +-++-++-++-+  +-++-++-+
-   |x||x||o||o|	 |o||o||x|
-   +-++-++-++-+	 +-++-++-+
-   +-+                 +-+
-   |o|		       |o|
-   +-+		       +-+
+      +-++-++-++-++-++-++-++-++-+
+      |o||o||o|o|o|o||o||o||o||o|
+      +-++-++-++-++-++-++-+   +-+
+      +-+               +-+   +-+
+      |o|	        |o|   |o|
+      +-+               +-+   +-+ 
+   +-++-++-++-+   +-++-++-+   +-+
+   |x||x||o||o|	  |o||o||x|   |o|
+   +-++-++-++-+	  +-++-++-+   +-+
+   +-+                  +-+
+   |o|		        |o|
+   +-+		        +-+
 
    scoring works most easily as follows:
    - determine the line (row or column) to which the tiles were adeded
@@ -567,6 +567,9 @@
   (for-each check-score Local)
   (for-each check-score ForStudents/)
   (for-each check-score Tests/)
+  
+  (map (λ (x) (list (render-map (first x)) (second x))) Tests/)
+
   (for-each check-score Ilyas/))
 
 (module+ test
