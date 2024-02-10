@@ -147,6 +147,25 @@
 
 (define ALL-TILES-PERM (pick-fixed-permutation ALL-TILES))
 
+;; ---------------------------------------------------------------------------------------------------
+;; name and export all tile shapes: red-star, green-star, ... 
+
+(require (for-syntax Qwirkle/Common/tile-colors))
+(require (for-syntax Qwirkle/Common/tile-shapes))
+(require (for-syntax syntax/parse))
+(define-syntax (define-all-color-shape-combos stx)
+  (syntax-parse stx 
+    [(_)
+     #:with (all-values ...) (for*/list ([s ALL-SHAPES] [c ALL-COLORS]) #`(tile '#,(car s) '#,c))
+     #:with (all-names ...)  (for*/list ([s ALL-SHAPES] [c ALL-COLORS]) (make-name stx c s))
+     #'(begin (provide all-names ...) (define all-names all-values) ...)]))
+
+(define-for-syntax (make-name stx c s)
+  (datum->syntax stx (string->symbol (format "~a-~a" c (car s)))))
+
+(define-all-color-shape-combos)
+;; ---------------------------------------------------------------------------------------------------
+
 ;                                                          
 ;                                                          
 ;                                      ;;;                 
@@ -165,7 +184,7 @@
 (module+ examples
   (define starter-tile (tile 'star 'red))
   (define +starter-tile (tile 'circle 'red))
-
+  
   (define 8-green (tile '8star 'green))
   (define sq-blue (tile 'square 'blue))
   (define ci-llow (tile 'circle 'yellow))
